@@ -13,7 +13,7 @@ from plotly.colors import qualitative
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from src.utils.common_io import *
 from src.utils.data_utils import *
-from src.utils.paper import with_paper_style, styler
+from src.utils.figure_style import with_paper_style, styler
 from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
 from src.web_search_decision.data_extraction_other_cai import load_whole_data_from_file as load_whole_data_from_file_cai
 from scipy.stats import binomtest

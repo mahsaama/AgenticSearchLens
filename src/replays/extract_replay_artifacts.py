@@ -1380,7 +1380,7 @@ def plot_replay_web_call_agreement_counts(
     import plotly.graph_objects as go
     from plotly.colors import qualitative
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     with open(input_path) as f:
         data = json.load(f)
@@ -1492,7 +1492,7 @@ def plot_openai_replay_model_call_outcomes(
 ):
     import plotly.graph_objects as go
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     sample_calls = {}
     for model_name in model_names:
@@ -1625,7 +1625,7 @@ def plot_openai_replay_model_outcome_trigger_heatmaps(
 ):
     import plotly.graph_objects as go
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     rows = _extract_rows_for_models(model_names)
     grouped_samples = _group_rows_by_sample(rows)
@@ -1782,7 +1782,7 @@ def plot_replay_pair_outcome_trigger_heatmap(
 ):
     import plotly.graph_objects as go
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     rows = _extract_rows_for_models(model_names)
     grouped_samples = _group_rows_by_sample(rows)
@@ -1927,7 +1927,7 @@ def plot_openai_replay_dev_prompt_web_call_heatmap(
 ):
     import plotly.graph_objects as go
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     if replay_models is None:
         replay_models = [
@@ -2076,7 +2076,7 @@ def plot_replay_query_term_count_trends_over_time(
     import plotly.graph_objects as go
 
     from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     iteration_bucket_order = ["1", "2", "3+"]
 
@@ -2598,7 +2598,7 @@ def plot_replay_parallel_queries_by_query_reformulations(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     platform_color_map = {
         "gpt-5.3-chat-latest": "#636EFA",
@@ -2859,7 +2859,7 @@ def plot_replay_top_domains(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     platform_color_map = {
         "gpt-5.3-chat-latest": "#636EFA",
@@ -3293,7 +3293,7 @@ def plot_replay_web_call_topic_distribution_across_platforms(
 ):
     import plotly.graph_objects as go
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     try:
         import pandas as pd
@@ -3654,7 +3654,7 @@ def plot_query_specificity_distribution_by_iteration(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     df = _load_replay_query_eval_df(input_stem)
     if df is None or df.empty:
@@ -4304,7 +4304,7 @@ def plot_reasons_for_another_web_query_distribution_all_models(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     df = _load_replay_query_eval_df(input_stem)
     if df is None or df.empty:
@@ -6031,7 +6031,7 @@ def plot_response_source_nli_sentence_based_for_replays(
     import pandas as pd
     import plotly.graph_objects as go
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
     from src.response_generation.response_generation import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
@@ -6894,7 +6894,7 @@ def evaluate_claude_associated_citation_bucket_alignment_for_replays(
     import pandas as pd
     import plotly.graph_objects as go
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
     from src.response_generation.response_generation import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
@@ -7305,7 +7305,7 @@ def evaluate_replay_source_tranco_ranks(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.utils.paper import with_paper_style, styler
+    from src.utils.figure_style import with_paper_style, styler
 
     ranked_payload = _load_replay_json(ranked_input_path)
 

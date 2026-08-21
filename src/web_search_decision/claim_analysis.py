@@ -19,7 +19,7 @@ from src.prompts.evaluator_prompts import (
     USER_PROMPT_CLAIM_EXTRACTION,
 )
 from src.replays.extract_replay_artifacts import _has_web_tool_call, _infer_provider
-from src.utils.paper import styler, with_paper_style
+from src.utils.figure_style import styler, with_paper_style
 from src.utils.common_io import OUTPUT_PATH, load_json, to_json
 
 

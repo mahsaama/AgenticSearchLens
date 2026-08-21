@@ -1,3 +1,8 @@
+"""Shared Plotly figure styling, applied consistently across every analysis
+module's charts so the paper's figures share one visual identity (fonts,
+gridlines, legend placement).
+"""
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -6,17 +11,30 @@ from plotly import graph_objects as go
 
 @dataclass
 class PaperStyle:
+    """Figure style settings. Construct with no args for the defaults, or
+    via `styler(...)` to override font sizes (see its docstring for why
+    that mutates this class rather than returning an instance)."""
+
     font_family: str = "Open Sans"
     font_size: int = 26
     legend_font_family: str = "Open Sans"
     legend_font_size: int = 24
-    plot_bgcolor = "rgba(0,0,0,0)"
+    plot_bgcolor: str = "rgba(0,0,0,0)"
     gridwidth: int = 1
     gridcolor: str = "rgba(0,0,0,0.1)"
     legend_bgcolor: str = "rgba(1.0,1.0,1.0,0.3)"
 
 
 def styler(font_size, legend_font_size):
+    """Override PaperStyle's default font sizes and return the class itself.
+
+    Note this mutates PaperStyle's class attributes in place (not an
+    instance) -- every subsequent `PaperStyle()` call anywhere in the
+    process picks up these font sizes as its new defaults, including the
+    default `config=PaperStyle()` in `with_paper_style`'s signature. Callers
+    use this to set a plot's font scale once before generating a batch of
+    figures with `with_paper_style`.
+    """
     PaperStyle.font_size = font_size
     PaperStyle.legend_font_size = legend_font_size
     return PaperStyle
@@ -28,8 +46,14 @@ def with_paper_style(
     *,
     new_legend: Optional[dict] = None,
     # Top left corner of the plot
-    legend_pos: Optional[tuple[float, float]] = (0.8,1.2),
+    legend_pos: Optional[tuple[float, float]] = (0.8, 1.2),
 ) -> go.Figure:
+    """Apply the shared paper style (fonts, gridlines, legend) to `fig` in
+    place and return it.
+
+    legend_pos=None hides the legend entirely; new_legend, if given,
+    replaces the default horizontal top-right legend layout outright.
+    """
     if legend_pos is None:
         show_legend = False
         legend = None
