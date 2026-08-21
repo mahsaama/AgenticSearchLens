@@ -1,3 +1,16 @@
+"""Claim-level comparison between a replayed model's Web-search-on ("auto")
+and Web-search-off ("none") responses to the same prompt: extracts atomic
+claims from each response, then has an LLM judge align and classify the
+claim pairs (MATCH/REFINEMENT/CONTRADICTION/UNMATCHED) to characterize what
+Web search actually changed about the response, not just whether quality
+scores moved.
+
+Run directly (`python -m src.web_search_decision.claim_analysis --help`)
+for the CLI: build a claim analysis from a replay file, print a summary, or
+plot a multi-model comparison. Requires OPENAI_API_KEY in .env, and a
+replay file already produced by src/replays/chat_replayer.py.
+"""
+
 import argparse
 import ast
 import json
@@ -60,6 +73,8 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def _load_replay_json(path):
+    """Load a chat_replayer.py results file (JSON, or Python-literal text as
+    a fallback) and confirm it parses to a {result_key: result} dict."""
     with open(path) as f:
         raw_text = f.read()
 
@@ -76,6 +91,9 @@ def _load_replay_json(path):
 
 
 def _coerce_claim_list(payload):
+    """Pull a list of claims out of a judge response, whether it returned a
+    bare JSON array or an object wrapping the array under a plausible key
+    ("claims", "claim_list", etc.)."""
     if isinstance(payload, list):
         return payload
     if isinstance(payload, dict):
@@ -87,6 +105,9 @@ def _coerce_claim_list(payload):
 
 
 def _clean_claims(claims):
+    """Normalize a list of claims to short-enough, alphabetic, deduplicated
+    strings (each claim may be a plain string or a {"claim"/"text"/
+    "statement": ...} dict)."""
     cleaned_claims = []
     seen = set()
     for claim in claims:
@@ -108,6 +129,9 @@ def _clean_claims(claims):
 
 
 def _extract_first_json_array(text):
+    """Best-effort recovery of a JSON array from `text` when it isn't valid
+    JSON on its own (judge responses sometimes wrap the array in prose):
+    the substring from the first "[" to the last "]"."""
     if not isinstance(text, str):
         return None
     start = text.find("[")
@@ -122,6 +146,9 @@ def _extract_first_json_array(text):
 
 
 def _extract_first_json_object(text):
+    """Best-effort recovery of a JSON object from `text` when it isn't
+    valid JSON on its own: the substring from the first "{" to the last
+    "}"."""
     if not isinstance(text, str):
         return None
     start = text.find("{")
@@ -136,6 +163,12 @@ def _extract_first_json_object(text):
 
 
 def _normalize_claim_comparison_judgment(payload):
+    """Normalize a claim-comparison judge's parsed JSON to a consistent
+    shape: {"category": str, "explanation": str, "alignments": [...]}, with
+    each alignment's "relation" mapped through
+    _normalize_claim_level_relation_label and older/alternate key names
+    ("no_web_claim"/"web_claim") folded into "claim_a"/"claim_b". Returns {}
+    if the payload has nothing usable."""
     if not isinstance(payload, dict):
         return {}
 
@@ -176,6 +209,9 @@ def _normalize_claim_comparison_judgment(payload):
 
 
 def _normalize_claim_level_relation_label(label):
+    """Map the legacy "NEW_CLAIM" relation label to its current name,
+    "UNMATCHED" (see SYSTEM_PROMPT_CLAIM_COMPARISON); passes any other
+    label through unchanged."""
     label = str(label or "").strip()
     if label == "NEW_CLAIM":
         return "UNMATCHED"
@@ -183,6 +219,9 @@ def _normalize_claim_level_relation_label(label):
 
 
 def extract_claims_from_text(text):
+    """Extract a deduplicated list of atomic factual claims from `text`
+    (typically one response's final answer) via SYSTEM_PROMPT_CLAIM_EXTRACTION.
+    Returns [] on empty input or judge failure."""
     text = str(text or "").strip()
     if not text:
         return []
@@ -219,6 +258,11 @@ def extract_claims_from_text(text):
 
 
 def compare_claim_sets(user_query, claims_without_web, claims_with_web):
+    """Have an LLM judge align and classify two claim sets for the same
+    prompt (SYSTEM_PROMPT_CLAIM_COMPARISON) -- e.g. the claims extracted
+    from a response generated without vs. with Web search. Returns
+    {"raw_output": str, "judgment": normalized_dict, "error": str}; on
+    judge failure, judgment is {} and error explains why."""
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT_CLAIM_COMPARISON},
         {
@@ -262,6 +306,10 @@ def compare_claim_sets(user_query, claims_without_web, claims_with_web):
 
 
 def _sample_has_auto_web_call(row):
+    """True if a replayed sample's "auto" (Web-search-allowed) response
+    actually invoked Web search -- build_claim_analysis() only compares
+    samples where it did, since otherwise "auto" and "none" wouldn't differ
+    in the way being studied."""
     auto_payload = row.get("auto") or {}
     response = auto_payload.get("response") or {}
     provider = _infer_provider("gpt-5.3-chat-latest", row)
@@ -269,6 +317,8 @@ def _sample_has_auto_web_call(row):
 
 
 def _load_cache(cache_path):
+    """Load the claim-extraction cache (text -> claims) at `cache_path`,
+    or {} if it doesn't exist / isn't a dict yet."""
     cache = load_json(cache_path)
     if isinstance(cache, dict):
         return cache
@@ -276,6 +326,10 @@ def _load_cache(cache_path):
 
 
 def _extract_claims_cached(text, cache, cache_dirty_state):
+    """extract_claims_from_text(text), cached by exact text match in
+    `cache` so re-running build_claim_analysis() doesn't re-spend API calls
+    on responses already seen. Sets cache_dirty_state["dirty"] = True on a
+    cache miss so the caller knows to persist the updated cache."""
     text = str(text or "").strip()
     if not text:
         return []
@@ -295,6 +349,14 @@ def build_claim_analysis(
     cache_path=CACHE_PATH,
     limit=None,
 ):
+    """For every replayed sample at `replay_path` whose "auto" response
+    actually called Web search, extract claims from both its "none" and
+    "auto" responses and have a judge compare them. Writes the per-sample
+    results to `output_path` and returns them; also persists the claim-
+    extraction cache to `cache_path` if it changed. `limit`, if given, caps
+    how many qualifying samples are processed (useful for a quick check
+    before a full, costly run).
+    """
     replay_data = _load_replay_json(replay_path)
     cache = _load_cache(cache_path)
     cache_dirty_state = {"dirty": False}
@@ -351,6 +413,10 @@ def build_claim_analysis(
 
 
 def print_claim_comparison_summary(input_path=OUTPUT_PATH_CLAIMS):
+    """Print the claim-level relation distribution (MATCH/REFINEMENT/
+    CONTRADICTION/UNMATCHED) and response-level category distribution
+    (SAME_CLAIMS/UPDATED_OR_SPECIFIED/CORRECTED/NEW_CLAIMS) for a single
+    model's build_claim_analysis() output at `input_path`."""
     records = load_json(input_path)
     if not isinstance(records, dict) or not records:
         print(f"No claim analysis records found at {input_path}.")
@@ -405,10 +471,16 @@ def print_claim_comparison_summary(input_path=OUTPUT_PATH_CLAIMS):
 
 
 def _claims_output_path_for_model(model_name_value):
+    """Where build_claim_analysis() would have written results for
+    `model_name_value` under its default output_path."""
     return Path(f"{OUTPUT_PATH}/replays/extracted/{model_name_value}_claims.json")
 
 
 def load_multi_model_claim_analysis_results(model_names=None):
+    """Load build_claim_analysis() output for each of `model_names`
+    (default: MODEL_NAMES, all four platforms) into
+    {model_name: records}. Raises FileNotFoundError only if none of them
+    have results yet; otherwise warns and skips the missing ones."""
     model_names = model_names or MODEL_NAMES
     loaded_results = {}
     missing_paths = []
@@ -437,6 +509,7 @@ def load_multi_model_claim_analysis_results(model_names=None):
 
 
 def _normalize_counter_to_percentages(counter, total):
+    """Convert a {label: count} Counter to {label: percent_of_total}."""
     normalized = {}
     for key, count in counter.items():
         normalized[key] = (100.0 * count / total) if total else 0.0
@@ -444,6 +517,8 @@ def _normalize_counter_to_percentages(counter, total):
 
 
 def _collapse_counter_to_allowed_labels(counter, allowed_labels, other_label="OTHER"):
+    """Re-bucket a Counter's keys down to `allowed_labels`, merging every
+    other key's count into `other_label`."""
     collapsed_counter = Counter()
     allowed_set = set(allowed_labels)
     for label, count in counter.items():
@@ -453,6 +528,9 @@ def _collapse_counter_to_allowed_labels(counter, allowed_labels, other_label="OT
 
 
 def _claim_level_relation_distribution(records):
+    """Count claim-alignment relations (MATCH/REFINEMENT/CONTRADICTION/
+    UNMATCHED) across every sample in one model's build_claim_analysis()
+    output. Returns (Counter, total_alignments)."""
     relation_counter = Counter()
     total = 0
 
@@ -477,6 +555,9 @@ def _claim_level_relation_distribution(records):
 
 
 def _response_level_category_distribution(records):
+    """Count response-level judge categories (SAME_CLAIMS/
+    UPDATED_OR_SPECIFIED/CORRECTED/NEW_CLAIMS) across every sample in one
+    model's build_claim_analysis() output. Returns (Counter, total_responses)."""
     category_counter = Counter()
     total = 0
 
@@ -496,6 +577,9 @@ def _response_level_category_distribution(records):
 
 
 def _stacked_bar_figure(distributions_by_model, category_order, color_map, title, yaxis_title):
+    """A 100%-stacked bar chart, one bar per model in
+    `distributions_by_model`, segmented by `category_order` (each a
+    {category: percent} dict from _normalize_counter_to_percentages)."""
     model_order = list(distributions_by_model.keys())
     model_display_order = [
         MODEL_NAMES_MAP.get(model_name_value, model_name_value)
@@ -560,6 +644,10 @@ def plot_multi_model_claim_comparison_summaries(
     model_names=None,
     output_dir=PLOT_OUTPUT_DIR,
 ):
+    """Build and save (HTML + PDF, under `output_dir`) two stacked-bar
+    charts comparing `model_names` (default MODEL_NAMES): claim-level
+    relation distribution, and response-level category distribution.
+    Returns the figures and output paths."""
     model_results = load_multi_model_claim_analysis_results(model_names=model_names)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -649,6 +737,8 @@ def plot_multi_model_claim_comparison_summaries(
 
 
 def main():
+    """CLI entry point: build a claim analysis (default), or --print-summary
+    / --plot-multi-model-summary against results already built."""
     parser = argparse.ArgumentParser(
         description=(
             "Extract claims from replay final responses for samples where "
