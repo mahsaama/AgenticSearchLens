@@ -1,14 +1,25 @@
+"""Parsing helpers specific to ChatGPT's export format, used by
+src/web_search_decision/data_extraction.py.
+
+The parallel module for Claude/Grok/DeepSeek exports (whose raw JSON shapes
+differ from ChatGPT's) is src/utils/other_platforms_parsing_utils.py.
+"""
+
 from datetime import datetime
+
 import pandas as pd
-from pathlib import Path
+
 from src.utils.common_io import *
 
 
 def normalize_timestamp(ts):
+    """Convert a ChatGPT `create_time` (Unix epoch, seconds or
+    milliseconds) into a naive local datetime."""
     ts = float(ts)
     if ts > 1e12:  # milliseconds
         ts /= 1000
     return datetime.fromtimestamp(ts)
+
 
 def sort_conversation(mapping):
     """
@@ -52,63 +63,22 @@ def sort_conversation(mapping):
 
 
 def load_topics():
+    """Load the conv_id -> topic lookup from the paper's LLM-annotated
+    conversation-topic CSV, if present.
+
+    This CSV is a research artifact produced separately over the paper's own
+    (ERB-restricted, unshared) donated dataset -- it will not exist for
+    anyone running this pipeline on their own export. Callers must treat a
+    missing file as expected, not an error: this returns an empty dict in
+    that case, and data_extraction.py falls back to a topic of "Other" for
+    every conversation when the lookup has no entry for it.
+    """
     topic_mapping_path = (
         f"{OUTPUT_PATH}/metadata/All_Conversations_annotation.csv"
     )
     try:
         topic_mapping_df = pd.read_csv(topic_mapping_path)[["conv_id", "topic_new"]]
         topic_lookup = dict(zip(topic_mapping_df["conv_id"], topic_mapping_df["topic_new"]))
-    except:
+    except Exception:
         return dict()
     return topic_lookup
-
-
-def load_turn_msgs(df, user_id, conv_id, turn_id, full=True):
-    turn_msgs = (
-        df[
-            (df["user id"] == user_id)
-            & (df["conv id"] == conv_id)
-            & (df["turn id"] == turn_id)
-        ]
-        .reset_index()
-        .loc[0, "turn_msgs"]
-    )
-
-    if full:
-        return turn_msgs
-
-    shortened_msgs = []
-    for turn_msg in turn_msgs:
-        msg = {
-            "Sender": turn_msg.get("author", {}).get("role", ""),
-            "Recipient": turn_msg.get("recipient", ""),
-            "Message": turn_msg.get("content", {}),
-        }
-        shortened_msgs.append(msg)
-
-    return shortened_msgs
-
-
-def load_conv_msgs(user_id, conv_idx, sorted=True, full=True):
-    file_path = Path(f"{DATA_BASE_PATH}/prolific_all_files/user_{user_id}/conversations.json")
-    with open(file_path, "r") as f:
-        data = json.load(f)
-
-    conv = data[conv_idx]
-    mapping = conv["mapping"]
-    if sorted:
-        mapping = sort_conversation(mapping)
-
-    if full:
-        return conv["title"], mapping
-    
-    shortened_mapping = []
-    for mapping_msg in mapping:
-        msg = {
-            "Sender": mapping_msg.get("message").get("author", {}).get("role", ''),
-            "Recipient": mapping_msg.get("message").get("recipient", ''),
-            "Message": mapping_msg.get("message").get("content", {}),
-        }
-        shortened_mapping.append(msg)
-
-    return conv["title"], shortened_mapping
