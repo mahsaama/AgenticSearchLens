@@ -1,13 +1,20 @@
+"""§4.3/§5.1 analyses: retrieved and cited source URLs -- domain preferences
+and bias, Tranco/topical authority ranking, citation-vs-retrieval rates,
+reachability/hallucination checks, and how much evidence (URL counts per
+query/response) each platform's search engine actually returns.
+
+Same scope note as query_reformulations.py: written for the paper's full
+cohort, organized as a library of individually-runnable analysis functions
+(see the mostly-commented-out call list in `if __name__ == "__main__"`),
+each writing its own figure/table under outputs/source_selection/.
+"""
+
 import os
-import sys
-import csv
 import ast
 import json
 import re
 from tqdm import tqdm
 import pandas as pd
-import socket
-import ssl
 import requests
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
@@ -21,10 +28,9 @@ pio.defaults.mathjax = None
 from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
-from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
+from src.web_search_decision.chatgpt_extraction import load_web_data_from_file
 from src.response_generation.response_generation import _load_response_source_similarity_input
 import tiktoken
-from pprint import pp
 
 CONF = "./source_selection"
 TIMEOUT = 5
@@ -221,6 +227,19 @@ def _primary_model(models):
 
 
 def _prepare_source_count_df(model=""):
+    """Load outputs/[<model>/]metadata/response_and_sources.pkl and add
+    per-row retrieved/safe/cited URL counts.
+
+    Pipeline dependency: this file is NOT produced by anything in this
+    module. Run response_generation.extract_response_and_sources(web_df)
+    (or extract_response_and_sources_other_platforms() for non-ChatGPT
+    platforms) first -- it's a separate scrape/dedupe pass over the raw
+    turn messages, distinct from extract_retrieved_safe_cited_source()
+    above, which writes a differently-named file
+    (retrieved_safe_cited_extracted_from_srcs.pkl) that functions in *this*
+    module read instead. The two pipelines are not interchangeable inputs
+    for each other despite the similar-sounding names.
+    """
     if model == "chatgpt" or model == "":
         df = pd.read_pickle(
             f"{OUTPUT_PATH}/metadata/response_and_sources.pkl"
@@ -241,6 +260,9 @@ def _prepare_source_count_df(model=""):
 
 
 def count_unique_retrieved_safe_cited():
+    """Count of responses with at least one retrieved/safe/cited URL each.
+    Requires response_generation.extract_response_and_sources() to have
+    been run first -- see _prepare_source_count_df()'s docstring."""
     df = _prepare_source_count_df()
     return {
         "retrieved_urls": (df["num_retrieved_urls"] > 0).sum(),
@@ -399,25 +421,6 @@ def _bootstrap_ratio_ci_by_conversation(
     }
 
 
-def _query_trace_count_from_retrieved_sources(items):
-    if not isinstance(items, list):
-        return 0
-
-    turn_indices = {
-        item.get("turn_index")
-        for item in items
-        if isinstance(item, dict) and item.get("turn_index") is not None
-    }
-    if turn_indices:
-        return len(turn_indices)
-
-    has_any_url = any(
-        isinstance(item, dict) and item.get("url", "")
-        for item in items
-    )
-    return 1 if has_any_url else 0
-
-
 def _web_query_groups_to_count(value):
     if isinstance(value, str):
         try:
@@ -521,56 +524,6 @@ def _load_query_groups_lookup(model=""):
             str(row.get("turn_id", "")),
         )
         value = row.get("web_queries", [])
-        if isinstance(value, str):
-            try:
-                value = json.loads(value)
-            except (TypeError, json.JSONDecodeError):
-                try:
-                    value = ast.literal_eval(value)
-                except (ValueError, SyntaxError):
-                    value = []
-        lookup[key] = value if isinstance(value, list) else []
-    return lookup
-
-
-def _load_query_sources_lookup(model=""):
-    if model == "chatgpt" or model == "":
-        candidate_paths = [
-            f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl",
-            f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
-        ]
-    else:
-        candidate_paths = [
-            f"{OUTPUT_PATH}/{model}/metadata/query_reformulation_with_thought_src_mem.pkl",
-            f"{OUTPUT_PATH}/{model}/metadata/query_reformulation_with_thought_src_mem.csv",
-        ]
-
-    query_df = None
-    for path in candidate_paths:
-        if not os.path.exists(path):
-            continue
-        if path.endswith(".pkl"):
-            query_df = pd.read_pickle(path).copy()
-        else:
-            query_df = pd.read_csv(path).copy()
-        break
-
-    if query_df is None:
-        return {}
-
-    required_cols = {"user_id", "conv_id", "turn_id", "sources"}
-    missing_cols = required_cols - set(query_df.columns)
-    if missing_cols:
-        return {}
-
-    lookup = {}
-    for _, row in query_df.iterrows():
-        key = (
-            str(row.get("user_id", "")),
-            str(row.get("conv_id", "")),
-            str(row.get("turn_id", "")),
-        )
-        value = row.get("sources", [])
         if isinstance(value, str):
             try:
                 value = json.loads(value)
@@ -1164,23 +1117,6 @@ def _domain_counter(df, col_name, top_k=20):
     if top_k is None:
         return plot_df
     return plot_df.head(top_k)
-
-
-def _url_count_for_source_column(df, col_name):
-    if col_name not in df.columns:
-        return 0
-
-    total = 0
-    for items in df[col_name]:
-        if not isinstance(items, list):
-            continue
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            url = _normalize_url_for_source_matching(item.get("url", ""))
-            if url:
-                total += 1
-    return int(total)
 
 
 def _cited_domain_counter_split(df, top_k=20, grounding_level="turn"):
@@ -4551,8 +4487,12 @@ if __name__ == "__main__":
     web_df = load_web_data_from_file(fmt="pkl")
     print(f"Loaded web data: {len(web_df)}")
     extract_retrieved_safe_cited_source(web_df)
-    
-    print(count_unique_retrieved_safe_cited())
+
+    # count_unique_retrieved_safe_cited() needs
+    # response_generation.extract_response_and_sources(web_df) run first --
+    # it reads a different file than the line above produces. See
+    # _prepare_source_count_df()'s docstring.
+    # print(count_unique_retrieved_safe_cited())
 
     # plot_url_counts_over_time(separate_cited_external_internal=True)
     # plot_grounding_rate_violin_over_time()
