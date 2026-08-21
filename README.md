@@ -26,9 +26,11 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 
 ## 📂 Repository Layout
 
-- `src/web_search_decision/data_extraction.py`: parses raw ChatGPT exports into a per-turn summary dataframe.
-- `src/web_search_decision/data_extraction_other_cai.py` / `src/utils/data_utils_cai.py`: same, for Claude, Grok, and DeepSeek exports.
-- `src/utils/data_utils.py` / `src/utils/utils.py`: shared parsing/IO helpers.
+- `src/web_search_decision/chatgpt_extraction.py`: parses raw ChatGPT exports into a per-turn summary dataframe.
+- `src/web_search_decision/other_platforms_extraction.py`: same, for Claude, Grok, and DeepSeek exports (and, via the same generic pipeline, ChatGPT too).
+- `src/utils/chatgpt_conversation_utils.py` / `src/utils/other_platforms_parsing_utils.py`: the conversation-tree parsing and topic-lookup helpers the two extraction modules above build on.
+- `src/utils/common_io.py`: shared path constants and JSON read/write helpers.
+- `src/utils/topic_classifier.py`: dependency-free keyword-based topic classification, used when no topic-annotation file is available (see "Pipeline Order & Known Gaps" below).
 - `src/web_search_decision/web_tool_invocation.py`: analyses focused on Web-call decisions and trends.
 - `src/web_search_decision/claim_analysis.py`: claim-level comparison between Web and no-Web responses.
 - `src/query_formulation/query_reformulations.py`: query evolution and reformulation analyses.
@@ -38,7 +40,7 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 - `src/replays/chat_replayer.py` / `src/replays/chat_replayer_evaluation.py`: invitro replay (re-querying prompts via platform APIs) and LLM-judge scoring of the replayed responses.
 - `src/replays/extract_replay_artifacts.py`: post-processes replay outputs into the artifacts/plots used across the analyses above.
 - `src/prompts/evaluator_prompts.py`: prompt templates used by the LLM-judge evaluations.
-- `src/utils/paper.py`: shared Plotly styling for figures.
+- `src/utils/figure_style.py`: shared Plotly styling for figures.
 - `outputs/`: generated analysis artifacts.
 - `data/`: your local copies of exported chat data (see below).
 
@@ -163,6 +165,54 @@ python -m src.response_generation.hallucinated_url_detection --help  # cited-URL
 `src/replays/extract_replay_artifacts.py` is invoked internally by the scripts above to
 turn replay output into the artifacts consumed by the analyses in step 2 — you generally
 don't need to run it directly.
+
+## 🔗 Pipeline Order & Known Gaps
+
+A few functions across the analysis modules depend on artifacts that either
+come from *another* module (run that one first) or don't ship with this
+repo at all (a research-only file, or a genuine gap). Worth knowing before
+a function fails in a way that isn't obviously about missing data:
+
+- **Topic labels.** `chatgpt_conversation_utils.load_topics()` and
+  `other_platforms_parsing_utils.load_topics()` look up each conversation's
+  topic from a CSV/JSONL the paper's authors built by hand over their own
+  dataset — it won't exist on your checkout. Rather than label everything
+  "Other", extraction now falls back to `topic_classifier.classify_topic()`,
+  a small dependency-free keyword classifier applied to each conversation's
+  opening message.
+- **`response_and_sources.pkl`.** `source_selection.py`'s
+  `count_unique_retrieved_safe_cited()` (and related functions) read
+  `outputs/[<platform>/]metadata/response_and_sources.pkl`, which is
+  produced by `response_generation.extract_response_and_sources(web_df)` —
+  a *different* module. Run that first. (It's easy to confuse with
+  `source_selection.extract_retrieved_safe_cited_source(web_df)`, which
+  writes a differently-named file that only feeds functions within
+  `source_selection.py` itself.)
+- **`all_tools_categorized.json`.** `web_tool_invocation.py`'s Web-call
+  trend functions normally read a hand-curated tool-name-to-category
+  mapping that also doesn't ship with this repo. They now fall back to
+  `_auto_categorize_tool()`, a small heuristic (name contains "web"/
+  "search"/"browse", or matches the known Grok/DeepSeek web-tool sets) that
+  gives a correct, if coarser, Web-vs-other split instead of silently
+  reading 0% everywhere.
+- **PII-safety annotations for replay.** `chat_replayer.py`'s
+  `filter_df_for_history()`/`replayer()` refuse to run without a
+  `personal_presence`/`special_category_presence`-annotated CSV (see
+  Appendix C.1 of the paper) — deliberately *not* given a graceful
+  fallback, since skipping it would mean sending unscreened personal data
+  to external provider APIs.
+- **Two known, currently-unfixed issues**, left as-is rather than
+  papered over or guessed at:
+  - `web_tool_invocation.py`'s `_run_tool_intent_judge()` references
+    `SYSTEM_PROMPT_TOOL_INTENT`/`USER_PROMPT_TOOL_INTENT`, which aren't
+    defined anywhere in `evaluator_prompts.py` — add them before calling
+    `classify_web_call_tool_intent_from_thoughts()`.
+  - `web_tool_invocation.py` defines its own `GROK_WEB_TOOLS`/
+    `DEEPSEEK_WEB_TOOLS` (used by `_has_web_call_for_platform()`) that are
+    much narrower than the canonical sets in `other_platforms_extraction.py`
+    (used everywhere else, including extraction itself) — a possible
+    under-counting inconsistency, not resolved here since picking which
+    heuristic is "correct" is a research-methodology call.
 
 ## 📝 Notes
 
