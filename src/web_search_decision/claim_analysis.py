@@ -13,7 +13,9 @@ from openai import OpenAI
 from tqdm import tqdm
 
 from src.prompts.evaluator_prompts import (
+    SYSTEM_PROMPT_CLAIM_COMPARISON,
     SYSTEM_PROMPT_CLAIM_EXTRACTION,
+    USER_PROMPT_CLAIM_COMPARISON,
     USER_PROMPT_CLAIM_EXTRACTION,
 )
 from src.replays.extract_replay_artifacts import _has_web_tool_call, _infer_provider
@@ -55,180 +57,6 @@ PLOT_OUTPUT_DIR = Path(f"{OUTPUT_PATH}/replays/plots")
 CLAIM_EXTRACTION_MODEL = os.getenv("CLAIM_ANALYSIS_MODEL")
 CLAIM_COMPARISON_JUDGE_MODEL = os.getenv("CLAIM_COMPARISON_JUDGE_MODEL")
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
-SYSTEM_PROMPT = """
-You are a claim-comparison judge. You compare two sets of claims extracted from two different answers to the same user query.
-
-Do not compare the answers based on overall topic similarity. Compare individual factual propositions.
-
-Neither claim set is the base or reference answer. Treat the two claim sets symmetrically.
-
-You must evaluate claims from both responses. Identify how claims in one set relate to the closest claim in the other set, and do the same in the reverse direction when needed to capture substantive unmatched or contradictory content.
-
-Do not omit any claim from claim set A or claim set B. Every substantive claim from both responses must be accounted for in the alignments, either through a MATCH, REFINEMENT, CONTRADICTION, or UNMATCHED relation.
-
-For each aligned comparison, classify the relationship as:
-
-- MATCH — same factual proposition; wording may differ.
-- REFINEMENT — same core proposition, but more current, precise, specific, concrete, or grounded.
-- CONTRADICTION — materially conflicts with or reverses the corresponding claim in the other set.
-- UNMATCHED — a substantive claim with no corresponding claim in the other set.
-
-Then assign exactly one overall category:
-
-- SAME_CLAIMS — claims are essentially matches.
-- UPDATED_OR_SPECIFIED — the main claims are preserved, but one response primarily refines, updates, specifies, or grounds the other.
-- CORRECTED — an important claim in one response is contradicted or materially corrected by the other.
-- NEW_CLAIMS — one response introduces substantive unmatched claims not present in the other.
-
-A claim being about the same topic does not make it a MATCH.
-
-If a claim contains both an existing proposition and additional substantive information, separate the additional information conceptually and consider whether it is a REFINEMENT or a NEW_CLAIM.
-
-Examples:
-
-Example 1:
-
-CLAIM SET A: "The Eiffel Tower is in Paris."
-CLAIM SET B: "The Eiffel Tower is located in Paris."
-
-JSON output:
-{
-  "category": "SAME_CLAIMS",
-  "explanation": "The two claim sets express the same factual proposition.",
-  "alignments": [
-    {
-      "claim_a": "The Eiffel Tower is in Paris.",
-      "claim_b": "The Eiffel Tower is located in Paris.",
-      "relation": "MATCH"
-    }
-  ]
-}
-
-Example 2:
-
-CLAIM SET A: "The company released a new electric car."
-CLAIM SET B: "The company released a new electric SUV in March 2026."
-
-JSON output:
-{
-  "category": "UPDATED_OR_SPECIFIED",
-  "explanation": "One claim preserves the core release proposition while adding more specific detail.",
-  "alignments": [
-    {
-      "claim_a": "The company released a new electric car.",
-      "claim_b": "The company released a new electric SUV in March 2026.",
-      "relation": "REFINEMENT"
-    }
-  ]
-}
-
-Example 3:
-
-CLAIM SET A: "The company released a new electric car."
-
-CLAIM SET B:
-"The company released a new electric car."
-"It has a 350-mile range."
-"It starts at $45,000."
-
-JSON output:
-{
-  "category": "NEW_CLAIMS",
-  "explanation": "The two sets share one core claim, but one set adds substantive unmatched claims about range and price.",
-  "alignments": [
-    {
-      "claim_a": "The company released a new electric car.",
-      "claim_b": "The company released a new electric car.",
-      "relation": "MATCH"
-    },
-    {
-      "claim_a": "",
-      "claim_b": "It has a 350-mile range.",
-      "relation": "UNMATCHED"
-    },
-    {
-      "claim_a": "",
-      "claim_b": "It starts at $45,000.",
-      "relation": "UNMATCHED"
-    }
-  ]
-}
-
-Example 4:
-
-CLAIM SET A: "The movie was released in 2023."
-CLAIM SET B: "The movie was released in 2024."
-
-JSON output:
-{
-  "category": "CORRECTED",
-  "explanation": "The two claim sets materially disagree about the release year.",
-  "alignments": [
-    {
-      "claim_a": "The movie was released in 2023.",
-      "claim_b": "The movie was released in 2024.",
-      "relation": "CONTRADICTION"
-    }
-  ]
-}
-
-Example 5:
-
-CLAIM SET A: "The treatment is effective."
-
-CLAIM SET B:
-"The treatment is effective."
-"A clinical trial found it reduced symptoms by 30%."
-
-JSON output:
-{
-  "category": "NEW_CLAIMS",
-  "explanation": "The two sets match on effectiveness, but one set adds a substantive clinical-trial claim.",
-  "alignments": [
-    {
-      "claim_a": "The treatment is effective.",
-      "claim_b": "The treatment is effective.",
-      "relation": "MATCH"
-    },
-    {
-      "claim_a": "",
-      "claim_b": "A clinical trial found it reduced symptoms by 30%.",
-      "relation": "UNMATCHED"
-    }
-  ]
-}
-
-Return JSON only:
-
-{{
-    "category": "SAME_CLAIMS | UPDATED_OR_SPECIFIED | CORRECTED | NEW_CLAIMS",
-    "explanation": "Brief explanation.",
-    "alignments": [
-        {{
-            "claim_a": "...",
-            "claim_b": "...",
-            "relation": "MATCH | REFINEMENT | CONTRADICTION | UNMATCHED"
-        }}
-    ]
-}}
-"""
-
-USER_PROMPT = """
-Compare the claims using the procedure in the system prompt. Identify the claim-level alignments first, then assign the overall category.
-
-Return the required JSON.
-
-USER QUERY:
-{user_query}
-
-CLAIM SET A:
-{claims_without_web}
-
-CLAIM SET B:
-{claims_with_web}
-"""
 
 
 def _load_replay_json(path):
@@ -392,10 +220,10 @@ def extract_claims_from_text(text):
 
 def compare_claim_sets(user_query, claims_without_web, claims_with_web):
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": SYSTEM_PROMPT_CLAIM_COMPARISON},
         {
             "role": "user",
-            "content": USER_PROMPT.format(
+            "content": USER_PROMPT_CLAIM_COMPARISON.format(
                 user_query=str(user_query or "").strip(),
                 claims_without_web=json.dumps(
                     _clean_claims(claims_without_web), ensure_ascii=False, indent=2
