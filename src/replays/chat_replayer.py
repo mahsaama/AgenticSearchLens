@@ -1,16 +1,32 @@
-import json
+"""invitro replay: re-sends invivo user prompts to each platform's own API
+(with Web search on/off/forced) so responses can be compared against what
+the platform originally returned.
+
+Supports OpenAI (ChatGPT/GPT), xAI (Grok) via the OpenAI-compatible
+Responses API, and Anthropic (Claude) / DeepSeek via the Anthropic-compatible
+Messages API. Requires the relevant provider API key in .env -- see
+README.md's "Setup" section.
+
+Run directly (`python -m src.replays.chat_replayer`) to replay the models
+configured in the __main__ block below; import `replayer()` to drive it
+programmatically.
+"""
+
 import ast
+import json
+import os
 from collections import Counter
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
+from tqdm import tqdm
+
+from src.utils.common_io import OUTPUT_PATH
+from src.web_search_decision.chatgpt_extraction import load_whole_data_from_file, load_web_data_from_file
 
 load_dotenv()
-from src.utils.common_io import *
-import pandas as pd
-from src.web_search_decision.chatgpt_extraction import load_whole_data_from_file, load_web_data_from_file
-from tqdm import tqdm
-import numpy as np
 
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
@@ -53,23 +69,34 @@ SYSTEM_PROMPT_DIR = Path(f"{OUTPUT_PATH}/replays/system_prompts")
 
 
 def _import_openai():
+    """Lazily import the openai package's client class (avoids requiring it
+    for callers that only replay Anthropic-compatible providers)."""
     from openai import OpenAI
 
     return OpenAI
 
 
 def _import_anthropic():
+    """Lazily import the anthropic package's client class (avoids requiring
+    it for callers that only replay OpenAI-compatible providers)."""
     from anthropic import Anthropic
 
     return Anthropic
 
 
 def _normalize_provider(provider):
+    """Map a provider/platform name (e.g. "chatgpt", "anthropic", "xai") to
+    its canonical id: "openai", "claude", "grok", or "deepseek"."""
     key = (provider or "openai").strip().lower()
     return PROVIDER_ALIASES.get(key, key)
 
 
 def _resolve_developer_prompt(developer_prompt):
+    """Resolve a developer-prompt argument to literal prompt text.
+
+    A string ending in ".md" is treated as a filename to read from
+    (relative to cwd, then SYSTEM_PROMPT_DIR); anything else is used
+    verbatim as the prompt text itself."""
     if not isinstance(developer_prompt, str):
         return None
 
@@ -90,6 +117,9 @@ def _resolve_developer_prompt(developer_prompt):
 
 
 def _infer_provider_from_model(model):
+    """Guess the provider from a model name prefix when none is given
+    explicitly (e.g. "claude-sonnet-4-6" -> "claude"), defaulting to
+    "openai"."""
     model_key = (model or "").strip().lower()
     if model_key.startswith("claude"):
         return "claude"
@@ -101,6 +131,9 @@ def _infer_provider_from_model(model):
 
 
 def _openai_compatible_base_url(provider):
+    """Optional API base-URL override for an OpenAI-compatible provider,
+    from OPENAI_BASE_URL / XAI_BASE_URL in .env, or None to use the SDK's
+    own default endpoint."""
     env_base_urls = {
         "openai": os.getenv("OPENAI_BASE_URL", "").strip(),
         "grok": os.getenv("XAI_BASE_URL", "").strip(),
@@ -109,6 +142,8 @@ def _openai_compatible_base_url(provider):
 
 
 def _client_for_provider(provider):
+    """Construct an authenticated OpenAI or Anthropic SDK client for the
+    given provider, reading its API key (and optional base URL) from .env."""
     provider = _normalize_provider(provider)
     if provider in OPENAI_COMPATIBLE_PROVIDERS:
         OpenAI = _import_openai()
@@ -142,6 +177,9 @@ def _client_for_provider(provider):
 
 
 def _as_list(value):
+    """Coerce a value that may be a real list, a numpy array, a
+    stringified-list (as stored in a CSV/pickle column), NaN, or a scalar
+    into an actual Python list."""
     if isinstance(value, list):
         return value
     if isinstance(value, tuple):
@@ -166,15 +204,23 @@ def _as_list(value):
 
 
 def _history_turn_depth(history_depth):
+    """Convert a message-count history_depth into a turn count (2 messages
+    per turn), or None if history_depth is None (meaning "no limit")."""
     if history_depth is None:
         return None
     return max(history_depth // 2, 0)
 
+
 def _clean_messages(messages):
+    """Coerce `messages` to a list (see _as_list) and drop blank entries."""
     return [str(msg).strip() for msg in _as_list(messages) if str(msg).strip()]
 
 
 def _has_exact_history_depth(row, prior_turns):
+    """True if `row` has exactly one more user message than `prior_turns`
+    (i.e. prior_turns of history plus the current prompt) and at least
+    `prior_turns` assistant replies -- used to select rows with a known,
+    fixed amount of conversational history to replay with."""
     user_prompts = _clean_messages(row["user_msg_history"])
     assistant_prompts = _clean_messages(row["assistant_msg_history"])
     return (
@@ -184,11 +230,36 @@ def _has_exact_history_depth(row, prior_turns):
 
 
 def _safe_annotation_conv_ids(annotation_path=ANNOTATIONS_TURNS_PATH):
-    annotations = pd.read_csv(
-        annotation_path,
-        usecols=lambda column: column in ANNOTATION_REQUIRED_COLUMNS,
-        dtype=str,
-    )
+    """Return the set of conv_ids whose turns were all annotated as free of
+    personal/special-category information (the PII-sanitization pass
+    described in README.md's invitro setup), from a PII-annotation CSV --
+    an internal research artifact, not shipped with this repo. Raises if
+    `annotation_path` doesn't have the expected columns; the caller is
+    expected to point this at their own equivalent annotation file before
+    calling filter_df_for_history()/replayer().
+
+    Deliberately not made "topic-independent" the way missing topic
+    annotations are (see topic_classifier.py): this file exists specifically
+    to keep personal/special-category conversations out of what gets sent
+    to external provider APIs during replay, so a missing annotation file
+    fails loudly here rather than silently treating everything as safe.
+    """
+    try:
+        annotations = pd.read_csv(
+            annotation_path,
+            usecols=lambda column: column in ANNOTATION_REQUIRED_COLUMNS,
+            dtype=str,
+        )
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(
+            f"PII-safety annotation file not found: {annotation_path}. "
+            "invitro replay refuses to run without it, since it's what keeps "
+            "personal/special-category conversations out of what gets sent "
+            "to external provider APIs. Annotate your own data with the "
+            "'conv_id', 'personal_presence', 'special_category_presence' "
+            "columns (see Appendix C.1 of the paper) at this path, or pass "
+            "annotation_path= to point elsewhere."
+        ) from exc
     missing_columns = ANNOTATION_REQUIRED_COLUMNS.difference(annotations.columns)
     if missing_columns:
         missing = ", ".join(sorted(missing_columns))
@@ -214,6 +285,8 @@ def _safe_annotation_conv_ids(annotation_path=ANNOTATIONS_TURNS_PATH):
 
 
 def _filter_to_safe_conversations(df, safe_conv_ids):
+    """Drop every row whose conv_id isn't in `safe_conv_ids` (see
+    _safe_annotation_conv_ids)."""
     return df[df["conv_id"].astype(str).isin(safe_conv_ids)].copy()
 
 
@@ -222,6 +295,13 @@ def filter_df_for_history(
     samples_per_source=1,
     random_seed=RANDOM_SEED,
 ):
+    """Build the sample of rows to replay: PII-safe, English-language turns
+    with exactly `history_depth` messages of prior context, split evenly
+    between turns that originally invoked Web search ("web") and ones that
+    didn't ("non_web"), up to `samples_per_source` of each. Returns a
+    DataFrame with a "sample_source" column recording which group each row
+    came from.
+    """
     whole_df = load_whole_data_from_file(fmt="pkl")
     web_df = load_web_data_from_file(fmt="pkl")
 
@@ -281,6 +361,10 @@ def filter_df_for_history(
 
 
 def _tool_choices_for_provider(provider):
+    """The Web-search tool_choice modes to replay a prompt under for
+    `provider`. Currently the same fixed list (module-level `tool_choices`)
+    for every provider; kept as its own function as the extension point if
+    that ever needs to vary per provider."""
     return tool_choices
 
 
@@ -290,6 +374,9 @@ def _openai_web_kwargs(
     tool_choice,
     developer_prompt=None,
 ):
+    """Build the kwargs for an OpenAI/Grok Responses-API call: `tool_choice`
+    is "auto"/"required"/"none", controlling whether/how the web_search tool
+    is offered."""
     kwargs = {
         "model": replay_model,
         "input": prompt,
@@ -304,23 +391,9 @@ def _openai_web_kwargs(
     return kwargs
 
 
-def _openai_chat_completion_payload(response):
-    message = response.choices[0].message
-    content = message.content
-    if isinstance(content, list):
-        output_text = "\n".join(
-            item.get("text", "") if isinstance(item, dict) else str(item)
-            for item in content
-        ).strip()
-    else:
-        output_text = (content or "").strip()
-    return {
-        "output_text": output_text,
-        "response": response.model_dump(),
-    }
-
-
 def _anthropic_content_text(content_blocks):
+    """Concatenate the text blocks of an Anthropic response's content list
+    (skipping tool_use/thinking/etc. blocks) into one string."""
     texts = []
     for block in content_blocks:
         if getattr(block, "type", None) == "text":
@@ -329,6 +402,8 @@ def _anthropic_content_text(content_blocks):
 
 
 def _anthropic_web_tools(tool_choice):
+    """The `tools` payload offering Anthropic's web_search tool, or None to
+    omit it entirely (tool_choice == "none")."""
     if tool_choice == "none":
         return None
     return [
@@ -340,6 +415,8 @@ def _anthropic_web_tools(tool_choice):
 
 
 def _anthropic_tool_choice(tool_choice):
+    """The `tool_choice` payload forcing web_search to be called, or None to
+    leave the choice to the model (tool_choice != "required")."""
     if tool_choice == "required":
         return {"type": "tool", "name": "web_search"}
     return None
@@ -353,6 +430,8 @@ def _create_openai_compatible_payload(
     tool_choice,
     developer_prompt=None,
 ):
+    """Call the OpenAI/Grok Responses API and normalize the result to
+    {"output_text": str, "response": dict}."""
     if provider in {"openai", "grok"}:
         kwargs = _openai_web_kwargs(
             replay_model,
@@ -377,6 +456,8 @@ def _anthropic_request_kwargs(
     provider,
     developer_prompt=None,
 ):
+    """Build the kwargs for an Anthropic Messages-API call (Claude or
+    DeepSeek, via its Anthropic-compatible endpoint)."""
     kwargs = {
         "model": replay_model,
         "messages": prompt,
@@ -403,6 +484,10 @@ def _create_anthropic_payload(
     provider,
     developer_prompt=None,
 ):
+    """Call the Anthropic Messages API and normalize the result to
+    {"output_text": str, "response": dict}, resuming the request if the
+    model pauses mid-turn (stop_reason "pause_turn", seen during long
+    web_search tool-use chains) until it finishes."""
     kwargs = _anthropic_request_kwargs(
         replay_model,
         prompt,
@@ -439,6 +524,9 @@ def _create_response_payload(
     replay_provider="openai",
     developer_prompt=None,
 ):
+    """Send one replay request to `replay_provider`'s API and return
+    {"output_text": str, "response": dict} -- the single entry point
+    replayer() uses regardless of which provider it's replaying."""
     provider = _normalize_provider(replay_provider)
     client = _client_for_provider(provider)
     if provider in OPENAI_COMPATIBLE_PROVIDERS:
@@ -463,6 +551,10 @@ def _create_response_payload(
 
 
 def _most_frequent_model(openai_models):
+    """The most common non-empty model name in a turn's per-message model
+    list (a turn can span several assistant messages/models), or None if
+    there isn't one. Used to pick the "invivo_model" recorded alongside
+    each replay result."""
     valid_models = [
         m
         for m in openai_models
@@ -474,11 +566,16 @@ def _most_frequent_model(openai_models):
 
 
 def _save_replay_results(results, output_file):
+    """Write the {result_key: result} replay-results dict to `output_file`
+    as pretty-printed JSON."""
     with open(output_file, "w") as f:
         json.dump(results, f, indent=4)
 
 
 def _load_replay_results(output_file):
+    """Load a previously-saved replay-results dict, or {} if `output_file`
+    is falsy/missing/not a dict -- lets replayer() resume an interrupted run
+    without redoing already-completed requests."""
     if not output_file:
         return {}
     path = Path(output_file)
@@ -490,12 +587,18 @@ def _load_replay_results(output_file):
 
 
 def _replay_output_file(model, dev_prompt=""):
+    """Default results path for a given replay model (and, if replaying
+    under another model's developer prompt, that prompt's name)."""
     if dev_prompt:
         return f"{OUTPUT_PATH}/replays/{model}_dev_prompt_{dev_prompt}.json"
     return f"{OUTPUT_PATH}/replays/{model}.json"
 
 
 def _build_prompt(user_prompts, assistant_prompts, with_history, history_depth):
+    """Build the message list to send for replay: the current (most recent)
+    user prompt, optionally preceded by up to `history_depth` turns of
+    prior user/assistant messages if `with_history` is set. Returns
+    (prompt_messages, current_user_prompt_text)."""
     user_prompts = _clean_messages(user_prompts)
     assistant_prompts = _clean_messages(assistant_prompts)
     if not user_prompts:
@@ -523,6 +626,8 @@ def _build_prompt(user_prompts, assistant_prompts, with_history, history_depth):
 
 
 def _replay_result_key(row):
+    """Stable key identifying a sampled row's replay result across runs
+    (sample_source::conv_id::turn_id), so results can be resumed/deduped."""
     return "::".join(
         str(row[column])
         for column in ["sample_source", "conv_id", "turn_id"]
@@ -540,6 +645,18 @@ def replayer(
     replay_provider=None,
     developer_prompt=None,
 ):
+    """Sample rows via filter_df_for_history() and replay each one's most
+    recent user prompt against `model`, under every tool_choice mode
+    _tool_choices_for_provider returns for its provider (typically just
+    "auto"). Results are saved incrementally to `output_file` (every
+    `save_every` rows) and can be resumed: rows/tool_choices already present
+    in an existing output_file are not re-requested. Returns the full
+    {result_key: result} dict.
+
+    `model="invivo"` replays each row under whatever model the platform
+    itself used for that turn (from the extracted data) instead of a fixed
+    model name.
+    """
     resolved_replay_provider = (
         _normalize_provider(replay_provider)
         if replay_provider
