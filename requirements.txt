@@ -4,7 +4,10 @@
 # came from a shared training environment are intentionally omitted; plain
 # `torch` below installs a CPU/platform-appropriate build via pip.
 
+anthropic==0.93.0
 beautifulsoup4==4.14.3
+curl_cffi==0.15.0
+httpx==0.28.1
 langdetect==1.0.9
 lxml==6.0.2
 lxml_html_clean==0.4.4
@@ -24,6 +27,7 @@ scipy==1.17.1
 sentence-transformers==5.2.3
 spacy==3.8.11
 tiktoken==0.12.0
+tldextract==5.3.1
 torch==2.9.1
 tqdm==4.67.3
 transformers==4.50.3
