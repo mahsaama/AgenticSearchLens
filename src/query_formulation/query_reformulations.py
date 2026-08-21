@@ -1,12 +1,27 @@
+"""§4 analyses: how conversational prompts become Web queries, and how those
+queries evolve across iterations -- fan-out (parallel) vs. sequential
+queries, keyword provenance (user prompt / conversation history / prior
+search results / parametric knowledge), query-term-count trends over time,
+query specificity growth (temporal/geographic/entity), why an agent issues
+another query, and user-vs-web-query type/relation classification.
+
+This module is written for the paper's full donated cohort (cross-platform
+comparisons, longitudinal trends across hundreds of users, LLM-judge
+classification) -- most functions expect the extracted invivo/invitro
+dataframes and reference outputs the paper's own pipeline produces (e.g.
+replay files under outputs/replays/). It's organized as a large library of
+individually-runnable analysis functions rather than one linear script: see
+the (mostly commented-out) call list in `if __name__ == "__main__"` at the
+bottom for how they're normally invoked one at a time, each writing its own
+figure/table under outputs/query_reformulations/.
+"""
+
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-import sys
-import csv
 import ast
 import json
-from pprint import pp
 from tqdm import tqdm
 import pandas as pd
 from urllib.parse import urlparse
@@ -20,7 +35,6 @@ from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
 from src.web_search_decision.chatgpt_extraction import load_web_data_from_file
-import nltk
 import spacy
 from nltk.stem.snowball import SnowballStemmer
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
@@ -1900,24 +1914,6 @@ def _clean_web_query_groups(value):
     return cleaned_groups
 
 
-def _count_retrieved_items_from_sources(source_groups):
-    source_groups = _safe_json_value(source_groups, [])
-    if not isinstance(source_groups, list):
-        return 0
-
-    total = 0
-    for source_group in source_groups:
-        if isinstance(source_group, list):
-            total += sum(
-                1
-                for item in source_group
-                if isinstance(item, str) and item.strip()
-            )
-        elif isinstance(source_group, str) and source_group.strip():
-            total += 1
-    return total
-
-
 def _count_url_source_records(items):
     if not isinstance(items, list):
         return 0
@@ -1928,22 +1924,6 @@ def _count_url_source_records(items):
     )
 
 
-def _iteration_bucket(value):
-    if value <= 1:
-        return "1 iteration"
-    if value == 2:
-        return "2 iterations"
-    return "3+ iterations"
-
-
-def _fanout_bucket(value):
-    if value <= 1:
-        return "1 fanout"
-    if value == 2:
-        return "2 fanout"
-    return "3+ fanout"
-
-
 def _hex_to_rgba(hex_color, alpha=0.16):
     if isinstance(hex_color, str) and hex_color.startswith("#") and len(hex_color) == 7:
         r = int(hex_color[1:3], 16)
@@ -1951,123 +1931,6 @@ def _hex_to_rgba(hex_color, alpha=0.16):
         b = int(hex_color[5:7], 16)
         return f"rgba({r}, {g}, {b}, {alpha})"
     return f"rgba(99, 110, 250, {alpha})"
-
-
-def _plot_term_count_over_time_by_bucket(
-    df,
-    *,
-    value_col,
-    bucket_col,
-    bucket_order,
-    legend_title,
-    title,
-    file_name,
-    tick_interval_months=2,
-    yaxis_max=None,
-):
-    plot_df = df.dropna(subset=["month", value_col, bucket_col]).copy()
-    if len(plot_df) == 0:
-        print(f"No valid rows for `{file_name}`.")
-        return []
-
-    monthly = (
-        plot_df.groupby(["month", bucket_col])[value_col]
-        .agg(mean="mean", std="std", num_turns="size")
-        .reset_index()
-        .sort_values("month")
-    )
-    monthly["std"] = monthly["std"].fillna(0.0)
-    monthly["se"] = monthly["std"] / np.sqrt(monthly["num_turns"].clip(lower=1))
-    monthly["lower"] = (monthly["mean"] - monthly["se"]).clip(lower=0)
-    monthly["upper"] = monthly["mean"] + monthly["se"]
-
-    fig = go.Figure()
-    palette = px.colors.qualitative.Plotly
-    for idx, bucket in enumerate(bucket_order):
-        bucket_df = monthly[monthly[bucket_col] == bucket].sort_values("month")
-        if len(bucket_df) == 0:
-            continue
-
-        color = palette[idx % len(palette)]
-        fill_color = _hex_to_rgba(color, alpha=0.16)
-
-        fig.add_trace(
-            go.Scatter(
-                x=bucket_df["month"],
-                y=bucket_df["lower"],
-                mode="lines",
-                line=dict(width=0),
-                hoverinfo="skip",
-                showlegend=False,
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=bucket_df["month"],
-                y=bucket_df["upper"],
-                mode="lines",
-                line=dict(width=0),
-                fill="tonexty",
-                fillcolor=fill_color,
-                hoverinfo="skip",
-                showlegend=False,
-            )
-        )
-
-        customdata = np.column_stack(
-            (
-                bucket_df["num_turns"].to_numpy(dtype=float),
-                bucket_df["lower"].to_numpy(dtype=float),
-                bucket_df["upper"].to_numpy(dtype=float),
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=bucket_df["month"],
-                y=bucket_df["mean"],
-                mode="lines+markers",
-                name=bucket,
-                line=dict(color=color, width=2.5),
-                marker=dict(color=color, size=6),
-                customdata=customdata,
-                hovertemplate=(
-                    "Month: %{x|%b %Y}<br>"
-                    "Bucket: %{fullData.name}<br>"
-                    "Average terms: %{y:.2f}<br>"
-                    "Error band (mean +/- SE): "
-                    "[%{customdata[1]:.2f}, %{customdata[2]:.2f}]<br>"
-                    "Turns: %{customdata[0]:.0f}<extra></extra>"
-                ),
-            )
-        )
-
-    if len(fig.data) == 0:
-        print(f"No bucket series to plot for `{file_name}`.")
-        return []
-
-    fig.update_layout(
-        xaxis_title="Month",
-        yaxis_title="Average Number of Query Terms",
-        title=title,
-        legend_title_text=legend_title,
-        xaxis=dict(
-            tickmode="linear",
-            dtick=f"M{tick_interval_months}",
-            tickformat="%b %Y",
-            tickangle=-30,
-        ),
-        margin=dict(b=90),
-    )
-    if yaxis_max is not None:
-        fig.update_yaxes(range=[0, yaxis_max])
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
-    fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.2))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
-
-    records = monthly.copy()
-    records["month"] = records["month"].dt.strftime("%Y-%m")
-    return records.to_dict(orient="records")
 
 
 def plot_query_term_count_trends_over_time(remove_stopwords=False):
@@ -4387,14 +4250,6 @@ def _sanitize_file_component(value):
     return "".join(safe_chars).strip("_") or "unknown"
 
 
-def _replay_output_prefix(replay_path, response_mode):
-    replay_name = os.path.splitext(os.path.basename(replay_path))[0]
-    return (
-        f"replay_{_sanitize_file_component(replay_name)}_"
-        f"{_sanitize_file_component(response_mode)}"
-    )
-
-
 def _message_content_to_text(content):
     if isinstance(content, str):
         return content
@@ -4456,45 +4311,6 @@ def _extract_replay_web_query_groups(row, response_mode):
     if not isinstance(mode_payload, dict):
         return []
     return _extract_web_query_groups_from_response(mode_payload.get("response", {}))
-
-
-def _load_replay_query_reformulation_df(
-    replay_path=f"{OUTPUT_PATH}/replays/gpt-5-mini-2025-08-07.json",
-    response_mode="auto",
-):
-    replay_data = load_json(replay_path)
-    if not isinstance(replay_data, dict):
-        return pd.DataFrame()
-
-    rows = []
-    for result_key, row in replay_data.items():
-        if not isinstance(row, dict):
-            continue
-
-        user_prompt = _extract_user_prompt_from_replay_row(row)
-        web_query_groups = _extract_replay_web_query_groups(row, response_mode)
-        rows.append(
-            {
-                "result_key": row.get("result_key", result_key),
-                "sample_source": row.get("sample_source"),
-                "conv_id": row.get("conv_id"),
-                "turn_id": row.get("turn_id"),
-                "topic": row.get("topic"),
-                "language": row.get("language"),
-                "invivo_model": row.get("invivo_model"),
-                "replay_model": row.get("replay_model"),
-                "response_mode": response_mode,
-                "user_prompt": user_prompt,
-                "user_msg_history": [user_prompt] if user_prompt else [],
-                "assistant_msg_history": [],
-                "web_queries": json.dumps(web_query_groups, ensure_ascii=False),
-                "thoughts_list": json.dumps([[] for _ in web_query_groups]),
-                "sources": json.dumps([[] for _ in web_query_groups]),
-                "memories": json.dumps([[] for _ in web_query_groups]),
-            }
-        )
-
-    return pd.DataFrame(rows)
 
 
 def _flatten_web_query_groups(web_query_groups):
