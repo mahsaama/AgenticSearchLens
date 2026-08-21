@@ -34,7 +34,10 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 - `src/web_search_decision/claim_analysis.py`: claim-level comparison between Web and no-Web responses.
 - `src/query_formulation/query_reformulations.py`: query evolution and reformulation analyses.
 - `src/response_generation/source_selection.py`: retrieved/cited source analyses.
-- `src/response_generation/response_generation.py`: response grounding and quality analyses.
+- `src/response_generation/response_generation.py`: response grounding and quality analyses -- the orchestrator; imports and runs the three modules below plus its own raw response/sources extraction and embedding-similarity checks.
+- `src/response_generation/web_content_fetch.py`: fetches and caches cited/retrieved source URLs' raw text (requests → Wikipedia API → Playwright fallback).
+- `src/response_generation/claim_extraction.py`: extracts atomic claims from a response's text, with a content-hash cache.
+- `src/response_generation/entailment_analysis.py`: NLI entailment scoring and the factuality/grounding-source analysis built on it (the bulk of §5.2's figures/tables).
 - `src/response_generation/hallucinated_url_detection.py`: checks cited URLs for reachability/hallucination.
 - `src/replays/chat_replayer.py` / `src/replays/chat_replayer_evaluation.py`: invitro replay (re-querying prompts via platform APIs) and LLM-judge scoring of the replayed responses.
 - `src/replays/extract_replay_artifacts.py`: post-processes replay outputs into the artifacts/plots used across the analyses above.
@@ -231,9 +234,10 @@ a function fails in a way that isn't obviously about missing data:
   `source_selection.py`'s and `query_reformulations.py`'s analysis functions
   already read per-platform data too (`_prepare_source_count_df(model=...)`
   and friends). What's *not* generalized: the deeper §5.2 grounding/NLI/
-  LLM-judge machinery in `response_generation.py` (URL-content scraping,
-  entailment scoring, factuality evaluation, and their ~30 hardcoded
-  `outputs/metadata/...` paths) is still ChatGPT-only by default — it was
+  LLM-judge machinery (now split across `web_content_fetch.py`,
+  `claim_extraction.py`, and `entailment_analysis.py` — see below — but the
+  split didn't change this) still has its own ~30 hardcoded
+  `outputs/metadata/...` paths and is ChatGPT-only by default — it was
   written and tuned against the paper's own ChatGPT-sourced replay data, and
   generalizing every one of those functions to an arbitrary platform wasn't
   attempted here (large surface, and untestable against real data without a

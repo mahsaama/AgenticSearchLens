@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from src.utils.common_io import OUTPUT_PATH
+from src.utils.common_io import OUTPUT_PATH, to_json
 from openai import OpenAI
 from tqdm import tqdm
 from src.prompts.evaluator_prompts import (
@@ -4659,13 +4659,12 @@ async def extract_replay_urls_content(
     require_all_models_web_call=True,
     common_filter_model_names=None,
 ):
-    from src.response_generation.response_generation import (
+    from src.response_generation.web_content_fetch import (
         URL_FETCH_CHECKPOINT_EVERY,
         URL_FETCH_TIMEOUT,
         _load_urls_content,
         fetch_url_content,
         logger,
-        to_json,
     )
 
     model_slug = _model_subset_slug(model_names)
@@ -4801,17 +4800,19 @@ def replay_response_source_nli_sentence_based(
     import numpy as np
     import pandas as pd
 
-    from src.response_generation.response_generation import (
+    from src.response_generation.entailment_analysis import (
         BERT_NLI_MODEL_NAME,
-        _claim_cache_key,
-        _load_claims_cache,
-        _load_urls_content,
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
-        _save_claims_cache,
         compute_nli_scores,
+    )
+    from src.response_generation.claim_extraction import (
+        _claim_cache_key,
+        _load_claims_cache,
+        _save_claims_cache,
         extract_claims_from_text,
     )
+    from src.response_generation.web_content_fetch import _load_urls_content
 
     if nli_method not in {"bert", "judge"}:
         raise ValueError("nli_method must be one of {'bert', 'judge'}")
@@ -5640,7 +5641,7 @@ def plot_response_source_nli_sentence_based_for_replays(
     import plotly.graph_objects as go
 
     from src.utils.figure_style import with_paper_style, styler
-    from src.response_generation.response_generation import (
+    from src.response_generation.entailment_analysis import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
     )
@@ -6002,7 +6003,7 @@ def plot_response_source_nli_sentence_based_judge_for_replays(
     common_filter_model_names=None,
     output_dir=PLOT_OUTPUT_DIR / "response_generation",
 ):
-    from src.response_generation.response_generation import (
+    from src.response_generation.entailment_analysis import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
     )
@@ -6039,7 +6040,7 @@ def response_source_nli_sentence_based_factuality_for_replays(
 ):
     import pandas as pd
 
-    from src.response_generation.response_generation import FACTUALITY_JUDGE_MODEL, _json_safe, evaluate_claim_factuality
+    from src.response_generation.entailment_analysis import FACTUALITY_JUDGE_MODEL, _json_safe, evaluate_claim_factuality
 
     factuality_model_name = factuality_model_name or FACTUALITY_JUDGE_MODEL
     model_slug = _model_subset_slug(model_names)
@@ -6503,7 +6504,7 @@ def evaluate_claude_associated_citation_bucket_alignment_for_replays(
     import plotly.graph_objects as go
 
     from src.utils.figure_style import with_paper_style, styler
-    from src.response_generation.response_generation import (
+    from src.response_generation.entailment_analysis import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
     )

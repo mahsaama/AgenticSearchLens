@@ -29,7 +29,7 @@ from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
 from src.web_search_decision.extraction import load_web_data_from_file
-from src.response_generation.response_generation import _load_response_source_similarity_input
+from src.response_generation.web_content_fetch import _load_response_source_similarity_input
 import tiktoken
 
 CONF = "./source_selection"
