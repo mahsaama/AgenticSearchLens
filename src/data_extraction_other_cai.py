@@ -94,6 +94,46 @@ def _iter_platform_files(data_base_path, conversations_key=None):
         return
 
 
+# ---------- Web-call detection ----------
+
+GROK_WEB_TOOLS = {
+    "WebSearch", "BrowsePage", "XThreadFetch", "XSearch",
+    "XUserSearch", "ViewXVideo", "ImageSearch", "PdfSearch", "PdfBrowse",
+}
+DEEPSEEK_WEB_TOOLS = {
+    "SEARCH", "READ_LINK", "TOOL_SEARCH", "TOOL_OPEN", "TOOL_FIND",
+}
+
+
+def web_call_mask(df, platform):
+    """Boolean Series flagging turns that invoked a Web-search tool.
+
+    Each platform exposes tool usage differently (ChatGPT: free-text
+    "interactions" trace; Claude: tool names, any containing "web"; Grok/
+    DeepSeek: fixed tool-name sets), so this centralizes the per-platform
+    heuristic used both by main()'s web_data_summary split and by
+    personal_explorer.py's single-user stats.
+    """
+    if platform == "chatgpt":
+        return df["interactions"].apply(lambda x: "web" in str(x))
+    elif platform == "claude":
+        return df["tools"].apply(
+            lambda ts: any("web" in str(t).lower() for t in (ts or []))
+        )
+    elif platform == "grok":
+        return df["tools"].apply(
+            lambda ts: any(t in GROK_WEB_TOOLS for t in (ts or []))
+        )
+    elif platform == "deepseek":
+        return df["tools"].apply(
+            lambda ts: any(t in DEEPSEEK_WEB_TOOLS for t in (ts or []))
+        )
+    raise ValueError(
+        f"Unknown platform: {platform!r}. "
+        "Use 'chatgpt', 'claude', 'grok', or 'deepseek'."
+    )
+
+
 # ---------- Dispatch wrapper ----------
 
 def load_whole_data(platform):
@@ -651,29 +691,7 @@ def main():
     df.to_csv(f"{base_dir}/data_summary.csv", index=False)
     print("All Data Saved Successfully!")
 
-    # web_df = df[(df["interactions"].apply(lambda x: "web" in str(x)))]
-    if args.platform == "chatgpt":
-        web_mask = df["interactions"].apply(lambda x: "web" in str(x))
-    elif args.platform == "claude":
-        web_mask = df["tools"].apply(
-            lambda ts: any("web" in str(t).lower() for t in (ts or []))
-        )
-    elif args.platform == "grok":
-        GROK_WEB_TOOLS = {
-            "WebSearch", "BrowsePage", "XThreadFetch", "XSearch",
-            "XUserSearch", "ViewXVideo", "ImageSearch", "PdfSearch", "PdfBrowse",
-        }
-        web_mask = df["tools"].apply(
-            lambda ts: any(t in GROK_WEB_TOOLS for t in (ts or []))
-        )
-    elif args.platform == "deepseek":
-        DEEPSEEK_WEB_TOOLS = {
-            "SEARCH", "READ_LINK", "TOOL_SEARCH", "TOOL_OPEN", "TOOL_FIND",
-        }
-        web_mask = df["tools"].apply(
-            lambda ts: any(t in DEEPSEEK_WEB_TOOLS for t in (ts or []))
-        )
-    web_df = df[web_mask]
+    web_df = df[web_call_mask(df, args.platform)]
 
     web_df = web_df.reset_index(drop=True)
     web_df.to_parquet(f"{base_dir}/web_data_summary.parquet")
