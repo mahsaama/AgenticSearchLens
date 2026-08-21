@@ -1,8 +1,8 @@
-# Web Search Tool Calling In AI Chatbots
+# 🔎 Web Search Tool Calling In AI Chatbots
 
 This repository studies how modern AI chatbots decide to call Web search tools and how those calls shape the final response.
 
-## Motivation
+## 🎯 Motivation
 
 1. AI agents powering chatbots are increasingly relying on tools, particularly Web search.
 2. Web search is a complex task:
@@ -11,16 +11,16 @@ This repository studies how modern AI chatbots decide to call Web search tools a
    - reformulating queries as new evidence is retrieved,
    - generating final responses grounded in both model knowledge and retrieved results.
 3. We analyze longitudinal data from four popular chatbot platforms:
-   - ChatGPT
-   - Claude
-   - Grok
-   - DeepSeek
+   - 🤖 ChatGPT
+   - 🟠 Claude
+   - ⚡ Grok
+   - 🐳 DeepSeek
 4. Implications:
    - (a) designers of AI agents,
    - (b) designers of Web search tools for AI agents,
    - (c) end users of chat platforms.
 
-## Web Search Life Cycle
+## 🔄 Web Search Life Cycle
 
 ```mermaid
 flowchart LR
@@ -29,7 +29,7 @@ flowchart LR
     C --> D[Response Generation]
 ```
 
-## Repository Layout
+## 📂 Repository Layout
 
 - `src/data_extraction.py`: parses raw ChatGPT exports into a per-turn summary dataframe.
 - `src/data_extraction_other_cai.py` / `src/data_utils_cai.py`: same, for Claude, Grok, and DeepSeek exports.
@@ -44,10 +44,10 @@ flowchart LR
 - `src/run_hallucinated_url_flow_from_pkl.py`: checks cited URLs for reachability/hallucination.
 - `src/evaluator_prompts.py`: prompt templates used by the LLM-judge evaluations.
 - `src/paper.py`: shared Plotly styling for figures.
-- `outputs/`: generated analysis artifacts (gitignored).
-- `data/`: your local, unshared copies of exported chat data (gitignored — see below).
+- `outputs/`: generated analysis artifacts.
+- `data/`: your local copies of exported chat data (see below).
 
-## Setup
+## ⚙️ Setup
 
 This project uses Python and common data-science dependencies, including test
 tooling (pytest), all listed in `requirements.txt`.
@@ -66,9 +66,8 @@ playwright install chromium
 python -m nltk.downloader punkt punkt_tab
 ```
 
-Fill in your keys in `.env` (already in the repo, gitignored, with placeholders for
-the API keys and every optional override commented out alongside its built-in
-default):
+🔑 Fill in your keys in `.env` (already in the repo, with placeholders for the API
+keys and every optional override alongside its built-in default):
 
 ```bash
 OPENAI_API_KEY=...       # LLM-judge evaluations (factuality/completeness/relevance,
@@ -83,7 +82,7 @@ Everything above is only needed if you plan to run the LLM-judge evaluations or 
 invitro replay (`chat_replayer.py`). The extraction and descriptive-analysis scripts
 work without any API key.
 
-## Exporting Your Own Data
+## 📥 Exporting Your Own Data
 
 Because of ERB restrictions we cannot share the original donated dataset (see
 **Ethical Considerations** in the paper). To run this pipeline on your own chat
@@ -98,14 +97,14 @@ if you ever combine exports from several accounts under the same platform (`user
 
 | Platform | Where to export | Raw file you get | Where it goes |
 |---|---|---|---|
-| ChatGPT | Settings → Data controls → Export data (emailed download link) | `conversations.json` | `data/chatgpt/user_0/conversations.json` |
-| Claude | Settings → Privacy → Export data | `conversations.json` | `data/claude/user_0/conversations.json` |
-| DeepSeek | Settings → Data export | `conversations.json` | `data/deepseek/user_0/conversations.json` |
-| Grok | Export your conversation history | `prod-grok-backend.json` | rename to `conversations.json`, then `data/grok/user_0/conversations.json` |
+| 🤖 ChatGPT | Settings → Data controls → Export data (emailed download link) | `conversations.json` | `data/chatgpt/user_0/conversations.json` |
+| 🟠 Claude | Settings → Privacy → Export data | `conversations.json` | `data/claude/user_0/conversations.json` |
+| 🐳 DeepSeek | Settings → Data export | `conversations.json` | `data/deepseek/user_0/conversations.json` |
+| ⚡ Grok | Export your conversation history | `prod-grok-backend.json` | rename to `conversations.json`, then `data/grok/user_0/conversations.json` |
 
 Notes:
 
-- **Grok's export file is not named `conversations.json`** — it comes down as
+- ⚠️ **Grok's export file is not named `conversations.json`** — it comes down as
   `prod-grok-backend.json`. Rename it to `conversations.json` and nest it under
   `user_0/`, e.g.:
 
@@ -117,11 +116,10 @@ Notes:
 - Exact export menu wording changes over time and by account type; look for
   "export my data" / "download your data" under each platform's privacy or account
   settings if the paths above have moved.
-- Exported data can contain personal or sensitive information. Treat your `data/`
-  and `outputs/` directories accordingly — both are gitignored by default so they
-  won't be committed accidentally.
+- 🔒 Exported data can contain personal or sensitive information — treat your
+  `data/` and `outputs/` directories as private.
 
-## Running The Pipeline / Evaluating Your Data
+## 🚀 Running The Pipeline / Evaluating Your Data
 
 **1. Extract raw exports into summary dataframes.** This parses the JSON exports
 above into per-turn dataframes (`outputs/<platform>/metadata/data_summary.*` and
@@ -168,7 +166,7 @@ python -m src.run_hallucinated_url_flow_from_pkl --help  # cited-URL reachabilit
 replay output into the artifacts consumed by the analyses in step 2 — you generally
 don't need to run it directly.
 
-## Notes
+## 📝 Notes
 
 - Raw data paths in some scripts are machine-specific and may require local edits.
 - Analysis outputs are written under `outputs/` by default.
