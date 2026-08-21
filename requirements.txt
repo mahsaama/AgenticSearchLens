@@ -3,14 +3,10 @@
 # packages (torch CUDA extras, sglang, vllm-adjacent kernels, etc.) that
 # came from a shared training environment are intentionally omitted; plain
 # `torch` below installs a CPU/platform-appropriate build via pip.
-#
-# fastapi/uvicorn/python-multipart are for src/local_server.py — the local
-# API server the "Explore Your Own Traces" page on GitHub Pages talks to.
 
 anthropic==0.93.0
 beautifulsoup4==4.14.3
 curl_cffi==0.15.0
-fastapi==0.135.3
 httpx==0.28.1
 langdetect==1.0.9
 lxml==6.0.2
@@ -24,7 +20,6 @@ plotly==6.5.2
 PyMuPDF==1.27.2
 python-dotenv==1.0.1
 pyarrow==23.0.1
-python-multipart==0.0.24
 readability-lxml==0.8.4.1
 requests==2.32.5
 rouge_score==0.1.2
@@ -37,7 +32,6 @@ tldextract==5.3.1
 torch==2.9.1
 tqdm==4.67.3
 transformers==4.50.3
-uvicorn==0.44.0
 
 # Testing
 pytest==9.0.2

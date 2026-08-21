@@ -111,8 +111,7 @@ def web_call_mask(df, platform):
     Each platform exposes tool usage differently (ChatGPT: free-text
     "interactions" trace; Claude: tool names, any containing "web"; Grok/
     DeepSeek: fixed tool-name sets), so this centralizes the per-platform
-    heuristic used both by main()'s web_data_summary split and by
-    personal_explorer.py's single-user stats.
+    heuristic previously duplicated inline in main()'s web_data_summary split.
     """
     if platform == "chatgpt":
         return df["interactions"].apply(lambda x: "web" in str(x))
