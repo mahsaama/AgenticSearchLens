@@ -11,7 +11,7 @@ import pandas as pd
 from urllib.parse import urlparse
 from langdetect import detect
 
-import src.utils.data_utils_cai as du
+import src.utils.other_platforms_parsing_utils as du
 from src.utils.common_io import *
 
 def parse_args():

@@ -1,7 +1,20 @@
+"""Parsing helpers for Claude, Grok, and DeepSeek exports, used by
+src/web_search_decision/data_extraction_other_cai.py.
+
+Each platform's raw export JSON has a different shape (ChatGPT/DeepSeek:
+parent/children message trees; Claude: a flat chronological array; Grok: a
+session with a `responses` list), so every function here takes an explicit
+`platform` argument and dispatches to a platform-specific implementation.
+The parallel, ChatGPT-only module is
+src/utils/chatgpt_conversation_utils.py.
+"""
+
 import json
 from datetime import datetime
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+
 from src.utils.common_io import *
 
 
@@ -38,15 +51,15 @@ def normalize_timestamp(ts, platform):
 def sort_conversation(conversation, platform):
     """
     Sort a conversation into chronological message order.
-    
+
     Args:
         conversation: The conversation data.
             - For "chatgpt": pass either the full conversation dict (with "mapping")
               or the mapping dict directly.
             - For "claude": pass either the full conversation dict (with "chat_messages")
               or the chat_messages list directly.
-        platform: "chatgpt" or "claude"
-    
+        platform: "chatgpt", "claude", "grok", or "deepseek"
+
     Returns: list of dicts with normalized fields:
         - role: "user" | "assistant" | "system" | "tool" (chatgpt)
                 or "human" | "assistant" (claude)
@@ -252,8 +265,17 @@ def load_topics(platform):
     """Return a ``{conv_id: topic_string}`` lookup for the given platform.
 
     - chatgpt: external CSV with columns (conv_id, topic_new); NaN -> "Other".
-    - claude / grok / deepseek: local JSONL under ``topics/``; resolution
+    - claude / grok / deepseek: local JSONL under ``src/topics/``; resolution
       handled by ``_resolve_topic_from_record``.
+
+    Neither source ships with this repo (both are research artifacts built
+    over the paper's own ERB-restricted donated dataset), so in practice
+    this returns {} for every platform on a fresh checkout -- by design, not
+    as an error: callers must already treat a missing topic lookup as
+    expected and fall back to a generic label (see
+    src/web_search_decision/data_extraction_other_cai.py's
+    topic-classification fallback for how a real topic gets assigned
+    instead, from the conversation content itself).
     """
     if platform == "chatgpt":
         path = f"{OUTPUT_PATH}/metadata/All_Conversations_annotation.csv"
@@ -294,54 +316,3 @@ def load_topics(platform):
                 continue
             lookup[conv_id] = _resolve_topic_from_record(record)
     return lookup
-
-
-def load_turn_msgs(df, user_id, conv_id, turn_id, full=True):
-    turn_msgs = (
-        df[
-            (df["user id"] == user_id)
-            & (df["conv id"] == conv_id)
-            & (df["turn id"] == turn_id)
-        ]
-        .reset_index()
-        .loc[0, "turn_msgs"]
-    )
-
-    if full:
-        return turn_msgs
-
-    shortened_msgs = []
-    for turn_msg in turn_msgs:
-        msg = {
-            "Sender": turn_msg.get("author", {}).get("role", ""),
-            "Recipient": turn_msg.get("recipient", ""),
-            "Message": turn_msg.get("content", {}),
-        }
-        shortened_msgs.append(msg)
-
-    return shortened_msgs
-
-
-def load_conv_msgs(user_id, conv_idx, sorted=True, full=True):
-    file_path = Path(f"{DATA_BASE_PATH}/prolific_all_files/user_{user_id}/conversations.json")
-    with open(file_path, "r") as f:
-        data = json.load(f)
-
-    conv = data[conv_idx]
-    mapping = conv["mapping"]
-    if sorted:
-        mapping = sort_conversation(mapping)
-
-    if full:
-        return conv["title"], mapping
-    
-    shortened_mapping = []
-    for mapping_msg in mapping:
-        msg = {
-            "Sender": mapping_msg.get("message").get("author", {}).get("role", ''),
-            "Recipient": mapping_msg.get("message").get("recipient", ''),
-            "Message": mapping_msg.get("message").get("content", {}),
-        }
-        shortened_mapping.append(msg)
-
-    return conv["title"], shortened_mapping
