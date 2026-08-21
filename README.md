@@ -44,15 +44,20 @@ flowchart LR
 - `src/run_hallucinated_url_flow_from_pkl.py`: checks cited URLs for reachability/hallucination.
 - `src/evaluator_prompts.py`: prompt templates used by the LLM-judge evaluations.
 - `src/paper.py`: shared Plotly styling for figures.
+- `src/personal_explorer.py` / `src/local_server.py`: the local API server behind the "Explore Your Own Traces" page section (see below) — single-user stats, computed from your own upload.
+- `agentic-search-atlas.html`: this project's page (published via GitHub Pages).
 - `outputs/`: generated analysis artifacts.
 - `data/`: your local copies of exported chat data (see below).
 
 ## ⚙️ Setup
 
 This project uses Python and common data-science dependencies, including test
-tooling (pytest), all listed in `requirements.txt`.
+tooling (pytest), all listed in `requirements.txt`. A virtual environment keeps
+these isolated from anything else on your machine:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -165,6 +170,30 @@ python -m src.run_hallucinated_url_flow_from_pkl --help  # cited-URL reachabilit
 `src/extract_replay_artifacts.py` is invoked internally by the scripts above to turn
 replay output into the artifacts consumed by the analyses in step 2 — you generally
 don't need to run it directly.
+
+## 🧭 Explore Your Own Traces (no scripting required)
+
+The project page ([`agentic-search-atlas.html`](agentic-search-atlas.html), published
+via GitHub Pages) has an **"Explore"** section where you can upload your own export(s)
+and see your personal stats — Web-search rate (overall and by month), tool usage, and
+reasoning-mode rate — directly in the browser, no scripting required.
+
+Since GitHub Pages only serves static files, this talks to a small local server that
+runs on *your* machine — your uploads and everything computed from them stay on
+localhost and are never sent anywhere else:
+
+```bash
+python -m src.local_server   # serves http://127.0.0.1:8420
+```
+
+Leave that running, open the page, jump to **Explore**, upload your export(s) (same
+`data/<platform>/user_0/conversations.json` convention as above — the page does the
+saving for you), and click **Analyze my traces**.
+
+This is intentionally a smaller slice than the full pipeline above: it's general,
+single-user stats only — no topic breakdowns (those need the paper's separately
+LLM-annotated topic data) and no retrieved/cited-domain analysis (today's URL parsing
+is ChatGPT-only). See `src/personal_explorer.py` for exactly what it computes.
 
 ## 📝 Notes
 
