@@ -31,14 +31,12 @@ from src.utils.common_io import OUTPUT_PATH
 from openai import OpenAI
 from tqdm import tqdm
 from src.prompts.evaluator_prompts import (
-    SYSTEM_PROMPT_CHARAC,
     SYSTEM_PROMPT_ENTITY_SPECIFICITY,
     SYSTEM_PROMPT_GEOGRAPHIC_SPECIFICITY,
     SYSTEM_PROMPT_NUMERIC_SPECIFICITY,
     SYSTEM_PROMPT_QUERY_REASON,
     SYSTEM_PROMPT_QUERY_REASON_VALIDATOR,
     SYSTEM_PROMPT_TEMPORAL_SPECIFICITY,
-    USER_PROMPT_CHARAC,
     USER_PROMPT_ENTITY_SPECIFICITY,
     USER_PROMPT_GEOGRAPHIC_SPECIFICITY,
     USER_PROMPT_NUMERIC_SPECIFICITY,
@@ -63,30 +61,9 @@ OPENAI_REPLAY_MODELS = [
 INPUT_DIR = Path(f"{OUTPUT_PATH}/replays")
 OUTPUT_DIR = Path(f"{OUTPUT_PATH}/replays/extracted")
 PLOT_OUTPUT_DIR = Path(f"{OUTPUT_PATH}/replays/plots")
-WEB_CALLS_CHARACTERIZATION_PATH = Path(
-    f"{OUTPUT_PATH}/metadata/web_calls_characterization.csv"
-)
-REPLAY_SAMPLE_CHARACTERIZATION_PATH = Path(
-    f"{OUTPUT_PATH}/metadata/replay_samples_web_calls_characterization.csv"
-)
-REPLAY_SAMPLE_SOURCE_PATH = INPUT_DIR / "gpt-5.3-chat-latest.json"
 REPLAY_QUERY_EVAL_OUTPUT_DIR = OUTPUT_DIR / "query_reformulations"
 REPLAY_URLS_CONTENT_PATH = OUTPUT_DIR / "replay_response_and_sources_url_content.json"
 REPLAY_CLAIM_CACHE_PATH = OUTPUT_DIR / "replay_response_source_claim_chunks_cache.json"
-
-PRIMARY_TRIGGER_LABEL_MAP = {
-    "High-Investment Recommendation": "High-Investment",
-    "Volatile/Temporal Information": "Temporal Information",
-    "Low Confidence/Niche Fact": "Low Confidence Fact",
-    "Unfamiliar Term/Typo": "Unfamiliar Term",
-    "High-Stakes Accuracy": "High-Stakes Accuracy",
-    "External Reference": "External Reference",
-    "User Verification": "User Verification",
-    "Attribution/Sourcing Needed": "Attribution Needed",
-    "Explicit Command": "Explicit Command",
-}
-EXCLUDED_PRIMARY_TRIGGERS = {"None of the Above", "OpenAI Product Info", ""}
-NO_CHARACTERIZATION_LABEL = "No Characterization"
 
 
 def _infer_provider(model_name, row):
@@ -103,36 +80,6 @@ def _infer_provider(model_name, row):
         return "deepseek"
     return "openai"
 
-
-def _parse_followed_web_policy(value):
-    if isinstance(value, dict):
-        return value
-    if not isinstance(value, str):
-        return {}
-
-    text = value.strip()
-    if not text:
-        return {}
-
-    for parser in (json.loads, ast.literal_eval):
-        try:
-            parsed = parser(text)
-            return parsed if isinstance(parsed, dict) else {}
-        except (json.JSONDecodeError, ValueError, SyntaxError):
-            continue
-
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and start < end:
-        candidate = text[start : end + 1]
-        for parser in (json.loads, ast.literal_eval):
-            try:
-                parsed = parser(candidate)
-                return parsed if isinstance(parsed, dict) else {}
-            except (json.JSONDecodeError, ValueError, SyntaxError):
-                continue
-
-    return {}
 
 
 def _parse_eval_json(text):
@@ -958,44 +905,6 @@ def _build_topic_lookup(source_platform="chatgpt"):
     }
 
 
-def _load_primary_triggers(
-    metadata_path=WEB_CALLS_CHARACTERIZATION_PATH,
-    judge_model=None,
-):
-    trigger_by_turn = {}
-    trigger_counts = {}
-
-    with open(metadata_path, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if judge_model is not None:
-                row_judge_model = str(row.get("judge_model", "") or "").strip()
-                if row_judge_model != str(judge_model):
-                    continue
-            conv_id = str(row.get("conv_id", "") or "").strip()
-            turn_id = str(row.get("turn_id", "") or "").strip()
-            if not conv_id or not turn_id:
-                continue
-
-            policy = _parse_followed_web_policy(row.get("followed_web_policy"))
-            primary_trigger = str(policy.get("primary_trigger", "") or "").strip()
-            if primary_trigger in EXCLUDED_PRIMARY_TRIGGERS:
-                continue
-
-            trigger_label = PRIMARY_TRIGGER_LABEL_MAP.get(
-                primary_trigger,
-                primary_trigger,
-            )
-            trigger_by_turn[(conv_id, turn_id)] = trigger_label
-            trigger_counts[trigger_label] = trigger_counts.get(trigger_label, 0) + 1
-
-    ordered_triggers = sorted(
-        trigger_counts,
-        key=lambda label: (-trigger_counts[label], label),
-    )
-    return trigger_by_turn, ordered_triggers
-
-
 def _group_rows_by_sample(rows):
     grouped = {}
     for row in rows:
@@ -1614,308 +1523,6 @@ def plot_cross_platform_replay_model_call_outcomes(
         output_dir=output_dir,
         output_stem=output_stem,
     )
-
-
-def plot_openai_replay_model_outcome_trigger_heatmaps(
-    metadata_path=REPLAY_SAMPLE_CHARACTERIZATION_PATH,
-    base_model_name="gpt-5.3-chat-latest",
-    model_names=OPENAI_REPLAY_MODELS,
-    output_dir=PLOT_OUTPUT_DIR,
-    output_stem="replay_models_auto_web_call_outcomes_by_primary_trigger_base_gpt-5.3-chat-latest",
-):
-    import plotly.graph_objects as go
-
-    from src.utils.figure_style import with_paper_style, styler
-
-    rows = _extract_rows_for_models(model_names)
-    grouped_samples = _group_rows_by_sample(rows)
-    trigger_by_turn, ordered_triggers = _load_primary_triggers(metadata_path)
-    trigger_labels = ordered_triggers + [NO_CHARACTERIZATION_LABEL]
-
-    base_model_label = _model_label(base_model_name)
-    comparison_models = [model for model in model_names if model != base_model_name]
-    outcome_specs = [
-        (
-            "base_not_called_and_model_called",
-            f"{base_model_label} did not<br>model called",
-        ),
-        (
-            "base_not_called_and_model_not_called",
-            f"{base_model_label} did not<br>model did not",
-        ),
-        (
-            "base_called_and_model_not_called",
-            f"{base_model_label} called<br>model did not",
-        ),
-        (
-            "base_called_and_model_called",
-            f"{base_model_label} called<br>model called",
-        ),
-    ]
-
-    summary = {}
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    for model_name in comparison_models:
-        model_label = _model_label(model_name)
-        outcome_specs = [
-            (
-                "base_not_called_and_model_called",
-                f"{base_model_label} did not<br>{model_label} called",
-            ),
-            (
-                "base_not_called_and_model_not_called",
-                f"{base_model_label} did not<br>{model_label} did not",
-            ),
-            (
-                "base_called_and_model_not_called",
-                f"{base_model_label} called<br>{model_label} did not",
-            ),
-            (
-                "base_called_and_model_called",
-                f"{base_model_label} called<br>{model_label} called",
-            ),
-        ]
-        counts = {
-            outcome_key: {trigger: 0 for trigger in trigger_labels}
-            for outcome_key, _ in outcome_specs
-        }
-
-        for sample in grouped_samples.values():
-            base_called = bool(sample["models"].get(base_model_name, False))
-            model_called = bool(sample["models"].get(model_name, False))
-            outcome_key = _outcome_key(base_called, model_called)
-            trigger = trigger_by_turn.get(
-                (sample["conv_id"], sample["turn_id"]),
-                NO_CHARACTERIZATION_LABEL,
-            )
-            counts[outcome_key][trigger] = counts[outcome_key].get(trigger, 0) + 1
-
-        z_values = []
-        text_values = []
-        summary[model_name] = {}
-
-        for outcome_key, outcome_label in outcome_specs:
-            row_counts = [counts[outcome_key].get(trigger, 0) for trigger in trigger_labels]
-            total = sum(row_counts)
-            row_percentages = [
-                (count / total * 100.0) if total else 0.0 for count in row_counts
-            ]
-            z_values.append(row_percentages)
-            text_values.append(
-                [
-                    f"{count}<br>{percentage:.0f}%"
-                    if count
-                    else ""
-                    for count, percentage in zip(row_counts, row_percentages)
-                ]
-            )
-            summary[model_name][outcome_key] = {
-                "outcome_label": outcome_label,
-                "total_samples": total,
-                "trigger_counts": {
-                    trigger: {
-                        "count": count,
-                        "percentage": percentage,
-                    }
-                    for trigger, count, percentage in zip(
-                        trigger_labels,
-                        row_counts,
-                        row_percentages,
-                    )
-                },
-            }
-
-        fig = go.Figure(
-            data=[
-                go.Heatmap(
-                    z=z_values,
-                    x=trigger_labels,
-                    y=[label for _, label in outcome_specs],
-                    colorscale="Blues",
-                    zmin=0,
-                    zmax=100,
-                    xgap=2,
-                    ygap=2,
-                    text=text_values,
-                    texttemplate="%{text}",
-                    hovertemplate=(
-                        "Outcome: %{y}<br>"
-                        "Trigger: %{x}<br>"
-                        "Row share: %{z:.1f}%<extra></extra>"
-                    ),
-                    colorbar=dict(title="Row %"),
-                )
-            ]
-        )
-
-        fig.update_layout(
-            title=f"{model_label}: call outcomes by primary trigger",
-            xaxis_title="Primary Trigger",
-            yaxis_title="Outcome",
-            plot_bgcolor="black",
-            margin=dict(t=10),
-        )
-        fig.update_xaxes(tickangle=35)
-        fig = with_paper_style(fig, config=styler(18, 16))
-        fig.update_layout(margin=dict(t=10))
-
-        model_slug = str(model_name).replace(".", "-")
-        fig.write_image(
-            output_dir
-            / f"{output_stem}__{model_slug}.pdf",
-            format="pdf",
-        )
-
-    with open(output_dir / f"{output_stem}_summary.json", "w") as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False)
-
-
-def plot_replay_pair_outcome_trigger_heatmap(
-    metadata_path=REPLAY_SAMPLE_CHARACTERIZATION_PATH,
-    base_model_name="gpt-4.1-mini-2025-04-14",
-    comparison_model_name="o4-mini-2025-04-16",
-    model_names=OPENAI_REPLAY_MODELS,
-    output_dir=PLOT_OUTPUT_DIR,
-    output_stem="replay_pair_auto_web_call_outcomes_by_primary_trigger",
-    trigger_model_name=None,
-):
-    import plotly.graph_objects as go
-
-    from src.utils.figure_style import with_paper_style, styler
-
-    rows = _extract_rows_for_models(model_names)
-    grouped_samples = _group_rows_by_sample(rows)
-    if trigger_model_name is None:
-        trigger_model_name = comparison_model_name
-    trigger_by_turn, ordered_triggers = _load_primary_triggers(
-        metadata_path,
-        judge_model=trigger_model_name,
-    )
-    trigger_labels = ordered_triggers + [NO_CHARACTERIZATION_LABEL]
-
-    base_model_label = _model_label(base_model_name)
-    comparison_model_label = _model_label(comparison_model_name)
-    outcome_specs = [
-        (
-            "base_not_called_and_model_called",
-            f"{base_model_label} did not<br>{comparison_model_label} called",
-        ),
-        (
-            "base_not_called_and_model_not_called",
-            f"{base_model_label} did not<br>{comparison_model_label} did not",
-        ),
-        (
-            "base_called_and_model_not_called",
-            f"{base_model_label} called<br>{comparison_model_label} did not",
-        ),
-        (
-            "base_called_and_model_called",
-            f"{base_model_label} called<br>{comparison_model_label} called",
-        ),
-    ]
-
-    counts = {
-        outcome_key: {trigger: 0 for trigger in trigger_labels}
-        for outcome_key, _ in outcome_specs
-    }
-
-    for sample in grouped_samples.values():
-        base_called = bool(sample["models"].get(base_model_name, False))
-        model_called = bool(sample["models"].get(comparison_model_name, False))
-        outcome_key = _outcome_key(base_called, model_called)
-        trigger = trigger_by_turn.get(
-            (sample["conv_id"], sample["turn_id"]),
-            NO_CHARACTERIZATION_LABEL,
-        )
-        counts[outcome_key][trigger] = counts[outcome_key].get(trigger, 0) + 1
-
-    z_values = []
-    text_values = []
-    summary = {
-        "base_model": base_model_name,
-        "comparison_model": comparison_model_name,
-        "trigger_model": trigger_model_name,
-        "outcomes": {},
-    }
-
-    for outcome_key, outcome_label in outcome_specs:
-        row_counts = [counts[outcome_key].get(trigger, 0) for trigger in trigger_labels]
-        total = sum(row_counts)
-        row_percentages = [
-            (count / total * 100.0) if total else 0.0 for count in row_counts
-        ]
-        z_values.append(row_percentages)
-        text_values.append(
-            [
-                f"{count}<br>{percentage:.0f}%"
-                if count
-                else ""
-                for count, percentage in zip(row_counts, row_percentages)
-            ]
-        )
-        summary["outcomes"][outcome_key] = {
-            "outcome_label": outcome_label,
-            "total_samples": total,
-            "trigger_counts": {
-                trigger: {
-                    "count": count,
-                    "percentage": percentage,
-                }
-                for trigger, count, percentage in zip(
-                    trigger_labels,
-                    row_counts,
-                    row_percentages,
-                )
-            },
-        }
-
-    fig = go.Figure(
-        data=[
-            go.Heatmap(
-                z=z_values,
-                x=trigger_labels,
-                y=[label for _, label in outcome_specs],
-                colorscale="Blues",
-                zmin=0,
-                zmax=100,
-                xgap=2,
-                ygap=2,
-                text=text_values,
-                texttemplate="%{text}",
-                hovertemplate=(
-                    "Outcome: %{y}<br>"
-                    "Trigger: %{x}<br>"
-                    "Row share: %{z:.1f}%<extra></extra>"
-                ),
-                colorbar=dict(title="Row %"),
-            )
-        ]
-    )
-
-    fig.update_layout(
-        title=f"{base_model_label} vs {comparison_model_label}: call outcomes by primary trigger",
-        xaxis_title="Primary Trigger",
-        yaxis_title="Outcome",
-        plot_bgcolor="black",
-        margin=dict(t=10),
-    )
-    fig.update_xaxes(tickangle=35)
-    fig = with_paper_style(fig, config=styler(18, 16))
-    fig.update_layout(margin=dict(t=10))
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    base_slug = str(base_model_name).replace(".", "-")
-    comparison_slug = str(comparison_model_name).replace(".", "-")
-    fig.write_image(
-        output_dir / f"{output_stem}__{base_slug}__vs__{comparison_slug}.pdf",
-        format="pdf",
-    )
-    with open(
-        output_dir / f"{output_stem}__{base_slug}__vs__{comparison_slug}_summary.json",
-        "w",
-    ) as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False)
 
 
 def plot_openai_replay_dev_prompt_web_call_heatmap(
@@ -7694,131 +7301,6 @@ def print_replay_web_search_sample_counts(
                 )
 
 
-def classify_replay_sample_primary_triggers(
-    model_names=DEFAULT_MODELS,
-    replay_path=REPLAY_SAMPLE_SOURCE_PATH,
-    output_path=REPLAY_SAMPLE_CHARACTERIZATION_PATH,
-    save_every=25,
-):
-    from src.replays.chat_replayer import _client_for_provider, _infer_provider_from_model
-
-    replay_data = _load_replay_json(replay_path)
-    if isinstance(model_names, str):
-        model_names = [model_names]
-    model_names = list(dict.fromkeys(model_names))
-
-    samples = []
-    for row in replay_data.values():
-        if _is_skipped_sample_idx(row.get("sample_idx")):
-            continue
-        samples.append(
-            {
-                "conv_id": row.get("conv_id"),
-                "turn_id": row.get("turn_id"),
-                "user_prompt": row.get("user_prompt", ""),
-            }
-        )
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    records = []
-    completed_keys = set()
-    clients = {
-        model_name: _client_for_provider(_infer_provider_from_model(model_name))
-        for model_name in model_names
-    }
-
-    def _save():
-        fieldnames = [
-            "conv_id",
-            "turn_id",
-            "user_prompt",
-            "judge_model",
-            "followed_web_policy",
-            "primary_trigger",
-            "secondary_triggers",
-            "explanation",
-            "judge_status",
-            "judge_error",
-            "judge_raw_judgment",
-        ]
-        with open(output_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(records)
-
-        json_path = output_path.with_suffix(".json")
-        with open(json_path, "w") as f:
-            json.dump(
-                {
-                    f'{row.get("conv_id")}::{row.get("turn_id")}::{row.get("judge_model")}': row
-                    for row in records
-                },
-                f,
-                indent=2,
-                ensure_ascii=False,
-            )
-
-    for model_name in model_names:
-        client = clients[model_name]
-        for row in tqdm(samples, desc=f"judge={model_name}"):
-            record_key = (
-                str(row.get("conv_id", "") or ""),
-                str(row.get("turn_id", "") or ""),
-                str(model_name),
-            )
-            if record_key in completed_keys:
-                continue
-
-            user_prompt = str(row.get("user_prompt", "") or "").strip()
-            record = {
-                "conv_id": row.get("conv_id"),
-                "turn_id": row.get("turn_id"),
-                "user_prompt": user_prompt,
-                "judge_model": model_name,
-                "followed_web_policy": "",
-                "primary_trigger": "",
-                "secondary_triggers": json.dumps([], ensure_ascii=False),
-                "explanation": "",
-                "judge_status": "",
-                "judge_error": "",
-                "judge_raw_judgment": "",
-            }
-
-            try:
-                eval_result = _run_judge(
-                    client=client,
-                    model_name=model_name,
-                    system_prompt=SYSTEM_PROMPT_CHARAC,
-                    user_prompt=USER_PROMPT_CHARAC.format(PROMPT=user_prompt),
-                )
-                parsed = eval_result.get("parsed_judgment")
-                if not isinstance(parsed, dict):
-                    parsed = {}
-
-                record["followed_web_policy"] = json.dumps(
-                    parsed,
-                    ensure_ascii=False,
-                )
-                record["primary_trigger"] = parsed.get("primary_trigger", "")
-                record["secondary_triggers"] = json.dumps(
-                    parsed.get("secondary_triggers", []),
-                    ensure_ascii=False,
-                )
-                record["explanation"] = parsed.get("explanation", "")
-                record["judge_status"] = "ok" if parsed else "parse_failed"
-                record["judge_raw_judgment"] = eval_result.get("raw_judgment", "")
-            except Exception as exc:
-                record["judge_status"] = "error"
-                record["judge_error"] = str(exc)
-
-            records.append(record)
-            completed_keys.add(record_key)
-            if save_every and len(records) % save_every == 0:
-                _save()
-
-    _save()
-
-
 def data_extraction():
     all_rows = []
     for model_name in DEFAULT_MODELS:
@@ -7842,16 +7324,7 @@ def data_extraction():
 
 if __name__ == "__main__":
     # data_extraction()
-    
-    # classify_replay_sample_primary_triggers()
-    # plot_openai_replay_model_outcome_trigger_heatmaps()
-    # plot_replay_pair_outcome_trigger_heatmap(
-    #     # base_model_name="gpt-4.1-mini-2025-04-14",
-    #     base_model_name="gpt-5.3-chat-latest",
-    #     comparison_model_name="o4-mini-2025-04-16",
-    #     # comparison_model_name="gpt-4.1-mini-2025-04-14",
-    # )
-    
+
     # plot_replay_web_call_agreement_counts()
     # plot_openai_replay_model_agreement_counts()
 
