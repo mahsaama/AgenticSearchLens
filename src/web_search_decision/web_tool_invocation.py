@@ -22,14 +22,16 @@ from plotly.colors import qualitative
 from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
-from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
-from src.web_search_decision.other_platforms_extraction import (
+from src.web_search_decision.extraction import (
     DEEPSEEK_WEB_TOOLS as _CANONICAL_DEEPSEEK_WEB_TOOLS,
     GROK_WEB_TOOLS as _CANONICAL_GROK_WEB_TOOLS,
-    load_whole_data_from_file as load_whole_data_from_file_cai,
+    load_web_data_from_file,
+    load_whole_data_from_file,
 )
-# Aliased: this file also defines its own, narrower GROK_WEB_TOOLS/
-# DEEPSEEK_WEB_TOOLS further down (used by _has_web_call_for_platform) --
+# extraction.load_whole_data_from_file/load_web_data_from_file already
+# dispatch to any of the 4 platforms (default platform="chatgpt") since the
+# ChatGPT-only and Claude/Grok/DeepSeek loaders were merged into one module.
+# This file also defines its own, narrower GROK_WEB_TOOLS/
 # keeping both distinct rather than silently overriding one, since they're
 # not obviously interchangeable (see that definition's comment).
 from scipy.stats import binomtest
@@ -414,7 +416,7 @@ def _auto_categorize_tool(tool_name):
     """Heuristic "Web & Browsing" vs "Plugins" classification for a single
     tool/recipient name, used only as a fallback when no real category file
     is present (see _tool_to_category_lookup). Reuses the same web-tool name
-    sets other_platforms_extraction.py's web_call_mask() already relies on
+    sets extraction.py's web_call_mask() already relies on
     for Grok/DeepSeek, plus a generic name-substring check that covers
     ChatGPT/Claude's "web"-named tools."""
     name = str(tool_name or "").lower()
@@ -573,7 +575,7 @@ def web_call_trend_over_time_all_convai(df):
     ))
 
     for cai in ["claude", "grok", "deepseek"]:
-        cai_df = load_whole_data_from_file_cai(fmt="pkl", platform=cai)
+        cai_df = load_whole_data_from_file(fmt="pkl", platform=cai)
         cai_tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/{cai}/metadata/all_tools_categorized.json")
         monthly_tooly_turns, total_web_turns, total_turns = _monthly_web_rate(
             cai_df, cai_tool_to_category
@@ -692,9 +694,10 @@ def web_call_stacked_bar_by_platform_year(platform_configs=None):
     }
 
     def _load_platform_df(platform):
-        if platform == "openai":
-            return load_whole_data_from_file(fmt="pkl")
-        return load_whole_data_from_file_cai(fmt="pkl", platform=platform)
+        # This file's "openai" convention maps to extraction.py's "chatgpt".
+        return load_whole_data_from_file(
+            fmt="pkl", platform="chatgpt" if platform == "openai" else platform
+        )
 
     plot_frames = []
     for platform, display_name in platform_configs:
@@ -1268,9 +1271,10 @@ def topic_distriction_of_whole_data_all_platforms(platform_configs=None):
         ]
     
     def _load_platform_df(platform):
-        if platform == "openai":
-            return load_whole_data_from_file(fmt="pkl")
-        return load_whole_data_from_file_cai(fmt="pkl", platform=platform)
+        # This file's "openai" convention maps to extraction.py's "chatgpt".
+        return load_whole_data_from_file(
+            fmt="pkl", platform="chatgpt" if platform == "openai" else platform
+        )
 
     platform_rate_frames = []
     for platform, display_name in platform_configs:

@@ -1,19 +1,23 @@
-"""Parses raw Claude, Grok, and DeepSeek export files into a per-turn
-summary dataframe -- the non-ChatGPT counterpart of chatgpt_extraction.py.
+"""Parses raw ChatGPT, Claude, Grok, and DeepSeek export files into a
+per-turn summary dataframe -- the single, unified extraction entry point
+for all four platforms (this used to be split into a ChatGPT-only
+chatgpt_extraction.py plus this file for the other three; they've been
+merged here since the parsing logic is >90% shared and having two loaders
+for "the same" pipeline step was a maintenance trap).
 
 Reads data/<platform>/user_<i>/conversations.json (or a flat
 data/<platform>/conversations.json for a single-user export; see README.md's
 "Exporting Your Own Data") and, for every turn, extracts which tools were
-called, thinking-mode flags, message history, timing, and a topic label --
-writing the result to outputs/<platform>/metadata/data_summary.* and
-web_data_summary.* (parquet/pickle/csv).
+called, thinking-mode flags, message history, timing, and a topic label.
 
 Run directly as:
-    python -m src.web_search_decision.other_platforms_extraction --platform claude
-(--platform one of: chatgpt, claude, grok, deepseek -- yes, this module can
-also parse a ChatGPT export via the same generic pipeline as the other
-three; chatgpt_extraction.py is the original, ChatGPT-only implementation
-kept for backwards compatibility with existing outputs/metadata/ layouts.)
+    python -m src.web_search_decision.extraction --platform claude
+(--platform one of: chatgpt, claude, grok, deepseek.)
+
+Output path convention (kept from the pre-merge layout, since every
+downstream analysis module already reads it this way):
+    chatgpt  -> outputs/metadata/data_summary.* + web_data_summary.*
+    others   -> outputs/<platform>/metadata/data_summary.* + web_data_summary.*
 
 Typical output, run against the paper's own (ERB-restricted, unshared)
 donated dataset:
@@ -41,7 +45,12 @@ from src.utils.topic_classifier import classify_topic
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base_dir", type=Path, default="data")
-    parser.add_argument("--platform", type=str, default="claude")
+    parser.add_argument(
+        "--platform",
+        type=str,
+        required=True,
+        choices=["chatgpt", "claude", "grok", "deepseek"],
+    )
     parser.add_argument("--output_path", type=Path, default="outputs")
     return parser.parse_args()
 
@@ -53,7 +62,11 @@ OUTPUT_PATH = Path("./outputs")
 
 # ---------- Column definitions ----------
 
-
+# "openai_models" holds the per-message model identifiers regardless of
+# platform (kept under this name -- not renamed to something neutral like
+# "models" -- because every downstream analysis module already reads
+# df["openai_models"] unconditionally; this is the one column name none of
+# them may diverge on).
 COLUMNS = [
     "user_id",
     "conv_id",
@@ -66,7 +79,7 @@ COLUMNS = [
     "reasoning",
     "thinking",
     "thoughts",
-    "other_platforms_models",
+    "openai_models",
     "user_msg_history",
     "assistant_msg_history",
     "turn_msgs",
@@ -239,10 +252,9 @@ def load_chatgpt_data():
                     # (ChatGPT only sets it explicitly when routing to a tool).
                     recipient = turn_msg.get("recipient", "all")
                     ts = turn_msg.get("create_time")
-                    models.append(turn_msg.get("metadata", {}).get("model_slug"))
-                    reasoning_path.append(
-                        turn_msg.get("metadata", {}).get("reasoning_status")
-                    )
+                    metadata_ = turn_msg.get("metadata", {}) or {}
+                    models.append(metadata_.get("model_slug"))
+                    reasoning_path.append(metadata_.get("reasoning_status"))
 
                     thinking_type = turn_msg.get("content", {}).get("content_type")
                     thinking_path.append(thinking_type)
@@ -252,8 +264,22 @@ def load_chatgpt_data():
 
                     interactions.append(f"{role_}:{recipient}")
                     if ts and role_ == "assistant" and recipient != "all":
+                        # Older/plugin-era export format: the assistant
+                        # explicitly routes the message to a named tool
+                        # (recipient="browser", "web", "dalle.text2im", ...).
                         main_tool_calls.append(recipient)
                         num_tool_usage += 1
+                    elif ts and role_ == "assistant" and metadata_.get("search_result_groups"):
+                        # Current (2025+) export format has no separate
+                        # tool-routed message -- a web search happened iff
+                        # the assistant's answer message metadata carries
+                        # actual retrieved results. Same signal
+                        # source_selection.py/response_generation.py/
+                        # query_reformulations.py already read to extract
+                        # retrieved sources, kept consistent here.
+                        main_tool_calls.append("web_search")
+                        num_tool_usage += 1
+                        interactions.append(f"{role_}:web_search")
 
                 reasoning = any(reasoning_path)
                 thinking = "thoughts" in thinking_path
@@ -681,9 +707,25 @@ def load_deepseek_data():
     return all_data, num_users, num_conversations, num_turns, num_msgs, num_tool_usage
 
 
-def load_whole_data_from_file(fmt, platform):
+def _metadata_dir(platform):
+    """outputs/metadata for chatgpt, outputs/<platform>/metadata otherwise.
+
+    Asymmetric on purpose: every analysis module downstream of extraction
+    (source_selection.py, response_generation.py, query_reformulations.py,
+    chat_replayer.py, extract_replay_artifacts.py, web_tool_invocation.py)
+    already reads ChatGPT's data from the flat outputs/metadata/ -- that
+    predates this module's Claude/Grok/DeepSeek support, which used its own
+    per-platform subfolder from the start. Keeping ChatGPT's path as-is
+    here avoids having to touch every one of those call sites.
+    """
+    if platform == "chatgpt":
+        return f"{OUTPUT_PATH}/metadata"
+    return f"{OUTPUT_PATH}/{platform}/metadata"
+
+
+def load_whole_data_from_file(fmt, platform="chatgpt"):
     """Load a previously extracted data_summary.<fmt> back into a DataFrame."""
-    base_dir = f"{OUTPUT_PATH}/{platform}/metadata"
+    base_dir = _metadata_dir(platform)
     if fmt == "csv":
         df = pd.read_csv(f"{base_dir}/data_summary.csv")
     elif fmt == "pkl":
@@ -695,10 +737,10 @@ def load_whole_data_from_file(fmt, platform):
     return df
 
 
-def load_web_data_from_file(fmt, platform):
+def load_web_data_from_file(fmt, platform="chatgpt"):
     """Load a previously extracted web_data_summary.<fmt> back into a DataFrame
     (data_summary.* filtered down to turns that invoked a Web-search tool)."""
-    base_dir = f"{OUTPUT_PATH}/{platform}/metadata"
+    base_dir = _metadata_dir(platform)
     if fmt == "csv":
         df = pd.read_csv(f"{base_dir}/web_data_summary.csv")
     elif fmt == "pkl":
@@ -712,12 +754,13 @@ def load_web_data_from_file(fmt, platform):
 
 def main():
     """CLI entry point: extract one platform's conversations and write
-    data_summary.* / web_data_summary.* under outputs/<platform>/metadata/."""
+    data_summary.* / web_data_summary.* under its metadata dir (see
+    _metadata_dir)."""
     global DATA_BASE_PATH, OUTPUT_PATH
     args = parse_args()
     DATA_BASE_PATH = Path(args.base_dir) / args.platform
     OUTPUT_PATH = Path(args.output_path)
-    base_dir = f"{OUTPUT_PATH}/{args.platform}/metadata"
+    base_dir = _metadata_dir(args.platform)
     Path(base_dir).mkdir(parents=True, exist_ok=True)
 
     all_data, num_users, num_conversations, num_turns, num_msgs, num_tool_usage = load_whole_data(

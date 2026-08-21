@@ -61,9 +61,20 @@ pio.defaults.mathjax = None
 from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
-from src.web_search_decision.chatgpt_extraction import load_web_data_from_file
+from src.web_search_decision.extraction import load_web_data_from_file
 
 CONF = "./response_generation"
+
+
+def _platform_metadata_dir(platform):
+    """outputs/metadata for chatgpt, outputs/<platform>/metadata otherwise
+    (same convention as src.web_search_decision.extraction._metadata_dir).
+    Used by extract_response_and_sources[_other_platforms] so Claude/Grok/
+    DeepSeek runs don't overwrite ChatGPT's response_and_sources.pkl (and
+    each other's) by all writing to the same flat path."""
+    if platform == "chatgpt":
+        return f"{OUTPUT_PATH}/metadata"
+    return f"{OUTPUT_PATH}/{platform}/metadata"
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -745,11 +756,13 @@ def extract_response_and_sources(web_df):
     web_df.drop(columns=["turn_msgs"], inplace=True)
     web_df.reset_index(drop=True, inplace=True)
 
+    platform_dir = _platform_metadata_dir("chatgpt")
+    os.makedirs(platform_dir, exist_ok=True)
     web_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/response_and_sources.csv",
+        f"{platform_dir}/response_and_sources.csv",
         index=False,
     )
-    web_df.to_pickle(f"{OUTPUT_PATH}/metadata/response_and_sources.pkl")
+    web_df.to_pickle(f"{platform_dir}/response_and_sources.pkl")
 
 
 # ============================================================
@@ -779,15 +792,23 @@ def _extract_response_and_sources_claude(web_df):
     web_df["srcs_safe_urls"] = [[]] * len(web_df)
     web_df["srcs_cited"] = [[]] * len(web_df)
     web_df["asistant_response"] = [""] * len(web_df)
+    web_df["user_query"] = [""] * len(web_df)
 
     for i, row in tqdm(web_df.iterrows(), total=len(web_df)):
         msgs = json.loads(row["turn_msgs"])
         retrieved = []
         cited = []
         response_parts = []
+        user_query = ""
 
         for msg in msgs:
             if msg.get("sender") != "assistant":
+                if not user_query and msg.get("sender") == "human":
+                    user_parts = [
+                        b.get("text", "") for b in (msg.get("content") or [])
+                        if b.get("type") == "text" and b.get("text")
+                    ]
+                    user_query = " ".join(user_parts).strip() or str(msg.get("text", "")).strip()
                 continue
             for b in msg.get("content") or []:
                 btype = b.get("type")
@@ -843,11 +864,14 @@ def _extract_response_and_sources_claude(web_df):
         web_df.at[i, "srcs_safe_urls"] = []
         web_df.at[i, "srcs_cited"] = cited
         web_df.at[i, "asistant_response"] = " ".join(response_parts).strip()
+        web_df.at[i, "user_query"] = user_query
 
     web_df.drop(columns=["turn_msgs"], inplace=True)
     web_df.reset_index(drop=True, inplace=True)
-    web_df.to_csv(f"{OUTPUT_PATH}/metadata/response_and_sources.csv", index=False)
-    web_df.to_pickle(f"{OUTPUT_PATH}/metadata/response_and_sources.pkl")
+    platform_dir = _platform_metadata_dir("claude")
+    os.makedirs(platform_dir, exist_ok=True)
+    web_df.to_csv(f"{platform_dir}/response_and_sources.csv", index=False)
+    web_df.to_pickle(f"{platform_dir}/response_and_sources.pkl")
 
 
 def _extract_response_and_sources_grok(web_df):
@@ -871,15 +895,19 @@ def _extract_response_and_sources_grok(web_df):
     web_df["srcs_safe_urls"] = [[]] * len(web_df)
     web_df["srcs_cited"] = [[]] * len(web_df)
     web_df["asistant_response"] = [""] * len(web_df)
+    web_df["user_query"] = [""] * len(web_df)
 
     for i, row in tqdm(web_df.iterrows(), total=len(web_df)):
         msgs = json.loads(row["turn_msgs"])
         retrieved = []
         cited = []
         response_parts = []
+        user_query = ""
 
         for msg in msgs:
             if str(msg.get("sender", "")).lower() != "assistant":
+                if not user_query and str(msg.get("sender", "")).lower() == "human":
+                    user_query = str(msg.get("message", "") or "").strip()
                 continue
 
             for r in msg.get("web_search_results") or []:
@@ -916,11 +944,14 @@ def _extract_response_and_sources_grok(web_df):
         web_df.at[i, "srcs_safe_urls"] = []
         web_df.at[i, "srcs_cited"] = cited
         web_df.at[i, "asistant_response"] = " ".join(response_parts).strip()
+        web_df.at[i, "user_query"] = user_query
 
     web_df.drop(columns=["turn_msgs"], inplace=True)
     web_df.reset_index(drop=True, inplace=True)
-    web_df.to_csv(f"{OUTPUT_PATH}/metadata/response_and_sources.csv", index=False)
-    web_df.to_pickle(f"{OUTPUT_PATH}/metadata/response_and_sources.pkl")
+    platform_dir = _platform_metadata_dir("grok")
+    os.makedirs(platform_dir, exist_ok=True)
+    web_df.to_csv(f"{platform_dir}/response_and_sources.csv", index=False)
+    web_df.to_pickle(f"{platform_dir}/response_and_sources.pkl")
 
 
 def _extract_response_and_sources_deepseek(web_df):
@@ -933,12 +964,14 @@ def _extract_response_and_sources_deepseek(web_df):
     web_df["srcs_safe_urls"] = [[]] * len(web_df)
     web_df["srcs_cited"] = [[]] * len(web_df)
     web_df["asistant_response"] = [""] * len(web_df)
+    web_df["user_query"] = [""] * len(web_df)
 
     for i, row in tqdm(web_df.iterrows(), total=len(web_df)):
         msgs = json.loads(row["turn_msgs"])
         retrieved = []
         response_parts = []
         cite_lookup = {}
+        user_query = ""
 
         for node in msgs:
             msg = node.get("message") or {}
@@ -949,6 +982,12 @@ def _extract_response_and_sources_deepseek(web_df):
                 or (not fragments and bool(files))
             )
             if is_user:
+                if not user_query:
+                    request_parts = [
+                        f.get("content", "") for f in fragments
+                        if f.get("type") == "REQUEST" and f.get("content")
+                    ]
+                    user_query = " ".join(request_parts).strip()
                 continue
 
             for f in fragments:
@@ -999,11 +1038,14 @@ def _extract_response_and_sources_deepseek(web_df):
         web_df.at[i, "srcs_safe_urls"] = []
         web_df.at[i, "srcs_cited"] = cited
         web_df.at[i, "asistant_response"] = asistant_response
+        web_df.at[i, "user_query"] = user_query
 
     web_df.drop(columns=["turn_msgs"], inplace=True)
     web_df.reset_index(drop=True, inplace=True)
-    web_df.to_csv(f"{OUTPUT_PATH}/metadata/response_and_sources.csv", index=False)
-    web_df.to_pickle(f"{OUTPUT_PATH}/metadata/response_and_sources.pkl")
+    platform_dir = _platform_metadata_dir("deepseek")
+    os.makedirs(platform_dir, exist_ok=True)
+    web_df.to_csv(f"{platform_dir}/response_and_sources.csv", index=False)
+    web_df.to_pickle(f"{platform_dir}/response_and_sources.pkl")
 
 
 def clean_html_for_readability(text):

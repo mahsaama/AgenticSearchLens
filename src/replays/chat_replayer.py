@@ -24,7 +24,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from src.utils.common_io import OUTPUT_PATH
-from src.web_search_decision.chatgpt_extraction import load_whole_data_from_file, load_web_data_from_file
+from src.web_search_decision.extraction import load_whole_data_from_file, load_web_data_from_file
 
 load_dotenv()
 
@@ -294,6 +294,7 @@ def filter_df_for_history(
     history_depth=0,
     samples_per_source=1,
     random_seed=RANDOM_SEED,
+    source_platform="chatgpt",
 ):
     """Build the sample of rows to replay: PII-safe, English-language turns
     with exactly `history_depth` messages of prior context, split evenly
@@ -301,9 +302,14 @@ def filter_df_for_history(
     didn't ("non_web"), up to `samples_per_source` of each. Returns a
     DataFrame with a "sample_source" column recording which group each row
     came from.
+
+    `source_platform` selects which platform's own invivo turns to sample
+    from (chatgpt/claude/grok/deepseek) -- independent of `model`/
+    `replay_provider` in replayer(), which is whichever model the sampled
+    prompts get *replayed against*.
     """
-    whole_df = load_whole_data_from_file(fmt="pkl")
-    web_df = load_web_data_from_file(fmt="pkl")
+    whole_df = load_whole_data_from_file(fmt="pkl", platform=source_platform)
+    web_df = load_web_data_from_file(fmt="pkl", platform=source_platform)
 
     safe_conv_ids = _safe_annotation_conv_ids()
     whole_df = _filter_to_safe_conversations(whole_df, safe_conv_ids)
@@ -644,6 +650,7 @@ def replayer(
     random_seed=RANDOM_SEED,
     replay_provider=None,
     developer_prompt=None,
+    source_platform="chatgpt",
 ):
     """Sample rows via filter_df_for_history() and replay each one's most
     recent user prompt against `model`, under every tool_choice mode
@@ -655,7 +662,9 @@ def replayer(
 
     `model="invivo"` replays each row under whatever model the platform
     itself used for that turn (from the extracted data) instead of a fixed
-    model name.
+    model name. `source_platform` picks whose invivo turns get sampled
+    (chatgpt/claude/grok/deepseek); `model`/`replay_provider` pick what they
+    get replayed against, independently of that.
     """
     resolved_replay_provider = (
         _normalize_provider(replay_provider)
@@ -668,6 +677,7 @@ def replayer(
         history_depth,
         samples_per_source=samples_per_source,
         random_seed=random_seed,
+        source_platform=source_platform,
     )
     df = df.reset_index(drop=True).copy()
     print("sample counts:", df["sample_source"].value_counts().to_dict())

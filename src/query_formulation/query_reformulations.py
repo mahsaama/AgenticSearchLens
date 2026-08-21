@@ -34,7 +34,7 @@ pio.defaults.mathjax = None
 from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
-from src.web_search_decision.chatgpt_extraction import load_web_data_from_file
+from src.web_search_decision.extraction import load_web_data_from_file
 import spacy
 from nltk.stem.snowball import SnowballStemmer
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction

@@ -26,8 +26,7 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 
 ## 📂 Repository Layout
 
-- `src/web_search_decision/chatgpt_extraction.py`: parses raw ChatGPT exports into a per-turn summary dataframe.
-- `src/web_search_decision/other_platforms_extraction.py`: same, for Claude, Grok, and DeepSeek exports (and, via the same generic pipeline, ChatGPT too).
+- `src/web_search_decision/extraction.py`: parses raw ChatGPT/Claude/Grok/DeepSeek exports into a per-turn summary dataframe (one unified module, `--platform` picks which).
 - `src/utils/chatgpt_conversation_utils.py` / `src/utils/other_platforms_parsing_utils.py`: the conversation-tree parsing and topic-lookup helpers the two extraction modules above build on.
 - `src/utils/common_io.py`: shared path constants and JSON read/write helpers.
 - `src/utils/topic_classifier.py`: dependency-free keyword-based topic classification, used when no topic-annotation file is available (see "Pipeline Order & Known Gaps" below).
@@ -122,23 +121,25 @@ Notes:
 ## 🚀 Running The Pipeline / Evaluating Your Data
 
 **1. Extract raw exports into summary dataframes.** This parses the JSON exports
-above into per-turn dataframes (`outputs/<platform>/metadata/data_summary.*` and
-`web_data_summary.*`, in parquet/pickle/csv):
+above into per-turn dataframes (`data_summary.*` and `web_data_summary.*`, in
+parquet/pickle/csv, under `outputs/metadata/` for ChatGPT or
+`outputs/<platform>/metadata/` for the others -- see "Pipeline Order & Known
+Gaps" below for why ChatGPT's path doesn't have the `<platform>/` prefix):
 
 ```bash
-python -m src.web_search_decision.chatgpt_extraction                                    # ChatGPT
-python -m src.web_search_decision.other_platforms_extraction --platform claude         # Claude
-python -m src.web_search_decision.other_platforms_extraction --platform grok           # Grok
-python -m src.web_search_decision.other_platforms_extraction --platform deepseek       # DeepSeek
+python -m src.web_search_decision.extraction --platform chatgpt    # ChatGPT
+python -m src.web_search_decision.extraction --platform claude     # Claude
+python -m src.web_search_decision.extraction --platform grok       # Grok
+python -m src.web_search_decision.extraction --platform deepseek   # DeepSeek
 ```
 
 Load the results back with:
 
 ```python
-from src.web_search_decision.chatgpt_extraction import load_whole_data_from_file, load_web_data_from_file
+from src.web_search_decision.extraction import load_whole_data_from_file, load_web_data_from_file
 
-df = load_whole_data_from_file("pkl")
-web_df = load_web_data_from_file("pkl")
+df = load_whole_data_from_file("pkl", platform="chatgpt")  # platform defaults to "chatgpt"
+web_df = load_web_data_from_file("pkl", platform="chatgpt")
 ```
 
 **2. Run the descriptive analyses.** Each of these reads the extracted dataframes
@@ -180,14 +181,26 @@ a function fails in a way that isn't obviously about missing data:
   "Other", extraction now falls back to `topic_classifier.classify_topic()`,
   a small dependency-free keyword classifier applied to each conversation's
   opening message.
+- **ChatGPT web-search detection covers two export formats.** Older/plugin-era
+  exports route a tool call through a separate message with an explicit
+  `recipient` (e.g. `"browser"`); current (2025+) exports don't — the only
+  signal is that the assistant's answer message carries a non-empty
+  `metadata.search_result_groups`. `extraction.py`'s ChatGPT loader checks
+  both, so turn/tool-call counts stay accurate either way. If your own export
+  still comes back with 0 Web-search turns, that's the first thing to check
+  against your actual JSON's message metadata shape.
 - **`response_and_sources.pkl`.** `source_selection.py`'s
   `count_unique_retrieved_safe_cited()` (and related functions) read
   `outputs/[<platform>/]metadata/response_and_sources.pkl`, which is
-  produced by `response_generation.extract_response_and_sources(web_df)` —
-  a *different* module. Run that first. (It's easy to confuse with
-  `source_selection.extract_retrieved_safe_cited_source(web_df)`, which
-  writes a differently-named file that only feeds functions within
-  `source_selection.py` itself.)
+  produced by `response_generation.extract_response_and_sources(web_df)` for
+  ChatGPT or `extract_response_and_sources_other_platforms(web_df, platform)`
+  for Claude/Grok/DeepSeek — a *different* module. Run that first. (It's easy
+  to confuse with `source_selection.extract_retrieved_safe_cited_source(web_df)`,
+  which writes a differently-named file that only feeds functions within
+  `source_selection.py` itself.) Each platform writes its own copy now (under
+  its own metadata dir, same convention as extraction's output) — earlier all
+  four wrote the same flat path and silently overwrote each other if you ran
+  more than one platform.
 - **`all_tools_categorized.json`.** `web_tool_invocation.py`'s Web-call
   trend functions normally read a hand-curated tool-name-to-category
   mapping that also doesn't ship with this repo. They now fall back to
@@ -200,7 +213,24 @@ a function fails in a way that isn't obviously about missing data:
   `personal_presence`/`special_category_presence`-annotated CSV (see
   Appendix C.1 of the paper) — deliberately *not* given a graceful
   fallback, since skipping it would mean sending unscreened personal data
-  to external provider APIs.
+  to external provider APIs. `filter_df_for_history()`/`replayer()` do accept
+  a `source_platform` argument (default `"chatgpt"`) to sample invivo turns
+  from Claude/Grok/DeepSeek instead, independent of which model(s) they get
+  replayed against.
+- **How far cross-platform support actually reaches.** `extraction.py` and
+  `response_generation.extract_response_and_sources[_other_platforms]` are
+  fully unified across all four platforms (one function, `platform=`
+  parameter, verified end-to-end against all four sample exports). Most of
+  `source_selection.py`'s and `query_reformulations.py`'s analysis functions
+  already read per-platform data too (`_prepare_source_count_df(model=...)`
+  and friends). What's *not* generalized: the deeper §5.2 grounding/NLI/
+  LLM-judge machinery in `response_generation.py` (URL-content scraping,
+  entailment scoring, factuality evaluation, and their ~30 hardcoded
+  `outputs/metadata/...` paths) is still ChatGPT-only by default — it was
+  written and tuned against the paper's own ChatGPT-sourced replay data, and
+  generalizing every one of those functions to an arbitrary platform wasn't
+  attempted here (large surface, and untestable against real data without a
+  richer non-ChatGPT sample than the synthetic fixtures in this repo).
 - **Two known, currently-unfixed issues**, left as-is rather than
   papered over or guessed at:
   - `web_tool_invocation.py`'s `_run_tool_intent_judge()` references
@@ -209,8 +239,8 @@ a function fails in a way that isn't obviously about missing data:
     `classify_web_call_tool_intent_from_thoughts()`.
   - `web_tool_invocation.py` defines its own `GROK_WEB_TOOLS`/
     `DEEPSEEK_WEB_TOOLS` (used by `_has_web_call_for_platform()`) that are
-    much narrower than the canonical sets in `other_platforms_extraction.py`
-    (used everywhere else, including extraction itself) — a possible
+    much narrower than the canonical sets in `extraction.py` (used
+    everywhere else, including extraction itself) — a possible
     under-counting inconsistency, not resolved here since picking which
     heuristic is "correct" is a research-methodology call.
 

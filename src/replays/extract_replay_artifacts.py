@@ -932,16 +932,19 @@ def _normalize_topic_name(topic):
     return topic
 
 
-def _build_topic_lookup():
-    from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
+def _build_topic_lookup(source_platform="chatgpt"):
+    """`source_platform` must match whatever chat_replayer.replayer()'s
+    `source_platform` the replay rows being enriched were sampled from --
+    it's how the replay's conv_id/turn_id keys get resolved back to a topic."""
+    from src.web_search_decision.extraction import load_web_data_from_file, load_whole_data_from_file
 
     try:
         import pandas as pd
     except ModuleNotFoundError:
         return {}
 
-    whole_df = load_whole_data_from_file(fmt="pkl").copy()
-    web_df = load_web_data_from_file(fmt="pkl").copy()
+    whole_df = load_whole_data_from_file(fmt="pkl", platform=source_platform).copy()
+    web_df = load_web_data_from_file(fmt="pkl", platform=source_platform).copy()
     df = pd.concat([whole_df, web_df], ignore_index=True)
     df["conv_id"] = df["conv_id"].astype(str)
     df["turn_id"] = df["turn_id"].astype(str)
@@ -2066,13 +2069,14 @@ def plot_replay_query_term_count_trends_over_time(
     remove_stopwords=False,
     model_names=DEFAULT_MODELS,
     output_dir=PLOT_OUTPUT_DIR / "query_complexity",
+    source_platform="chatgpt",
 ):
     import numpy as np
     import pandas as pd
     import plotly.express as px
     import plotly.graph_objects as go
 
-    from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
+    from src.web_search_decision.extraction import load_web_data_from_file, load_whole_data_from_file
     from src.utils.figure_style import with_paper_style, styler
 
     iteration_bucket_order = ["1", "2", "3+"]
@@ -2111,8 +2115,8 @@ def plot_replay_query_term_count_trends_over_time(
         return float(nice * power)
 
     def _build_time_lookup():
-        whole_df = load_whole_data_from_file(fmt="pkl").copy()
-        web_df = load_web_data_from_file(fmt="pkl").copy()
+        whole_df = load_whole_data_from_file(fmt="pkl", platform=source_platform).copy()
+        web_df = load_web_data_from_file(fmt="pkl", platform=source_platform).copy()
         df = pd.concat([whole_df, web_df], ignore_index=True)
         df["conv_id"] = df["conv_id"].astype(str)
         df["turn_id"] = df["turn_id"].astype(str)
@@ -3287,6 +3291,7 @@ def plot_replay_top_domains(
 def plot_replay_web_call_topic_distribution_across_platforms(
     model_names=DEFAULT_MODELS,
     output_dir=PLOT_OUTPUT_DIR / "topics",
+    source_platform="chatgpt",
 ):
     import plotly.graph_objects as go
 
@@ -3300,7 +3305,7 @@ def plot_replay_web_call_topic_distribution_across_platforms(
 
     rows = _extract_rows_for_models(model_names)
     rows = _filter_rows_to_common_samples(rows, model_names)
-    topic_lookup = _build_topic_lookup()
+    topic_lookup = _build_topic_lookup(source_platform=source_platform)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     platform_frames = []
