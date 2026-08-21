@@ -49,12 +49,11 @@ flowchart LR
 
 ## Setup
 
-This project uses Python and common data-science dependencies (see `requirements.txt`; `requirements-dev.txt` adds test tooling).
+This project uses Python and common data-science dependencies, including test
+tooling (pytest), all listed in `requirements.txt`.
 
 ```bash
 pip install -r requirements.txt
-# for development/tests:
-pip install -r requirements-dev.txt
 ```
 
 One-time extras some modules need at runtime:
@@ -92,29 +91,29 @@ history, request a data export from each platform and drop it under `data/`. Eac
 platform's export contains **your own conversations only** — nothing donated by
 anyone else is required to run the code.
 
+Every platform uses the same layout: `data/<platform>/user_0/conversations.json`.
+That's also the `user_<i>/conversations.json` shape all four extraction paths expect
+if you ever combine exports from several accounts under the same platform (`user_0`,
+`user_1`, ...).
+
 | Platform | Where to export | Raw file you get | Where it goes |
 |---|---|---|---|
 | ChatGPT | Settings → Data controls → Export data (emailed download link) | `conversations.json` | `data/chatgpt/user_0/conversations.json` |
-| Claude | Settings → Privacy → Export data | `conversations.json` | `data/claude/conversations.json` |
-| DeepSeek | Settings → Data export | `conversations.json` | `data/deepseek/conversations.json` |
-| Grok | Export your conversation history | `prod-grok-backend.json` | rename to `conversations.json`, then `data/grok/conversations.json` |
+| Claude | Settings → Privacy → Export data | `conversations.json` | `data/claude/user_0/conversations.json` |
+| DeepSeek | Settings → Data export | `conversations.json` | `data/deepseek/user_0/conversations.json` |
+| Grok | Export your conversation history | `prod-grok-backend.json` | rename to `conversations.json`, then `data/grok/user_0/conversations.json` |
 
 Notes:
 
 - **Grok's export file is not named `conversations.json`** — it comes down as
-  `prod-grok-backend.json`. Just rename it to `conversations.json` before placing it
-  in `data/grok/`, e.g.:
+  `prod-grok-backend.json`. Rename it to `conversations.json` and nest it under
+  `user_0/`, e.g.:
 
   ```bash
-  mkdir -p data/grok
-  mv ~/Downloads/prod-grok-backend.json data/grok/conversations.json
+  mkdir -p data/grok/user_0
+  mv ~/Downloads/prod-grok-backend.json data/grok/user_0/conversations.json
   ```
 
-- **ChatGPT is nested one level deeper** (`data/chatgpt/user_<i>/conversations.json`)
-  than the other three platforms, which read a flat `data/<platform>/conversations.json`.
-  This lets `data_extraction_other_cai.py` also support a multi-user layout
-  (`data/<platform>/user_<i>/conversations.json`) if you're combining exports from
-  several accounts — ChatGPT extraction always expects the per-user form.
 - Exact export menu wording changes over time and by account type; look for
   "export my data" / "download your data" under each platform's privacy or account
   settings if the paths above have moved.

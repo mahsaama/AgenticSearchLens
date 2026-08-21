@@ -32,6 +32,10 @@ torch==2.9.1
 tqdm==4.67.3
 transformers==4.50.3
 
+# Testing
+pytest==9.0.2
+pytest-timeout==2.4.0
+
 # spaCy language models used by query_reformulations.py for multilingual
 # query-term stemming/lemmatization (en/de/es/fr).
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
