@@ -1924,15 +1924,6 @@ def _count_url_source_records(items):
     )
 
 
-def _hex_to_rgba(hex_color, alpha=0.16):
-    if isinstance(hex_color, str) and hex_color.startswith("#") and len(hex_color) == 7:
-        r = int(hex_color[1:3], 16)
-        g = int(hex_color[3:5], 16)
-        b = int(hex_color[5:7], 16)
-        return f"rgba({r}, {g}, {b}, {alpha})"
-    return f"rgba(99, 110, 250, {alpha})"
-
-
 def plot_query_term_count_trends_over_time(remove_stopwords=False):
     return _plot_query_term_count_trends_over_time_multiplatform(
         remove_stopwords=remove_stopwords
@@ -3902,20 +3893,6 @@ def _safe_json_value(value, default=None):
     return value
 
 
-def _dedupe_preserve_order(values):
-    seen = set()
-    deduped = []
-    for value in values:
-        if not isinstance(value, str):
-            continue
-        value = value.strip()
-        if not value or value in seen:
-            continue
-        seen.add(value)
-        deduped.append(value)
-    return deduped
-
-
 def _detect_language_safe(text):
     text = str(text or "").strip()
     if not text:
@@ -4237,80 +4214,6 @@ def plot_user_and_web_query_language_patterns(
         "pair_summary": pair_summary,
         "language_pairs": language_pairs,
     }
-
-
-def _sanitize_file_component(value):
-    value = str(value or "").strip()
-    safe_chars = []
-    for char in value:
-        if char.isalnum() or char in {"-", "_", "."}:
-            safe_chars.append(char)
-        else:
-            safe_chars.append("_")
-    return "".join(safe_chars).strip("_") or "unknown"
-
-
-def _message_content_to_text(content):
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for item in content:
-            if isinstance(item, str):
-                parts.append(item)
-            elif isinstance(item, dict):
-                text = item.get("text") or item.get("content")
-                if isinstance(text, str):
-                    parts.append(text)
-        return "\n".join(parts)
-    return "" if content is None else str(content)
-
-
-def _extract_user_prompt_from_replay_row(row):
-    user_prompt = row.get("user_prompt", "")
-    if isinstance(user_prompt, str) and user_prompt.strip():
-        return user_prompt
-
-    prompt = row.get("prompt", [])
-    if not isinstance(prompt, list):
-        return ""
-
-    for message in reversed(prompt):
-        if not isinstance(message, dict):
-            continue
-        if message.get("role") == "user":
-            return _message_content_to_text(message.get("content", ""))
-    return ""
-
-
-def _extract_web_query_groups_from_response(response_payload):
-    if not isinstance(response_payload, dict):
-        return []
-
-    web_query_groups = []
-    for item in response_payload.get("output", []) or []:
-        if not isinstance(item, dict) or item.get("type") != "web_search_call":
-            continue
-
-        action = item.get("action") or {}
-        queries = []
-
-        action_queries = action.get("queries", [])
-        if isinstance(action_queries, list):
-            queries.extend(action_queries)
-
-        queries = _dedupe_preserve_order(queries)
-        if queries:
-            web_query_groups.append(queries)
-
-    return web_query_groups
-
-
-def _extract_replay_web_query_groups(row, response_mode):
-    mode_payload = row.get(response_mode, {})
-    if not isinstance(mode_payload, dict):
-        return []
-    return _extract_web_query_groups_from_response(mode_payload.get("response", {}))
 
 
 def _flatten_web_query_groups(web_query_groups):

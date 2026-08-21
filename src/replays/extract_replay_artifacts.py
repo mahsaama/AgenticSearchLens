@@ -1,3 +1,20 @@
+"""Post-processes invitro replay output (src/replays/chat_replayer.py's
+results files) into the artifacts the rest of the pipeline's analyses
+consume: query-specificity/reformulation-reason LLM-judge evaluations,
+per-model/per-topic Web-call and domain-distribution summaries, and
+replay-vs-invivo comparison plots.
+
+Same scope note as the other giant analysis modules: written for the
+paper's full cohort, organized as a library of individually-runnable
+functions (see the __main__ call list), each writing its own output under
+outputs/replays/. Several functions here are the ones
+web_tool_invocation.py, query_reformulations.py, and claim_analysis.py
+import from directly, so this module sits fairly central in the pipeline's
+dependency graph despite being one of the last steps chronologically
+(replay first, extract_replay_artifacts second, then the platform-specific
+analyses).
+"""
+
 import ast
 import asyncio
 import csv
@@ -1042,12 +1059,6 @@ def _is_skipped_sample_idx(sample_idx):
         return False
 
 
-def _mean_or_na(values):
-    if not values:
-        return "NA"
-    return f"{(sum(values) / len(values)):.2f}"
-
-
 def _mean_with_bootstrap_ci_or_na(values, confidence=0.95):
     if not values:
         return "NA"
@@ -1077,20 +1088,6 @@ def _safe_json_value(value, default=None):
                 continue
         return default
     return value
-
-
-def _dedupe_preserve_order(values):
-    seen = set()
-    deduped = []
-    for value in values:
-        if not isinstance(value, str):
-            continue
-        value = value.strip()
-        if not value or value in seen:
-            continue
-        seen.add(value)
-        deduped.append(value)
-    return deduped
 
 
 def _normalize_reason_transition_endpoint(value):
@@ -3649,7 +3646,6 @@ def plot_query_specificity_distribution_by_iteration(
     input_stem="replay_query_specificity",
     output_dir=PLOT_OUTPUT_DIR / "query_reformulations",
 ):
-    import numpy as np
     import pandas as pd
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
