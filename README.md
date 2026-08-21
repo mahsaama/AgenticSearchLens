@@ -22,12 +22,7 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 
 ## 🔄 Web Search Life Cycle
 
-```mermaid
-flowchart LR
-    A[User Prompt] --> B[Web Search Decision]
-    B --> C[Query Formulation]
-    C --> D[Response Generation]
-```
+![Life cycle of agentic Web search: User Prompt → Web Search Decision → Query Formulation → Response Generation](docs/images/lifecycle.png)
 
 ## 📂 Repository Layout
 
