@@ -1,0 +1,34 @@
+# Data & outputs (never commit: donated conversation data is ERB-restricted
+# and must not leave secured storage; outputs/ is derived from it).
+data/
+outputs/
+
+# Secrets
+.env
+.env.*
+
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Editors
+.vscode/
+.idea/
