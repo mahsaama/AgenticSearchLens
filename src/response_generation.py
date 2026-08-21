@@ -35,7 +35,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 if not logging.getLogger().handlers:
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
+        level=os.getenv("LOG_LEVEL").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
@@ -60,17 +60,17 @@ HEADERS = {
 
 DIRECT_API_DOMAINS = {"wikipedia.org"}
 SKIP_REQUESTS_DOMAINS = {"politico.com", "reuters.com"}
-REQUEST_TIMEOUT = int(os.getenv("ARTICLE_REQUEST_TIMEOUT", "12"))
-WIKIPEDIA_TIMEOUT = int(os.getenv("ARTICLE_WIKIPEDIA_TIMEOUT", "15"))
-PLAYWRIGHT_GOTO_TIMEOUT = int(os.getenv("ARTICLE_PLAYWRIGHT_GOTO_TIMEOUT", "20000"))
+REQUEST_TIMEOUT = int(os.getenv("ARTICLE_REQUEST_TIMEOUT"))
+WIKIPEDIA_TIMEOUT = int(os.getenv("ARTICLE_WIKIPEDIA_TIMEOUT"))
+PLAYWRIGHT_GOTO_TIMEOUT = int(os.getenv("ARTICLE_PLAYWRIGHT_GOTO_TIMEOUT"))
 PLAYWRIGHT_NETWORKIDLE_TIMEOUT = int(
-    os.getenv("ARTICLE_PLAYWRIGHT_NETWORKIDLE_TIMEOUT", "4000")
+    os.getenv("ARTICLE_PLAYWRIGHT_NETWORKIDLE_TIMEOUT")
 )
 PLAYWRIGHT_FALLBACK_TIMEOUT = float(
-    os.getenv("ARTICLE_PLAYWRIGHT_FALLBACK_TIMEOUT", "60")
+    os.getenv("ARTICLE_PLAYWRIGHT_FALLBACK_TIMEOUT")
 )
-URL_FETCH_TIMEOUT = float(os.getenv("ARTICLE_URL_FETCH_TIMEOUT", "60"))
-URL_FETCH_CHECKPOINT_EVERY = int(os.getenv("ARTICLE_URL_CHECKPOINT_EVERY", "100"))
+URL_FETCH_TIMEOUT = float(os.getenv("ARTICLE_URL_FETCH_TIMEOUT"))
+URL_FETCH_CHECKPOINT_EVERY = int(os.getenv("ARTICLE_URL_CHECKPOINT_EVERY"))
 RESPONSE_URLS_CONTENT_PATH = (
     f"{OUTPUT_PATH}/metadata/response_and_sources_url_content.json"
 )
@@ -116,26 +116,21 @@ EXTERNAL_PLATFORM_ORDER = ["ChatGPT"] + list(
 CITED_URL_VALIDITY_LABELS_PATH = (
     f"{OUTPUT_PATH}/metadata/cited_url_validity_labels.json"
 )
-BERT_NLI_MODEL_NAME = os.getenv("BERT_NLI_MODEL_NAME", "facebook/bart-large-mnli")
-BERT_NLI_MAX_LENGTH = int(os.getenv("BERT_NLI_MAX_LENGTH", "512"))
+BERT_NLI_MODEL_NAME = os.getenv("BERT_NLI_MODEL_NAME")
+BERT_NLI_MAX_LENGTH = int(os.getenv("BERT_NLI_MAX_LENGTH"))
 NLI_JUDGE_CONTEXT_WINDOW_TOKENS = 128000
 NLI_JUDGE_MAX_OUTPUT_TOKENS = 256
 NLI_JUDGE_TOKEN_SAFETY_MARGIN = 2000
 NLI_ESTIMATED_CHARS_PER_TOKEN = 3.0
-CLAIM_EXTRACTION_MODEL = os.getenv("CLAIM_EXTRACTION_MODEL", "gpt-4o-mini")
-CLAIM_EXTRACTION_MAX_INPUT_CHARS = int(
-    os.getenv("CLAIM_EXTRACTION_MAX_INPUT_CHARS", "24000")
-)
+CLAIM_EXTRACTION_MODEL = os.getenv("CLAIM_EXTRACTION_MODEL")
+CLAIM_EXTRACTION_MAX_INPUT_CHARS = int(os.getenv("CLAIM_EXTRACTION_MAX_INPUT_CHARS"))
 CLAIM_EXTRACTION_MAX_OUTPUT_TOKENS = int(
-    os.getenv("CLAIM_EXTRACTION_MAX_OUTPUT_TOKENS", "1024")
+    os.getenv("CLAIM_EXTRACTION_MAX_OUTPUT_TOKENS")
 )
-CLAIM_EXTRACTION_CACHE_PATH = os.getenv(
-    "CLAIM_EXTRACTION_CACHE_PATH",
-    f"{OUTPUT_PATH}/metadata/response_source_claim_chunks_cache.json",
-)
-FACTUALITY_JUDGE_MODEL = os.getenv("FACTUALITY_JUDGE_MODEL", "gpt-5.4-mini")
+CLAIM_EXTRACTION_CACHE_PATH = os.getenv("CLAIM_EXTRACTION_CACHE_PATH")
+FACTUALITY_JUDGE_MODEL = os.getenv("FACTUALITY_JUDGE_MODEL")
 FACTUALITY_JUDGE_MAX_OUTPUT_TOKENS = int(
-    os.getenv("FACTUALITY_JUDGE_MAX_OUTPUT_TOKENS", "512")
+    os.getenv("FACTUALITY_JUDGE_MAX_OUTPUT_TOKENS")
 )
 
 model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")

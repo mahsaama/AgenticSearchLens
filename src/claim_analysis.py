@@ -26,7 +26,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 if not logging.getLogger().handlers:
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
+        level=os.getenv("LOG_LEVEL").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
@@ -52,10 +52,8 @@ REPLAY_PATH = Path(f"{OUTPUT_PATH}/replays/{model_name}.json")
 OUTPUT_PATH_CLAIMS = Path(f"{OUTPUT_PATH}/replays/extracted/{model_name}_claims.json")
 CACHE_PATH = Path(f"{OUTPUT_PATH}/replays/extracted/{model_name}_claims_cache.json")
 PLOT_OUTPUT_DIR = Path(f"{OUTPUT_PATH}/replays/plots")
-CLAIM_EXTRACTION_MODEL = os.getenv("CLAIM_ANALYSIS_MODEL", "gpt-4o-mini")
-CLAIM_COMPARISON_JUDGE_MODEL = os.getenv(
-    "CLAIM_COMPARISON_JUDGE_MODEL", "gpt-4o-mini"
-)
+CLAIM_EXTRACTION_MODEL = os.getenv("CLAIM_ANALYSIS_MODEL")
+CLAIM_COMPARISON_JUDGE_MODEL = os.getenv("CLAIM_COMPARISON_JUDGE_MODEL")
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 

@@ -103,7 +103,7 @@ def _infer_provider_from_model(model):
 def _openai_compatible_base_url(provider):
     env_base_urls = {
         "openai": os.getenv("OPENAI_BASE_URL", "").strip(),
-        "grok": os.getenv("XAI_BASE_URL", "").strip() or "https://api.x.ai/v1",
+        "grok": os.getenv("XAI_BASE_URL", "").strip(),
     }
     return env_base_urls.get(provider) or None
 
@@ -134,8 +134,6 @@ def _client_for_provider(provider):
         }
         kwargs = {"api_key": os.getenv(api_key_env[provider])}
         base_url = os.getenv(base_url_env[provider], "").strip()
-        if provider == "deepseek" and not base_url:
-            base_url = "https://api.deepseek.com/anthropic"
         if base_url:
             kwargs["base_url"] = base_url
         return Anthropic(**kwargs)
@@ -382,7 +380,7 @@ def _anthropic_request_kwargs(
     kwargs = {
         "model": replay_model,
         "messages": prompt,
-        "max_tokens": int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024")),
+        "max_tokens": int(os.getenv("ANTHROPIC_MAX_TOKENS")),
     }
     if isinstance(developer_prompt, str) and developer_prompt.strip():
         kwargs["system"] = developer_prompt.strip()
