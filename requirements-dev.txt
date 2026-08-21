@@ -1,0 +1,6 @@
+# Development-only dependencies (testing). Install with:
+#   pip install -r requirements.txt -r requirements-dev.txt
+-r requirements.txt
+
+pytest==9.0.2
+pytest-timeout==2.4.0
