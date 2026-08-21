@@ -25,7 +25,7 @@ Outputs under --output-dir:
   - results_hallucinated_rate.json
 
 Example:
-  python run_hallucinated_url_flow_from_pkl.py \
+  python -m src.response_generation.hallucinated_url_detection \
     --input-pkl /path/to/response_and_sources.pkl \
     --output-dir hallucinated_url_results
 """
@@ -38,7 +38,7 @@ import pickle
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
-from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunparse, urlunsplit
 
 
 CONCURRENCY = 20
@@ -55,10 +55,15 @@ USER_AGENT = (
 
 
 class RateLimited(Exception):
+    """Raised internally when the Wayback Machine API returns HTTP 429, so
+    run_wayback_group can back off instead of treating it as a normal error."""
     pass
 
 
 def normalize_url(url):
+    """Canonicalize a URL for deduplication: strip a trailing "/" from the
+    path and drop a chatgpt/openai utm_source tracking param, so the same
+    page cited with/without tracking params or a trailing slash counts once."""
     if not isinstance(url, str):
         return ""
     value = url.strip()
@@ -87,6 +92,9 @@ def normalize_url(url):
 
 
 def parse_source_value(value):
+    """Coerce a pkl column's raw source value -- which may already be a
+    list/tuple/set, a stringified-list (as stored after a CSV/pickle
+    round-trip), NaN, or None -- into an actual Python list."""
     if value is None:
         return []
     try:
@@ -114,6 +122,9 @@ def parse_source_value(value):
 
 
 def source_urls(value):
+    """Extract every normalized http(s) URL from a source-column value:
+    recurses into nested lists, and pulls the URL out of dicts under any of
+    "url"/"source_url"/"link"/"uri"."""
     urls = []
 
     def collect(item):
@@ -141,11 +152,16 @@ def source_urls(value):
 
 
 def dump_json(path, data):
+    """Write `data` as pretty-printed JSON to `path`, creating parent
+    directories if needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 def load_json(path, default):
+    """Load JSON from `path`, or return `default` if it doesn't exist yet
+    -- every stage of this pipeline uses this to resume from wherever a
+    previous run left off."""
     if not path.exists():
         return default
     with path.open() as f:
@@ -153,6 +169,10 @@ def load_json(path, default):
 
 
 def row_month(row):
+    """First-of-month string (YYYY-MM-01) for a response row's "month" or
+    "time" field, or None if neither is present/parseable. Used as the
+    Wayback Machine lookup timestamp, so a citation is checked against a
+    snapshot close to when it was actually cited."""
     for key in ("month", "time"):
         value = row.get(key)
         if value is None:
@@ -169,6 +189,9 @@ def row_month(row):
 
 
 def iter_grounding_rows(df):
+    """Yield (index, row) pairs from `df` in stable conv_id/turn_id/time
+    order (whichever of those columns are present), so citation-group
+    bucketing is deterministic across runs."""
     sort_cols = [col for col in ("conv_id", "turn_id", "time") if col in df.columns]
     if sort_cols:
         df = df.sort_values(sort_cols, kind="stable")
@@ -176,6 +199,13 @@ def iter_grounding_rows(df):
 
 
 def build_citation_groups(input_pkl, output_dir):
+    """Stage 1: split every cited URL in `input_pkl` into "cited_and_retrieved"
+    (also appeared in that conversation's own retrieved sources, cumulative
+    across turns) vs. "cited_only" (cited but never actually retrieved --
+    the group most likely to contain hallucinated citations), writing
+    per-group occurrences/unique-URLs/cite-months JSON under `output_dir`.
+    Returns a summary dict (also written to citation_grouping_summary.json).
+    """
     with Path(input_pkl).open("rb") as f:
         df = pickle.load(f)
 
@@ -241,6 +271,10 @@ def build_citation_groups(input_pkl, output_dir):
 
 
 async def check_url(session, url, semaphore):
+    """Check whether `url` is reachable (HEAD, falling back to GET on
+    405/406), retrying transient failures up to MAX_RETRIES times. Returns
+    the HTTP status code on success, or a short string label describing why
+    it couldn't be checked (e.g. "TIMEOUT", "CONNECT_ERROR")."""
     async with semaphore:
         for attempt in range(MAX_RETRIES):
             try:
@@ -268,6 +302,10 @@ async def check_url(session, url, semaphore):
 
 
 async def run_reachability_group(output_dir, group):
+    """Stage 2: check every not-yet-checked URL in `{group}_unique.json`
+    concurrently (CONCURRENCY at a time, browser-impersonating client to
+    reduce bot-blocking) and write the results to `{group}_reachability.json`,
+    checkpointing every 100 URLs so a long run can be resumed."""
     from curl_cffi.requests import AsyncSession
 
     urls = load_json(output_dir / f"{group}_unique.json", [])
@@ -292,6 +330,9 @@ async def run_reachability_group(output_dir, group):
 
 
 def check_wayback(client, url, timestamp):
+    """Query the Wayback Machine's "available" API for the closest archived
+    snapshot of `url` at/near `timestamp` (YYYYMMDD, or ""). Returns
+    (has_snapshot, snapshot_dict); raises RateLimited on HTTP 429."""
     query = f"{WAYBACK_API}?url={url}"
     if timestamp:
         query += f"&timestamp={timestamp}"
@@ -306,12 +347,15 @@ def check_wayback(client, url, timestamp):
 
 
 def is_wikipedia_url(url):
+    """True if `url`'s host is wikipedia.org or a wikipedia.org subdomain
+    (e.g. en.wikipedia.org)."""
     host = urlparse(url).hostname or ""
     host = host.lower()
     return host == "wikipedia.org" or host.endswith(".wikipedia.org")
 
 
 def wikipedia_history_url(url):
+    """`url` rewritten to its "?action=history" edit-history page."""
     parsed = urlparse(url)
     query = dict(parse_qsl(parsed.query, keep_blank_values=True))
     query["action"] = "history"
@@ -319,6 +363,11 @@ def wikipedia_history_url(url):
 
 
 def check_wikipedia_history(client, url):
+    """For a dead (404/410) Wikipedia URL, check its edit-history page for
+    evidence the article existed and was later deleted/moved ("stale") vs.
+    no such evidence ("unknown") -- a Wikipedia-specific fallback for pages
+    the Wayback Machine hasn't archived. Returns (looks_stale, details_dict);
+    (False, {}) immediately if `url` isn't a Wikipedia URL."""
     if not is_wikipedia_url(url):
         return False, {}
 
@@ -352,6 +401,13 @@ def check_wikipedia_history(client, url):
 
 
 def run_wayback_group(output_dir, group):
+    """Stage 3: for every URL in `{group}` that came back dead (404/410,
+    from stage 2's reachability check) and hasn't been checked yet, look it
+    up in the Wayback Machine (falling back to a Wikipedia edit-history
+    check) and classify it "stale" (existed, later removed) or
+    "hallucinated" (no evidence it ever existed). Backs off on repeated
+    HTTP 429s from the Wayback API and checkpoints every 25 URLs. Writes/
+    returns `{group}_wayback.json`."""
     import httpx
 
     reach = load_json(output_dir / f"{group}_reachability.json", {})
@@ -419,6 +475,9 @@ def run_wayback_group(output_dir, group):
 
 
 def bucket_url(url, reachability, wayback):
+    """Final classification for one URL: "valid" (2xx-3xx), "stale"/
+    "hallucinated" (dead, per the Wayback/Wikipedia check), or "unknown"
+    (couldn't be determined either way)."""
     status = reachability.get(url)
     try:
         code = int(status)
@@ -438,6 +497,10 @@ def bucket_url(url, reachability, wayback):
 
 
 def classify_group(output_dir, group):
+    """Stage 4: apply bucket_url to every occurrence in `{group}`, writing
+    the full classified list and the hallucinated-only subset, and return
+    the bucket counts (including the hallucination rate) for
+    results_hallucinated_rate.json."""
     occurrences = load_json(output_dir / f"{group}_occurrences.json", [])
     reachability = load_json(output_dir / f"{group}_reachability.json", {})
     wayback = load_json(output_dir / f"{group}_wayback.json", {})
@@ -470,6 +533,9 @@ def classify_group(output_dir, group):
 
 
 async def run_pipeline(args):
+    """Run all 4 stages in order (citation grouping -> reachability ->
+    Wayback -> classification) and write the final
+    results_hallucinated_rate.json summary."""
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -496,6 +562,8 @@ async def run_pipeline(args):
 
 
 def parse_args():
+    """CLI arguments: --input-pkl, --output-dir, and the --skip-* flags to
+    resume from a partially-completed run."""
     parser = argparse.ArgumentParser(
         description="Compute hallucinated URL buckets from response_and_sources.pkl."
     )

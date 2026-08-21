@@ -34,7 +34,7 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 - `src/query_formulation/query_reformulations.py`: query evolution and reformulation analyses.
 - `src/response_generation/source_selection.py`: retrieved/cited source analyses.
 - `src/response_generation/response_generation.py`: response grounding and quality analyses.
-- `src/response_generation/run_hallucinated_url_flow_from_pkl.py`: checks cited URLs for reachability/hallucination.
+- `src/response_generation/hallucinated_url_detection.py`: checks cited URLs for reachability/hallucination.
 - `src/replays/chat_replayer.py` / `src/replays/chat_replayer_evaluation.py`: invitro replay (re-querying prompts via platform APIs) and LLM-judge scoring of the replayed responses.
 - `src/replays/extract_replay_artifacts.py`: post-processes replay outputs into the artifacts/plots used across the analyses above.
 - `src/prompts/evaluator_prompts.py`: prompt templates used by the LLM-judge evaluations.
@@ -157,7 +157,7 @@ python -m src.replays.chat_replayer               # replay prompts through each 
 python -m src.replays.chat_replayer_evaluation    # score replayed responses (factuality/
                                                    # completeness/relevance) with an LLM judge
 python -m src.web_search_decision.claim_analysis --help            # claim-level Web vs. no-Web comparison
-python -m src.response_generation.run_hallucinated_url_flow_from_pkl --help  # cited-URL reachability check
+python -m src.response_generation.hallucinated_url_detection --help  # cited-URL reachability check
 ```
 
 `src/replays/extract_replay_artifacts.py` is invoked internally by the scripts above to
