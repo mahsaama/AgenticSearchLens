@@ -417,6 +417,72 @@
   }
   .scope b{ color:var(--ink); }
 
+  /* ============ EXPLORE YOUR OWN TRACES ============ */
+  .explore-steps{ display:flex; flex-direction:column; gap:14px; margin-top:22px; }
+  .explore-step{ display:flex; gap:14px; align-items:flex-start; }
+  .explore-step-no{
+    flex:none; width:24px; height:24px; border-radius:50%; background:var(--accent-soft);
+    color:var(--accent); font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; margin-top:2px;
+  }
+  .explore-step-body{ flex:1; min-width:0; }
+  .explore-step-body p{ font-size:13.5px; color:var(--ink-2); margin-bottom:8px; }
+  .explore-step .cite-card{ margin-top:0; padding:14px 18px; }
+  .explore-step .cite-card pre{ font-size:12.5px; }
+
+  .status-row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:22px; }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600;
+    padding:7px 13px; border-radius:99px; background:var(--surface-2); color:var(--ink-2);
+  }
+  .status-dot{ width:8px; height:8px; border-radius:50%; background:var(--ink-3); flex:none; }
+  .status-pill[data-state="connected"]{ background:rgba(27,175,122,0.14); color:#1baf7a; }
+  .status-pill[data-state="connected"] .status-dot{ background:#1baf7a; }
+  .status-pill[data-state="offline"]{ background:rgba(227,73,72,0.12); color:var(--s-param); }
+  .status-pill[data-state="offline"] .status-dot{ background:var(--s-param); }
+  .status-pill[data-state="checking"] .status-dot{ animation:pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+
+  .upload-grid{ display:flex; flex-direction:column; gap:14px; margin-top:24px; }
+  .upload-row{
+    display:grid; grid-template-columns:170px 1fr auto; align-items:center; gap:16px;
+    padding:14px 16px; background:var(--surface-2); border-radius:12px;
+  }
+  .upload-plat{ display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:600; color:var(--ink); }
+  .platform-dot{ width:11px; height:11px; border-radius:50%; flex:none; }
+  .upload-status{ font-size:12.5px; color:var(--ink-3); font-family:"IBM Plex Mono",monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .upload-status[data-state="ready"]{ color:var(--accent); }
+  .upload-status[data-state="done"]{ color:#1baf7a; }
+  .upload-status[data-state="error"]{ color:var(--s-param); }
+  .upload-file-btn{
+    display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px;
+    font-size:12.5px; font-weight:600; background:var(--surface); border:1px solid var(--border);
+    color:var(--ink); cursor:pointer; white-space:nowrap;
+  }
+  .upload-file-btn:hover{ border-color:var(--ink-3); }
+  .upload-row input[type="file"]{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; }
+  @media (max-width:640px){
+    .upload-row{ grid-template-columns:1fr; }
+    .upload-file-btn{ width:fit-content; }
+  }
+
+  .explore-actions{ display:flex; align-items:center; gap:14px; margin-top:24px; flex-wrap:wrap; }
+  .explore-note{ font-size:12.5px; color:var(--ink-3); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+  .explore-results{ display:flex; flex-direction:column; gap:20px; margin-top:8px; }
+  .explore-empty{ font-size:13.5px; color:var(--ink-3); padding:6px 2px; }
+  .explore-error{
+    background:rgba(227,73,72,0.08); border:1px solid rgba(227,73,72,0.25); border-radius:12px;
+    padding:16px 18px; font-size:13px; color:var(--ink-2);
+  }
+  .explore-error b{ color:var(--s-param); }
+  .result-head{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .result-head .platform-dot{ width:12px; height:12px; }
+  .result-head h4{ font-size:15px; color:var(--ink); }
+  .result-sub-title{ font-size:12.5px; font-weight:600; color:var(--ink-2); margin:22px 0 4px; }
+  .result-sub-title:first-of-type{ margin-top:22px; }
+
   /* citation */
   .cite-card{
     background:var(--ink); color:#f2f1ec; border-radius:16px; padding:30px 32px; margin-top:26px;
@@ -472,6 +538,7 @@
       <li><a href="#queries">Queries</a></li>
       <li><a href="#grounding">Grounding</a></li>
       <li><a href="#data">Data</a></li>
+      <li><a href="#explore">Explore</a></li>
       <li><a href="#cite">Cite</a></li>
     </ul>
     <div class="nav-right">
@@ -874,6 +941,81 @@
     </div>
   </section>
 
+  <!-- ============ EXPLORE YOUR OWN TRACES ============ -->
+  <section id="explore">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow">Try it yourself</div>
+        <h2>Explore your own agentic search traces.</h2>
+        <p class="dek-sm">Runs entirely on your machine: start the local explorer server from this repo, upload your own platform export(s) below, and see your own Web‑search rate, monthly trend, tool usage, and reasoning‑mode rate. Nothing you upload — and nothing computed from it — ever leaves localhost.</p>
+      </div>
+
+      <div class="panel reveal">
+        <div class="panel-title">1. Run the local explorer</div>
+        <div class="panel-sub">One‑time setup, then keep this running in a terminal while you use this page</div>
+        <div class="explore-steps">
+          <div class="explore-step">
+            <div class="explore-step-no">1</div>
+            <div class="explore-step-body">
+              <p>Clone the repo and install dependencies.</p>
+              <div class="cite-card"><pre>git clone https://github.com/&lt;org&gt;/AgenticSearchLens.git
+cd AgenticSearchLens
+pip install -r requirements.txt</pre></div>
+            </div>
+          </div>
+          <div class="explore-step">
+            <div class="explore-step-no">2</div>
+            <div class="explore-step-body">
+              <p>Start the local explorer server (binds to 127.0.0.1:8420 by default).</p>
+              <div class="cite-card"><pre>python -m src.local_server</pre></div>
+            </div>
+          </div>
+        </div>
+        <div class="status-row">
+          <span class="status-pill" id="exploreStatusPill" data-state="checking"><span class="status-dot"></span><span id="exploreStatusText">Checking for local server…</span></span>
+          <button class="btn btn-ghost" id="exploreCheckBtn" type="button">Check connection</button>
+        </div>
+      </div>
+
+      <div class="panel reveal">
+        <div class="panel-title">2. Upload your exports</div>
+        <div class="panel-sub">See the README's "Exporting Your Own Data" for where each platform's export comes from and how it's named. Upload as many as you like — at least one.</div>
+        <div class="upload-grid">
+          <div class="upload-row" data-platform="chatgpt">
+            <div class="upload-plat"><span class="platform-dot" style="background:var(--p-chatgpt)"></span>ChatGPT</div>
+            <div class="upload-status" data-state="idle">No file selected</div>
+            <label class="upload-file-btn">Choose file<input type="file" accept="application/json,.json"></label>
+          </div>
+          <div class="upload-row" data-platform="claude">
+            <div class="upload-plat"><span class="platform-dot" style="background:var(--p-claude)"></span>Claude</div>
+            <div class="upload-status" data-state="idle">No file selected</div>
+            <label class="upload-file-btn">Choose file<input type="file" accept="application/json,.json"></label>
+          </div>
+          <div class="upload-row" data-platform="grok">
+            <div class="upload-plat"><span class="platform-dot" style="background:var(--p-grok)"></span>Grok</div>
+            <div class="upload-status" data-state="idle">No file selected</div>
+            <label class="upload-file-btn">Choose file<input type="file" accept="application/json,.json"></label>
+          </div>
+          <div class="upload-row" data-platform="deepseek">
+            <div class="upload-plat"><span class="platform-dot" style="background:var(--p-deepseek)"></span>DeepSeek</div>
+            <div class="upload-status" data-state="idle">No file selected</div>
+            <label class="upload-file-btn">Choose file<input type="file" accept="application/json,.json"></label>
+          </div>
+        </div>
+        <div class="explore-actions">
+          <button class="btn btn-primary" id="exploreAnalyzeBtn" type="button" disabled>Analyze my traces</button>
+          <span class="explore-note">Start the local server above, then upload at least one export.</span>
+        </div>
+      </div>
+
+      <div class="explore-results" id="exploreResults"></div>
+
+      <div class="scope reveal">
+        <b>What this shows, and what it doesn't:</b> these are general, single‑user stats computed straight from your own export — conversation/turn counts, your own Web‑search rate (overall and by month), which tools you triggered, and how often reasoning mode was used. It does not (yet) include the paper's topic breakdowns (those come from a separately LLM‑annotated dataset, not derivable from a raw export) or retrieved/cited‑domain analysis (today's URL parsing in the codebase is ChatGPT‑only). See <code>src/personal_explorer.py</code>.
+      </div>
+    </div>
+  </section>
+
   <!-- ============ CITATION ============ -->
   <section id="cite">
     <div class="wrap">
@@ -954,5 +1096,177 @@
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
     targets.forEach(function(el){ io.observe(el); });
+  })();
+</script>
+
+<!-- "Explore Your Own Traces" — talks to the local server (src/local_server.py)
+     over http://127.0.0.1:8420. Nothing here ever calls a remote host. -->
+<script>
+  (function(){
+    var API_BASE = 'http://127.0.0.1:8420';
+    var PLATFORM_LABEL = { chatgpt: 'ChatGPT', claude: 'Claude', grok: 'Grok', deepseek: 'DeepSeek' };
+
+    var statusPill = document.getElementById('exploreStatusPill');
+    var statusText = document.getElementById('exploreStatusText');
+    var checkBtn = document.getElementById('exploreCheckBtn');
+    var analyzeBtn = document.getElementById('exploreAnalyzeBtn');
+    var resultsEl = document.getElementById('exploreResults');
+    var uploadRows = document.querySelectorAll('.upload-row');
+
+    // Guard: these elements only exist on pages that include the explore
+    // section's markup.
+    if (!statusPill || !analyzeBtn || !resultsEl) return;
+
+    var pendingFiles = {};      // platform -> File chosen but not yet uploaded
+    var uploadedPlatforms = {}; // platform -> true, uploaded successfully this session
+
+    function esc(s){
+      return String(s).replace(/[&<>"]/g, function(c){
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+
+    function setStatus(state, text){
+      statusPill.setAttribute('data-state', state);
+      statusText.textContent = text;
+      analyzeBtn.disabled = state !== 'connected';
+    }
+
+    function checkHealth(){
+      setStatus('checking', 'Checking for local server…');
+      fetch(API_BASE + '/health')
+        .then(function(res){ if (!res.ok) throw new Error('bad status'); return res.json(); })
+        .then(function(){ setStatus('connected', 'Local server connected'); })
+        .catch(function(){
+          setStatus('offline', 'Not connected — run "python -m src.local_server", then click Check connection');
+        });
+    }
+
+    uploadRows.forEach(function(row){
+      var platform = row.getAttribute('data-platform');
+      var input = row.querySelector('input[type="file"]');
+      var statusEl = row.querySelector('.upload-status');
+      input.addEventListener('change', function(){
+        var file = input.files && input.files[0];
+        if (!file) return;
+        pendingFiles[platform] = file;
+        statusEl.setAttribute('data-state', 'ready');
+        statusEl.textContent = 'Ready to upload: ' + file.name;
+      });
+    });
+
+    function uploadPending(){
+      var platforms = Object.keys(pendingFiles);
+      return Promise.all(platforms.map(function(platform){
+        var file = pendingFiles[platform];
+        var row = document.querySelector('.upload-row[data-platform="' + platform + '"]');
+        var statusEl = row.querySelector('.upload-status');
+        var form = new FormData();
+        form.append('file', file);
+        return fetch(API_BASE + '/upload?platform=' + encodeURIComponent(platform), { method: 'POST', body: form })
+          .then(function(res){ return res.json().then(function(data){ return { ok: res.ok, data: data }; }); })
+          .then(function(r){
+            if (!r.ok) throw new Error(r.data.detail || 'Upload failed');
+            uploadedPlatforms[platform] = true;
+            delete pendingFiles[platform];
+            statusEl.setAttribute('data-state', 'done');
+            statusEl.textContent = 'Uploaded ✓ ' + file.name;
+          })
+          .catch(function(err){
+            statusEl.setAttribute('data-state', 'error');
+            statusEl.textContent = 'Error: ' + err.message;
+          });
+      }));
+    }
+
+    function renderMonthlyTrend(monthly, colorVar){
+      if (!monthly.length) {
+        return '<div class="explore-empty">Not enough history for a monthly trend yet.</div>';
+      }
+      var maxH = 150;
+      var bars = monthly.map(function(m){
+        var h = Math.max(4, Math.round(maxH * (m.web_rate / 100)));
+        return '<div class="vbar-col">' +
+          '<div class="vbar-val">' + m.web_rate.toFixed(1) + '%</div>' +
+          '<div class="vbar" style="height:' + h + 'px;background:' + colorVar + '" ' +
+          'title="' + esc(m.month) + ': ' + m.web_turns + '/' + m.turns + ' turns"></div>' +
+          '<div class="vbar-label">' + esc(m.month) + '</div>' +
+          '</div>';
+      }).join('');
+      return '<div class="vbars" style="height:' + (maxH + 60) + 'px">' + bars + '</div>';
+    }
+
+    function renderToolUsage(tools, colorVar){
+      if (!tools.length) {
+        return '<div class="explore-empty">No tool calls recorded.</div>';
+      }
+      var maxCount = Math.max.apply(null, tools.map(function(t){ return t.count; }));
+      var rows = tools.map(function(t){
+        var pct = Math.max(4, Math.round(100 * t.count / maxCount));
+        return '<div class="hbar-row">' +
+          '<div class="hbar-label">' + esc(t.tool) + '</div>' +
+          '<div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%;background:' + colorVar + '"></div></div>' +
+          '<div class="hbar-val">' + t.count + '</div>' +
+          '</div>';
+      }).join('');
+      return '<div class="hbars">' + rows + '</div>';
+    }
+
+    function renderPlatformResult(platform, data){
+      var colorVar = 'var(--p-' + platform + ')';
+      return '' +
+        '<div class="panel">' +
+          '<div class="result-head"><span class="platform-dot" style="background:' + colorVar + '"></span>' +
+          '<h4>' + esc(PLATFORM_LABEL[platform] || platform) + '</h4></div>' +
+          '<div class="stats" style="margin-top:18px">' +
+            '<div class="stat"><div class="stat-value">' + data.total_conversations + '</div><div class="stat-label">Conversations</div></div>' +
+            '<div class="stat"><div class="stat-value">' + data.total_turns + '</div><div class="stat-label">Turns</div></div>' +
+            '<div class="stat"><div class="stat-value">' + data.web_call_rate.toFixed(1) + '%</div><div class="stat-label">Turns with Web search</div></div>' +
+            '<div class="stat"><div class="stat-value">' + data.reasoning_rate.toFixed(1) + '%</div><div class="stat-label">Turns using reasoning mode</div></div>' +
+          '</div>' +
+          '<div class="result-sub-title">Web-search rate by month</div>' +
+          renderMonthlyTrend(data.monthly_trend, colorVar) +
+          '<div class="result-sub-title">Tools you triggered</div>' +
+          renderToolUsage(data.tool_usage, colorVar) +
+        '</div>';
+    }
+
+    function renderError(platform, message){
+      return '<div class="explore-error"><b>' + esc(PLATFORM_LABEL[platform] || platform) + ':</b> ' + esc(message) + '</div>';
+    }
+
+    function runAnalysis(){
+      resultsEl.innerHTML = '<div class="explore-empty">Analyzing…</div>';
+      uploadPending().then(function(){
+        var platforms = Object.keys(uploadedPlatforms);
+        if (!platforms.length) {
+          resultsEl.innerHTML = '<div class="explore-empty">Upload at least one export above, then click "Analyze my traces" again.</div>';
+          return;
+        }
+        return fetch(API_BASE + '/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platforms: platforms }),
+        })
+          .then(function(res){ return res.json(); })
+          .then(function(payload){
+            var html = '';
+            platforms.forEach(function(platform){
+              if (payload.results && payload.results[platform]) {
+                html += renderPlatformResult(platform, payload.results[platform]);
+              } else if (payload.errors && payload.errors[platform]) {
+                html += renderError(platform, payload.errors[platform]);
+              }
+            });
+            resultsEl.innerHTML = html || '<div class="explore-empty">No results.</div>';
+          });
+      }).catch(function(err){
+        resultsEl.innerHTML = '<div class="explore-error"><b>Error:</b> ' + esc(err.message) + '</div>';
+      });
+    }
+
+    checkBtn.addEventListener('click', checkHealth);
+    analyzeBtn.addEventListener('click', runAnalysis);
+    checkHealth();
   })();
 </script>
