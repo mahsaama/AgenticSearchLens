@@ -16,10 +16,10 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 
 pio.defaults.mathjax = None
-from src.utils import *
-from src.data_utils import *
-from src.paper import with_paper_style, styler
-from src.data_extraction import load_web_data_from_file
+from src.utils.utils import *
+from src.utils.data_utils import *
+from src.utils.paper import with_paper_style, styler
+from src.web_search_decision.data_extraction import load_web_data_from_file
 import nltk
 import spacy
 from nltk.stem.snowball import SnowballStemmer
@@ -32,7 +32,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import Counter
 from openai import OpenAI
-from src.evaluator_prompts import *
+from src.prompts.evaluator_prompts import *
 
 
 CONF = "./query_reformulations"

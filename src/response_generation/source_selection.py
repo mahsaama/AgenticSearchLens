@@ -18,11 +18,11 @@ from scipy.stats import ttest_rel
 import numpy as np
 from collections import Counter
 pio.defaults.mathjax = None
-from src.utils import *
-from src.data_utils import *
-from src.paper import with_paper_style, styler
-from src.data_extraction import load_web_data_from_file, load_whole_data_from_file
-from src.response_generation import _load_response_source_similarity_input
+from src.utils.utils import *
+from src.utils.data_utils import *
+from src.utils.paper import with_paper_style, styler
+from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
+from src.response_generation.response_generation import _load_response_source_similarity_input
 import tiktoken
 from pprint import pp
 

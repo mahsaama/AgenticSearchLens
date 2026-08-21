@@ -26,19 +26,19 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 
 ## 📂 Repository Layout
 
-- `src/data_extraction.py`: parses raw ChatGPT exports into a per-turn summary dataframe.
-- `src/data_extraction_other_cai.py` / `src/data_utils_cai.py`: same, for Claude, Grok, and DeepSeek exports.
-- `src/data_utils.py` / `src/utils.py`: shared parsing/IO helpers.
-- `src/web_tool_invocation.py`: analyses focused on Web-call decisions and trends.
-- `src/query_reformulations.py`: query evolution and reformulation analyses.
-- `src/source_selection.py`: retrieved/cited source analyses.
-- `src/response_generation.py`: response grounding and quality analyses.
-- `src/claim_analysis.py`: claim-level comparison between Web and no-Web responses.
-- `src/chat_replayer.py` / `src/chat_replayer_evaluation.py`: invitro replay (re-querying prompts via platform APIs) and LLM-judge scoring of the replayed responses.
-- `src/extract_replay_artifacts.py`: post-processes replay outputs into the artifacts/plots used across the analyses above.
-- `src/run_hallucinated_url_flow_from_pkl.py`: checks cited URLs for reachability/hallucination.
-- `src/evaluator_prompts.py`: prompt templates used by the LLM-judge evaluations.
-- `src/paper.py`: shared Plotly styling for figures.
+- `src/web_search_decision/data_extraction.py`: parses raw ChatGPT exports into a per-turn summary dataframe.
+- `src/web_search_decision/data_extraction_other_cai.py` / `src/utils/data_utils_cai.py`: same, for Claude, Grok, and DeepSeek exports.
+- `src/utils/data_utils.py` / `src/utils/utils.py`: shared parsing/IO helpers.
+- `src/web_search_decision/web_tool_invocation.py`: analyses focused on Web-call decisions and trends.
+- `src/web_search_decision/claim_analysis.py`: claim-level comparison between Web and no-Web responses.
+- `src/query_formulation/query_reformulations.py`: query evolution and reformulation analyses.
+- `src/response_generation/source_selection.py`: retrieved/cited source analyses.
+- `src/response_generation/response_generation.py`: response grounding and quality analyses.
+- `src/response_generation/run_hallucinated_url_flow_from_pkl.py`: checks cited URLs for reachability/hallucination.
+- `src/replays/chat_replayer.py` / `src/replays/chat_replayer_evaluation.py`: invitro replay (re-querying prompts via platform APIs) and LLM-judge scoring of the replayed responses.
+- `src/replays/extract_replay_artifacts.py`: post-processes replay outputs into the artifacts/plots used across the analyses above.
+- `src/prompts/evaluator_prompts.py`: prompt templates used by the LLM-judge evaluations.
+- `src/utils/paper.py`: shared Plotly styling for figures.
 - `outputs/`: generated analysis artifacts.
 - `data/`: your local copies of exported chat data (see below).
 
@@ -77,8 +77,8 @@ DEEPSEEK_API_KEY=...     # invitro replay of DeepSeek models
 ```
 
 Everything above is only needed if you plan to run the LLM-judge evaluations or the
-invitro replay (`chat_replayer.py`). The extraction and descriptive-analysis scripts
-work without any API key.
+invitro replay (`src/replays/chat_replayer.py`). The extraction and descriptive-analysis
+scripts work without any API key.
 
 ## 📥 Exporting Your Own Data
 
@@ -124,16 +124,16 @@ above into per-turn dataframes (`outputs/<platform>/metadata/data_summary.*` and
 `web_data_summary.*`, in parquet/pickle/csv):
 
 ```bash
-python -m src.data_extraction                                    # ChatGPT
-python -m src.data_extraction_other_cai --platform claude         # Claude
-python -m src.data_extraction_other_cai --platform grok           # Grok
-python -m src.data_extraction_other_cai --platform deepseek       # DeepSeek
+python -m src.web_search_decision.data_extraction                                    # ChatGPT
+python -m src.web_search_decision.data_extraction_other_cai --platform claude         # Claude
+python -m src.web_search_decision.data_extraction_other_cai --platform grok           # Grok
+python -m src.web_search_decision.data_extraction_other_cai --platform deepseek       # DeepSeek
 ```
 
 Load the results back with:
 
 ```python
-from src.data_extraction import load_whole_data_from_file, load_web_data_from_file
+from src.web_search_decision.data_extraction import load_whole_data_from_file, load_web_data_from_file
 
 df = load_whole_data_from_file("pkl")
 web_df = load_web_data_from_file("pkl")
@@ -143,25 +143,25 @@ web_df = load_web_data_from_file("pkl")
 and writes figures/tables under `outputs/<module_name>/`:
 
 ```bash
-python -m src.web_tool_invocation     # §3: search-calling decisions & trends
-python -m src.query_reformulations    # §4: querying strategies & reformulation
-python -m src.source_selection        # §4.3/§5.1: retrieved/cited source bias
-python -m src.response_generation     # §5.2: response grounding & entailment
+python -m src.web_search_decision.web_tool_invocation     # §3: search-calling decisions & trends
+python -m src.query_formulation.query_reformulations      # §4: querying strategies & reformulation
+python -m src.response_generation.source_selection        # §4.3/§5.1: retrieved/cited source bias
+python -m src.response_generation.response_generation     # §5.2: response grounding & entailment
 ```
 
 **3. (Optional) invitro replay + LLM-judge evaluation.** To reproduce the
 API-based replay and quality scoring (needs the provider API keys above):
 
 ```bash
-python -m src.chat_replayer               # replay prompts through each platform's API
-python -m src.chat_replayer_evaluation    # score replayed responses (factuality/
-                                           # completeness/relevance) with an LLM judge
-python -m src.claim_analysis --help       # claim-level Web vs. no-Web comparison
-python -m src.run_hallucinated_url_flow_from_pkl --help  # cited-URL reachability check
+python -m src.replays.chat_replayer               # replay prompts through each platform's API
+python -m src.replays.chat_replayer_evaluation    # score replayed responses (factuality/
+                                                   # completeness/relevance) with an LLM judge
+python -m src.web_search_decision.claim_analysis --help            # claim-level Web vs. no-Web comparison
+python -m src.response_generation.run_hallucinated_url_flow_from_pkl --help  # cited-URL reachability check
 ```
 
-`src/extract_replay_artifacts.py` is invoked internally by the scripts above to turn
-replay output into the artifacts consumed by the analyses in step 2 — you generally
+`src/replays/extract_replay_artifacts.py` is invoked internally by the scripts above to
+turn replay output into the artifacts consumed by the analyses in step 2 — you generally
 don't need to run it directly.
 
 ## 📝 Notes

@@ -10,10 +10,10 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from src.utils import OUTPUT_PATH
+from src.utils.utils import OUTPUT_PATH
 from openai import OpenAI
 from tqdm import tqdm
-from src.evaluator_prompts import (
+from src.prompts.evaluator_prompts import (
     SYSTEM_PROMPT_CHARAC,
     SYSTEM_PROMPT_ENTITY_SPECIFICITY,
     SYSTEM_PROMPT_GEOGRAPHIC_SPECIFICITY,
@@ -916,7 +916,7 @@ def _normalize_topic_name(topic):
 
 
 def _build_topic_lookup():
-    from src.data_extraction import load_web_data_from_file, load_whole_data_from_file
+    from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
 
     try:
         import pandas as pd
@@ -1034,7 +1034,7 @@ def _safe_float(value):
 
 
 def _is_skipped_sample_idx(sample_idx):
-    from src.chat_replayer import SKIPPED_REPLAY_SAMPLE_INDICES
+    from src.replays.chat_replayer import SKIPPED_REPLAY_SAMPLE_INDICES
 
     try:
         return int(sample_idx) in SKIPPED_REPLAY_SAMPLE_INDICES
@@ -1256,7 +1256,7 @@ def _count_terms_local(text, remove_stopwords=False):
     if not text:
         return 0
     if remove_stopwords:
-        from src.query_reformulations import preprocess_text_in_chunks
+        from src.query_formulation.query_reformulations import preprocess_text_in_chunks
 
         return len(preprocess_text_in_chunks(text))
     return len(text.split())
@@ -1380,7 +1380,7 @@ def plot_replay_web_call_agreement_counts(
     import plotly.graph_objects as go
     from plotly.colors import qualitative
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     with open(input_path) as f:
         data = json.load(f)
@@ -1492,7 +1492,7 @@ def plot_openai_replay_model_call_outcomes(
 ):
     import plotly.graph_objects as go
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     sample_calls = {}
     for model_name in model_names:
@@ -1625,7 +1625,7 @@ def plot_openai_replay_model_outcome_trigger_heatmaps(
 ):
     import plotly.graph_objects as go
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     rows = _extract_rows_for_models(model_names)
     grouped_samples = _group_rows_by_sample(rows)
@@ -1782,7 +1782,7 @@ def plot_replay_pair_outcome_trigger_heatmap(
 ):
     import plotly.graph_objects as go
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     rows = _extract_rows_for_models(model_names)
     grouped_samples = _group_rows_by_sample(rows)
@@ -1927,7 +1927,7 @@ def plot_openai_replay_dev_prompt_web_call_heatmap(
 ):
     import plotly.graph_objects as go
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     if replay_models is None:
         replay_models = [
@@ -2075,8 +2075,8 @@ def plot_replay_query_term_count_trends_over_time(
     import plotly.express as px
     import plotly.graph_objects as go
 
-    from src.data_extraction import load_web_data_from_file, load_whole_data_from_file
-    from src.paper import with_paper_style, styler
+    from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
+    from src.utils.paper import with_paper_style, styler
 
     iteration_bucket_order = ["1", "2", "3+"]
 
@@ -2598,7 +2598,7 @@ def plot_replay_parallel_queries_by_query_reformulations(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     platform_color_map = {
         "gpt-5.3-chat-latest": "#636EFA",
@@ -2859,7 +2859,7 @@ def plot_replay_top_domains(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     platform_color_map = {
         "gpt-5.3-chat-latest": "#636EFA",
@@ -3293,7 +3293,7 @@ def plot_replay_web_call_topic_distribution_across_platforms(
 ):
     import plotly.graph_objects as go
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     try:
         import pandas as pd
@@ -3654,7 +3654,7 @@ def plot_query_specificity_distribution_by_iteration(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     df = _load_replay_query_eval_df(input_stem)
     if df is None or df.empty:
@@ -4304,7 +4304,7 @@ def plot_reasons_for_another_web_query_distribution_all_models(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     df = _load_replay_query_eval_df(input_stem)
     if df is None or df.empty:
@@ -5051,7 +5051,7 @@ async def extract_replay_urls_content(
     require_all_models_web_call=True,
     common_filter_model_names=None,
 ):
-    from src.response_generation import (
+    from src.response_generation.response_generation import (
         URL_FETCH_CHECKPOINT_EVERY,
         URL_FETCH_TIMEOUT,
         _load_urls_content,
@@ -5193,7 +5193,7 @@ def replay_response_source_nli_sentence_based(
     import numpy as np
     import pandas as pd
 
-    from src.response_generation import (
+    from src.response_generation.response_generation import (
         BERT_NLI_MODEL_NAME,
         _claim_cache_key,
         _load_claims_cache,
@@ -6031,8 +6031,8 @@ def plot_response_source_nli_sentence_based_for_replays(
     import pandas as pd
     import plotly.graph_objects as go
 
-    from src.paper import with_paper_style, styler
-    from src.response_generation import (
+    from src.utils.paper import with_paper_style, styler
+    from src.response_generation.response_generation import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
     )
@@ -6394,7 +6394,7 @@ def plot_response_source_nli_sentence_based_judge_for_replays(
     common_filter_model_names=None,
     output_dir=PLOT_OUTPUT_DIR / "response_generation",
 ):
-    from src.response_generation import (
+    from src.response_generation.response_generation import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
     )
@@ -6431,7 +6431,7 @@ def response_source_nli_sentence_based_factuality_for_replays(
 ):
     import pandas as pd
 
-    from src.response_generation import FACTUALITY_JUDGE_MODEL, _json_safe, evaluate_claim_factuality
+    from src.response_generation.response_generation import FACTUALITY_JUDGE_MODEL, _json_safe, evaluate_claim_factuality
 
     factuality_model_name = factuality_model_name or FACTUALITY_JUDGE_MODEL
     model_slug = _model_subset_slug(model_names)
@@ -6894,8 +6894,8 @@ def evaluate_claude_associated_citation_bucket_alignment_for_replays(
     import pandas as pd
     import plotly.graph_objects as go
 
-    from src.paper import with_paper_style, styler
-    from src.response_generation import (
+    from src.utils.paper import with_paper_style, styler
+    from src.response_generation.response_generation import (
         _normalize_claim_selection_mode,
         _normalize_chunking_method,
     )
@@ -7305,7 +7305,7 @@ def evaluate_replay_source_tranco_ranks(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    from src.paper import with_paper_style, styler
+    from src.utils.paper import with_paper_style, styler
 
     ranked_payload = _load_replay_json(ranked_input_path)
 
@@ -7699,7 +7699,7 @@ def classify_replay_sample_primary_triggers(
     output_path=REPLAY_SAMPLE_CHARACTERIZATION_PATH,
     save_every=25,
 ):
-    from src.chat_replayer import _client_for_provider, _infer_provider_from_model
+    from src.replays.chat_replayer import _client_for_provider, _infer_provider_from_model
 
     replay_data = _load_replay_json(replay_path)
     if isinstance(model_names, str):

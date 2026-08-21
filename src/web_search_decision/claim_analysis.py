@@ -12,13 +12,13 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from tqdm import tqdm
 
-from src.evaluator_prompts import (
+from src.prompts.evaluator_prompts import (
     SYSTEM_PROMPT_CLAIM_EXTRACTION,
     USER_PROMPT_CLAIM_EXTRACTION,
 )
-from src.extract_replay_artifacts import _has_web_tool_call, _infer_provider
-from src.paper import styler, with_paper_style
-from src.utils import OUTPUT_PATH, load_json, to_json
+from src.replays.extract_replay_artifacts import _has_web_tool_call, _infer_provider
+from src.utils.paper import styler, with_paper_style
+from src.utils.utils import OUTPUT_PATH, load_json, to_json
 
 
 load_dotenv()

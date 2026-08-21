@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from src.evaluator_prompts import SYSTEM_PROMPT_RESP_SYNT, USER_PROMPT_RESP_SYNT, SYSTEM_PROMPT_CLAIM_EXTRACTION, USER_PROMPT_CLAIM_EXTRACTION, SYSTEM_PROMPT_CLAIM_FACTUALITY_EVAL, USER_PROMPT_CLAIM_FACTUALITY_EVAL
+from src.prompts.evaluator_prompts import SYSTEM_PROMPT_RESP_SYNT, USER_PROMPT_RESP_SYNT, SYSTEM_PROMPT_CLAIM_EXTRACTION, USER_PROMPT_CLAIM_EXTRACTION, SYSTEM_PROMPT_CLAIM_FACTUALITY_EVAL, USER_PROMPT_CLAIM_FACTUALITY_EVAL
 
 
 load_dotenv()
@@ -40,10 +40,10 @@ if not logging.getLogger().handlers:
     )
 
 pio.defaults.mathjax = None
-from src.utils import *
-from src.data_utils import *
-from src.paper import with_paper_style, styler
-from src.data_extraction import load_web_data_from_file, load_whole_data_from_file
+from src.utils.utils import *
+from src.utils.data_utils import *
+from src.utils.paper import with_paper_style, styler
+from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
 
 CONF = "./response_generation"
 HEADERS = {
@@ -2156,7 +2156,7 @@ def plot_retrieved_and_cited_urls_over_time(
     Plot the average number of retrieved and cited URLs per response over time,
     along with citation rate and grounding rate.
     """
-    from src.source_selection import (
+    from src.response_generation.source_selection import (
         _iter_rows_for_grounding,
         _normalized_urls_from_sources,
         _validated_grounding_level,
@@ -3528,7 +3528,7 @@ def summarize_response_source_nli_sentence_based_factuality(
     resampling responses with replacement. For cited claims, the split into
     Cited Retrieved vs Cited Parametric follows the requested grounding level.
     """
-    from src.source_selection import (
+    from src.response_generation.source_selection import (
         _normalize_url_for_source_matching,
         _row_retrieved_urls_by_grounding,
         _iter_rows_for_grounding,
@@ -3896,7 +3896,7 @@ def plot_claim_bucket_tranco_rank_comparison(
     claim chunks attributed to Marked/Other Citations using the full-content
     claim-level NLI output.
     """
-    from src.source_selection import (
+    from src.response_generation.source_selection import (
         evaluate_source_tranco_ranks,
         _normalize_url_for_source_matching,
     )

@@ -6,7 +6,7 @@ from tqdm import tqdm
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
-from src.data_utils import *
+from src.utils.data_utils import *
 from urllib.parse import urlparse
 try:
     from langdetect import detect

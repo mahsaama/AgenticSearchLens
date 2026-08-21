@@ -1,7 +1,7 @@
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
-from src.utils import *
+from src.utils.utils import *
 
 
 def normalize_timestamp(ts):
