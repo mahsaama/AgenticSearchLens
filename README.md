@@ -67,7 +67,9 @@ playwright install chromium
 python -m nltk.downloader punkt punkt_tab
 ```
 
-Copy `.env.example` to `.env` (or otherwise export these) with whichever keys you need:
+Fill in your keys in `.env` (already in the repo, gitignored, with placeholders for
+the API keys and every optional override commented out alongside its built-in
+default):
 
 ```bash
 OPENAI_API_KEY=...       # LLM-judge evaluations (factuality/completeness/relevance,
