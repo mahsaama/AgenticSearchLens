@@ -1,6 +1,16 @@
+"""§3 analyses: Web-search *decisions* -- when and how often agents call
+Web search, by platform/model/topic/time, and whether harness instructions
+vs. models' own judgment drive those calls (invitro developer-prompt swap
+replays), plus whether calling search actually helped (invitro Web vs.
+no-Web quality comparison, Prometheus/LLM-judge evaluations).
+
+Same scope note as the other analysis modules: written for the paper's full
+cohort, organized as a library of individually-runnable analysis functions
+(see the __main__ call list), each writing its own figure/table under
+outputs/web_tool_invocation/.
+"""
+
 import os
-import sys
-import csv
 import ast
 import json
 from collections import Counter
@@ -8,14 +18,20 @@ from pathlib import Path
 from tqdm import tqdm
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.io as pio
 from plotly.colors import qualitative
-from sklearn.metrics import cohen_kappa_score, accuracy_score
 from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
 from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
-from src.web_search_decision.other_platforms_extraction import load_whole_data_from_file as load_whole_data_from_file_cai
+from src.web_search_decision.other_platforms_extraction import (
+    DEEPSEEK_WEB_TOOLS as _CANONICAL_DEEPSEEK_WEB_TOOLS,
+    GROK_WEB_TOOLS as _CANONICAL_GROK_WEB_TOOLS,
+    load_whole_data_from_file as load_whole_data_from_file_cai,
+)
+# Aliased: this file also defines its own, narrower GROK_WEB_TOOLS/
+# DEEPSEEK_WEB_TOOLS further down (used by _has_web_call_for_platform) --
+# keeping both distinct rather than silently overriding one, since they're
+# not obviously interchangeable (see that definition's comment).
 from scipy.stats import binomtest
 
 
@@ -391,126 +407,56 @@ def _thoughts_before_first_web_query(row):
     return _stringify_nested_text(thoughts_list[0])
 
 
-def _confusion_counts(y_true, y_pred):
-    counts = [[0, 0], [0, 0]]
-    for truth, pred in zip(y_true, y_pred):
-        truth_idx = 1 if truth else 0
-        pred_idx = 1 if pred else 0
-        counts[truth_idx][pred_idx] += 1
-    return counts
+_WEB_TOOL_NAME_HINTS = ("web", "search", "browse", "browser")
 
 
-def _confusion_annotations(counts, total, row_labels, col_labels, cell_text=None):
-    annotations = []
-    for row_idx, row_label in enumerate(row_labels):
-        for col_idx, col_label in enumerate(col_labels):
-            count = counts[row_idx][col_idx]
-            share = count / total if total else 0
-            text = f"{count}<br>{share:.0%}"
-            if cell_text is not None:
-                text = f"{cell_text[row_idx][col_idx]}<br>{count}<br>{share:.0%}"
-            annotations.append(
-                dict(
-                    x=col_label,
-                    y=row_label,
-                    text=text,
-                    showarrow=False,
-                    font=dict(color="black", size=16),
-                )
-            )
-    return annotations
+def _auto_categorize_tool(tool_name):
+    """Heuristic "Web & Browsing" vs "Plugins" classification for a single
+    tool/recipient name, used only as a fallback when no real category file
+    is present (see _tool_to_category_lookup). Reuses the same web-tool name
+    sets other_platforms_extraction.py's web_call_mask() already relies on
+    for Grok/DeepSeek, plus a generic name-substring check that covers
+    ChatGPT/Claude's "web"-named tools."""
+    name = str(tool_name or "").lower()
+    if any(hint in name for hint in _WEB_TOOL_NAME_HINTS):
+        return "Web & Browsing"
+    if tool_name in _CANONICAL_GROK_WEB_TOOLS or tool_name in _CANONICAL_DEEPSEEK_WEB_TOOLS:
+        return "Web & Browsing"
+    return "Plugins"
 
 
-def _style_confusion_figure(fig, row_labels, col_labels):
-    fig.update_layout(
-        width=760,
-        height=620,
-        margin=dict(l=170, r=60, t=90, b=90),
-    )
-    fig.update_xaxes(
-        side="top",
-        tickmode="array",
-        tickvals=col_labels,
-        ticktext=col_labels,
-        automargin=True,
-    )
-    fig.update_yaxes(
-        tickmode="array",
-        tickvals=row_labels,
-        ticktext=row_labels,
-        automargin=True,
-        scaleanchor="x",
-        scaleratio=1,
-    )
-    return fig
+class _AutoToolCategoryLookup(dict):
+    """An empty dict that classifies any tool via _auto_categorize_tool
+    instead of falling through to a caller-supplied default. Used in place
+    of a real (but absent) category lookup so a missing
+    all_tools_categorized.json degrades to a coarser Web-vs-other split
+    rather than silently mapping every tool to "Plugins"/"Others" -- which
+    would make every Web-search trend line in this file read 0%, a wrong
+    answer delivered without any error."""
+
+    def get(self, tool_name, default=None):
+        return super().get(tool_name) or _auto_categorize_tool(tool_name)
 
 
-def _precision_recall(y_true, y_pred):
-    tp = sum(bool(t) and bool(p) for t, p in zip(y_true, y_pred))
-    fp = sum((not bool(t)) and bool(p) for t, p in zip(y_true, y_pred))
-    fn = sum(bool(t) and (not bool(p)) for t, p in zip(y_true, y_pred))
-    precision = tp / (tp + fp) if (tp + fp) else 0.0
-    recall = tp / (tp + fn) if (tp + fn) else 0.0
-    return precision, recall
+def _tool_to_category_lookup(path):
+    """Flat {tool_name: category} lookup from a categorized-tools JSON file
+    (nested {category: {tool: id, ...}, ...}) at `path`, or an
+    auto-classifying fallback (_AutoToolCategoryLookup) if the file isn't
+    present -- true for anyone but the paper's authors, who built it by
+    hand over their own dataset's observed tool names."""
+    tools_categorized = load_json(path)
+    if not tools_categorized:
+        return _AutoToolCategoryLookup()
+    return {
+        tool: cat
+        for cat, cat_tools in tools_categorized.items()
+        for tool in cat_tools
+    }
 
-
-def _oracle_auto_counts_and_metrics(df):
-    y_true = df["oracle_used_web"].tolist()
-    y_pred = df["auto_used_web"].tolist()
-    counts_bool = _confusion_counts(y_true, y_pred)
-    counts = [
-        [counts_bool[1][1], counts_bool[1][0]],
-        [counts_bool[0][1], counts_bool[0][0]],
-    ]
-    precision, recall = _precision_recall(y_true, y_pred)
-    return counts, precision, recall
-
-
-def _build_oracle_auto_confusion_figure(df, title=None):
-    cost_rows = ["Oracle: Web Needed", "Oracle: No Web Needed"]
-    cost_cols = ["Auto: Web Call", "Auto: No Web Call"]
-    cost_text = [
-        ["Cost Paid for Quality", "Missed Quality Gain"],
-        ["Extra Cost", "Saved Cost"],
-    ]
-    cost_counts, precision, recall = _oracle_auto_counts_and_metrics(df)
-
-    fig = go.Figure(
-        data=go.Heatmap(
-            z=cost_counts,
-            x=cost_cols,
-            y=cost_rows,
-            xgap=2,
-            ygap=2,
-            colorscale="peach",
-            showscale=False,
-            hoverongaps=False,
-        )
-    )
-    fig.update_layout(
-        title=title,
-        xaxis_title="Auto decision",
-        yaxis_title="Oracle decision",
-        annotations=_confusion_annotations(
-            cost_counts, len(df), cost_rows, cost_cols, cell_text=cost_text
-        ),
-    )
-    fig.add_annotation(
-        x=0.5,
-        y=-0.18,
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        text=f"Precision: {precision:.2%} | Recall: {recall:.2%}",
-        font=dict(size=15),
-    )
-    fig = _style_confusion_figure(fig, cost_rows, cost_cols)
-    return fig, precision, recall
 
 def web_call_trend_over_time(df):
     df = df.copy()
-    tools_categorized = load_json(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
-    tool_to_category = {tool: cat for cat, cat_tools in tools_categorized.items() for tool, id in cat_tools.items()}
+    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
     df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
 
     df["month"] = pd.to_datetime(df["month"])
@@ -582,14 +528,8 @@ def web_call_trend_over_time_all_convai(df):
     min_valid_month = pd.Timestamp("2023-01-01")
     cat = "Web & Browsing"
 
-    def _monthly_web_rate(platform_df, tools_categorized):
+    def _monthly_web_rate(platform_df, tool_to_category):
         platform_df = platform_df.copy()
-        tool_to_category = {}
-        for cat_name, cat_tools in (tools_categorized or {}).items():
-            if isinstance(cat_tools, dict):
-                for tool_name in cat_tools:
-                    tool_to_category[tool_name] = cat_name
-
         platform_df["tools"] = platform_df["tools"].apply(_as_list_value)
         platform_df["categories"] = platform_df["tools"].apply(
             lambda tools: [tool_to_category.get(tool, "Others") for tool in tools]
@@ -613,9 +553,9 @@ def web_call_trend_over_time_all_convai(df):
         )
         return monthly_rate, total_web_turns, len(platform_df)
 
-    openai_tools_categorized = load_json(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
+    openai_tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
     openai_monthly, openai_total_web_turns, openai_total_turns = _monthly_web_rate(
-        df, openai_tools_categorized
+        df, openai_tool_to_category
     )
     overall_rates = [
         {
@@ -634,9 +574,9 @@ def web_call_trend_over_time_all_convai(df):
 
     for cai in ["claude", "grok", "deepseek"]:
         cai_df = load_whole_data_from_file_cai(fmt="pkl", platform=cai)
-        tools_categorized = load_json(f"{OUTPUT_PATH}/{cai}/metadata/all_tools_categorized.json")
+        cai_tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/{cai}/metadata/all_tools_categorized.json")
         monthly_tooly_turns, total_web_turns, total_turns = _monthly_web_rate(
-            cai_df, tools_categorized
+            cai_df, cai_tool_to_category
         )
         overall_rates.append(
             {
@@ -678,10 +618,7 @@ def web_call_trend_over_time_all_convai(df):
 def web_call_trend_over_time_by_model(df):
     df = df.copy()
     selected_models = ['gpt-4-1', 'gpt-4-1-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-5', 'gpt-5-instant', 'gpt-5-mini', 'gpt-5-thinking', 'gpt-5-2', 'gpt-5-2-thinking', 'o3', 'o3-mini', 'text-davinci-002-render-sha']
-    tools_categorized = load_json(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
-    tool_to_category = {
-        tool: cat for cat, cat_tools in tools_categorized.items() for tool, id in cat_tools.items()
-    }
+    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
     df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
     df["month"] = pd.to_datetime(df["month"])
     df["model"] = df["openai_models"].apply(_primary_model)
@@ -3946,6 +3883,18 @@ def _run_tool_intent_judge(
     temperature=0.0,
     max_output_tokens=256,
 ):
+    """LLM-judge call classifying why a tool was invoked, from the user
+    message and the model's own reasoning/thoughts.
+
+    KNOWN BUG: references SYSTEM_PROMPT_TOOL_INTENT and
+    USER_PROMPT_TOOL_INTENT, neither of which is defined anywhere in
+    src/prompts/evaluator_prompts.py or elsewhere in this codebase -- this
+    raises NameError the moment it's actually called. Not fixed here: doing
+    so would mean writing new LLM-judge prompt content from scratch, which
+    isn't a code-cleanup call to make unilaterally. Add those two prompts to
+    evaluator_prompts.py before calling this (via
+    classify_web_call_tool_intent_from_thoughts()).
+    """
     response = client.responses.create(
         model=model_name,
         tools=[],
