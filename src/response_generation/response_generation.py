@@ -1,10 +1,28 @@
+"""§5.2 analyses: how responses are grounded in (or ungrounded from) their
+cited/retrieved sources -- scraping cited URLs' actual content, computing
+NLI entailment between response claims and that content, and factuality
+scoring by grounding source (associated citation / other citation / search
+result / parametric knowledge).
+
+Same scope note as query_reformulations.py / source_selection.py: written
+for the paper's full cohort, organized as a library of individually-
+runnable analysis functions (see the __main__ call list), each writing its
+own figure/table under outputs/response_generation/.
+
+Pipeline dependency: extract_response_and_sources(web_df) (and
+extract_response_and_sources_other_platforms() for non-ChatGPT platforms)
+writes outputs/[<platform>/]metadata/response_and_sources.pkl -- most of
+the grounding/NLI functions here read it, and it's also the prerequisite
+source_selection.py's count_unique_retrieved_safe_cited() and related
+functions need but don't produce themselves. Run it before those.
+"""
+
 import os
 import json
 import re
 import ast
 import hashlib
 import logging
-import warnings
 from collections import Counter
 from tqdm import tqdm
 import pandas as pd
@@ -43,7 +61,7 @@ pio.defaults.mathjax = None
 from src.utils.common_io import *
 from src.utils.chatgpt_conversation_utils import *
 from src.utils.figure_style import with_paper_style, styler
-from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
+from src.web_search_decision.chatgpt_extraction import load_web_data_from_file
 
 CONF = "./response_generation"
 HEADERS = {
@@ -414,27 +432,6 @@ def _safe_parse_source_list(value):
         except json.JSONDecodeError:
             return []
     return parsed if isinstance(parsed, list) else []
-
-
-def _build_response_source_retrieved_url_lookup():
-    response_df = _load_response_source_similarity_input().copy()
-    retrieved_url_lookup = {}
-
-    for _, row in response_df.iterrows():
-        record = row.to_dict() if hasattr(row, "to_dict") else dict(row)
-        join_key = _record_join_key(record)
-        if not any(join_key):
-            continue
-        retrieved_urls = set()
-        for src in _safe_parse_source_list(record.get("srcs_retrieved", [])):
-            if not isinstance(src, dict):
-                continue
-            url = str(src.get("url", "") or "").strip()
-            if url:
-                retrieved_urls.add(url)
-        retrieved_url_lookup[join_key] = retrieved_urls
-
-    return retrieved_url_lookup
 
 
 def _external_platform_output_base_candidates(
@@ -2157,7 +2154,6 @@ def plot_retrieved_and_cited_urls_over_time(
     along with citation rate and grounding rate.
     """
     from src.response_generation.source_selection import (
-        _iter_rows_for_grounding,
         _normalized_urls_from_sources,
         _validated_grounding_level,
     )
