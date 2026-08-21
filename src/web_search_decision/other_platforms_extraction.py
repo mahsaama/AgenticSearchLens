@@ -1,18 +1,42 @@
+"""Parses raw Claude, Grok, and DeepSeek export files into a per-turn
+summary dataframe -- the non-ChatGPT counterpart of chatgpt_extraction.py.
+
+Reads data/<platform>/user_<i>/conversations.json (or a flat
+data/<platform>/conversations.json for a single-user export; see README.md's
+"Exporting Your Own Data") and, for every turn, extracts which tools were
+called, thinking-mode flags, message history, timing, and a topic label --
+writing the result to outputs/<platform>/metadata/data_summary.* and
+web_data_summary.* (parquet/pickle/csv).
+
+Run directly as:
+    python -m src.web_search_decision.other_platforms_extraction --platform claude
+(--platform one of: chatgpt, claude, grok, deepseek -- yes, this module can
+also parse a ChatGPT export via the same generic pipeline as the other
+three; chatgpt_extraction.py is the original, ChatGPT-only implementation
+kept for backwards compatibility with existing outputs/metadata/ layouts.)
+
+Typical output, run against the paper's own (ERB-restricted, unshared)
+donated dataset:
+    Claude:   102 users, 9,267 conversations, 64,354 turns, 11,466 with tool calls
+    Grok:     100 users, 9,005 conversations, 53,844 turns,  3,291 with tool calls
+    DeepSeek: 101 users, 9,262 conversations, 36,020 turns,  1,730 with tool calls
+"""
+
 import argparse
-import ast
 import json
 import sys
 
 sys.setrecursionlimit(5000)
-from tqdm import tqdm
 from pathlib import Path
-from datetime import datetime
+
 import pandas as pd
-from urllib.parse import urlparse
 from langdetect import detect
+from tqdm import tqdm
 
 import src.utils.other_platforms_parsing_utils as du
-from src.utils.common_io import *
+from src.utils.common_io import DATA_BASE_PATH
+from src.utils.topic_classifier import classify_topic
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -53,10 +77,22 @@ COLUMNS = [
 # ---------- Shared helpers ----------
 
 def _detect_language(history):
+    """Best-effort language code for a list of message strings, "" on failure."""
     try:
         return detect("\n".join(str(x) for x in history))
     except Exception:
         return ""
+
+
+def _resolve_topic(topic_lookup, conv_id, user_msg_history):
+    """Look up `conv_id`'s annotated topic; if none is available (the common
+    case outside the paper's own dataset), classify it from the
+    conversation's opening message instead of defaulting to "Other"."""
+    topic = topic_lookup.get(conv_id)
+    if topic:
+        return topic
+    first_user_message = user_msg_history[0] if user_msg_history else ""
+    return classify_topic(first_user_message)
 
 
 def _iter_platform_files(data_base_path, conversations_key=None):
@@ -136,6 +172,8 @@ def web_call_mask(df, platform):
 # ---------- Dispatch wrapper ----------
 
 def load_whole_data(platform):
+    """Extract every user's conversations.json for `platform` into a list of
+    per-turn rows (see COLUMNS). Dispatches to the platform-specific loader."""
     if platform == "chatgpt":
         return load_chatgpt_data()
     elif platform == "claude":
@@ -158,6 +196,7 @@ def _iter_chatgpt_files():
 
 
 def load_chatgpt_data():
+    """Extract every user's ChatGPT conversations.json into per-turn rows."""
     all_data = []
     num_users = 0
     num_conversations = 0
@@ -220,13 +259,14 @@ def load_chatgpt_data():
                 thinking = "thoughts" in thinking_path
                 time_ = du.normalize_timestamp(turn_msgs[-1].get("create_time"), "chatgpt")
                 language = _detect_language(user_msg_history)
+                topic = _resolve_topic(topic_lookup, conv["id"], user_msg_history)
 
                 all_data.append([
                     i,
                     conv["id"],
                     turn_msgs[0]["id"],
                     conv_starter,
-                    topic_lookup.get(conv["id"], "Other"),
+                    topic,
                     language,
                     main_tool_calls,
                     interactions,
@@ -278,6 +318,7 @@ def _iter_claude_files():
 
 
 def load_claude_data():
+    """Extract every user's Claude conversations.json into per-turn rows."""
     all_data = []
     num_users = 0
     num_conversations = 0
@@ -325,13 +366,14 @@ def load_claude_data():
                 thinking = "thinking" in thinking_path
                 time_ = du.normalize_timestamp(turn_msgs[-1].get("created_at"), "claude")
                 language = _detect_language(user_msg_history)
+                topic = _resolve_topic(topic_lookup, conv["uuid"], user_msg_history)
 
                 all_data.append([
                     i,
                     conv["uuid"],
                     turn_msgs[0]["uuid"],
                     conv_starter,
-                    topic_lookup.get(conv["uuid"], "Other"),
+                    topic,
                     language,
                     tool_calls,
                     interactions,
@@ -389,6 +431,7 @@ def _iter_grok_files():
 
 
 def load_grok_data():
+    """Extract every user's Grok conversations.json into per-turn rows."""
     all_data = []
     num_users = 0
     num_conversations = 0
@@ -455,13 +498,14 @@ def load_grok_data():
 
                 time_ = du.normalize_timestamp(turn_msgs[-1].get("create_time"), "grok")
                 language = _detect_language(user_msg_history)
+                topic = _resolve_topic(topic_lookup, conv_meta.get("id"), user_msg_history)
 
                 all_data.append([
                     i,
                     conv_meta.get("id"),
                     turn_msgs[0].get("_id"),
                     conv_starter,
-                    topic_lookup.get(conv_meta.get("id"), "Other"),
+                    topic,
                     language,
                     tool_calls,
                     interactions,
@@ -509,6 +553,7 @@ def _iter_deepseek_files():
 
 
 def load_deepseek_data():
+    """Extract every user's DeepSeek conversations.json into per-turn rows."""
     all_data = []
     num_users = 0
     num_conversations = 0
@@ -573,13 +618,14 @@ def load_deepseek_data():
                     last_msg.get("inserted_at"), "deepseek"
                 )
                 language = _detect_language(user_msg_history)
+                topic = _resolve_topic(topic_lookup, conv.get("id"), user_msg_history)
 
                 all_data.append([
                     i,
                     conv.get("id"),
                     turn_msgs[0].get("id"),
                     conv_starter,
-                    topic_lookup.get(conv.get("id"), "Other"),
+                    topic,
                     language,
                     tool_calls,
                     interactions,
@@ -636,6 +682,7 @@ def load_deepseek_data():
 
 
 def load_whole_data_from_file(fmt, platform):
+    """Load a previously extracted data_summary.<fmt> back into a DataFrame."""
     base_dir = f"{OUTPUT_PATH}/{platform}/metadata"
     if fmt == "csv":
         df = pd.read_csv(f"{base_dir}/data_summary.csv")
@@ -643,10 +690,14 @@ def load_whole_data_from_file(fmt, platform):
         df = pd.read_pickle(f"{base_dir}/data_summary.pkl")
     elif fmt == "parquet":
         df = pd.read_parquet(f"{base_dir}/data_summary.parquet")
+    else:
+        raise ValueError(f"Unsupported format: {fmt}")
     return df
 
 
 def load_web_data_from_file(fmt, platform):
+    """Load a previously extracted web_data_summary.<fmt> back into a DataFrame
+    (data_summary.* filtered down to turns that invoked a Web-search tool)."""
     base_dir = f"{OUTPUT_PATH}/{platform}/metadata"
     if fmt == "csv":
         df = pd.read_csv(f"{base_dir}/web_data_summary.csv")
@@ -654,10 +705,14 @@ def load_web_data_from_file(fmt, platform):
         df = pd.read_pickle(f"{base_dir}/web_data_summary.pkl")
     elif fmt == "parquet":
         df = pd.read_parquet(f"{base_dir}/web_data_summary.parquet")
+    else:
+        raise ValueError(f"Unsupported format: {fmt}")
     return df
 
 
 def main():
+    """CLI entry point: extract one platform's conversations and write
+    data_summary.* / web_data_summary.* under outputs/<platform>/metadata/."""
     global DATA_BASE_PATH, OUTPUT_PATH
     args = parse_args()
     DATA_BASE_PATH = Path(args.base_dir) / args.platform
@@ -701,28 +756,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# # CLAUDE OUTPUT:
-# Number of Users: 102
-# Number of Conversation: 9267
-# Number of Turns: 64354
-# Number of Turns with Tool calls: 11466
-# Number of Messages: 137626
-# Number of Messages with Tool calls: 36074
-
-# # Grok OUTPUT:
-# Number of Users: 100                                                                                              
-# Number of Conversation: 9005                                                                                      
-# Number of Turns: 53844                                                                                                                                                                                                              
-# Number of Turns with Tool calls: 3291
-# Number of Messages: 110670                                                                                        
-# Number of Messages with Tool calls: 22762
-
-# # DeepSeek OUTPUT:
-# Number of Users: 101
-# Number of Conversation: 9262
-# Number of Turns: 36020
-# Number of Turns with Tool calls: 1730
-# Number of Messages: 72024
-# Number of Messages with Tool calls: 2231

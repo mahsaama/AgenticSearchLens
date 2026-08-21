@@ -916,7 +916,7 @@ def _normalize_topic_name(topic):
 
 
 def _build_topic_lookup():
-    from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
+    from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
 
     try:
         import pandas as pd
@@ -2075,7 +2075,7 @@ def plot_replay_query_term_count_trends_over_time(
     import plotly.express as px
     import plotly.graph_objects as go
 
-    from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file
+    from src.web_search_decision.chatgpt_extraction import load_web_data_from_file, load_whole_data_from_file
     from src.utils.figure_style import with_paper_style, styler
 
     iteration_bucket_order = ["1", "2", "3+"]

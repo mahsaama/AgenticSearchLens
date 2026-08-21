@@ -1,0 +1,288 @@
+[
+  {
+    "id": "conv-travel",
+    "title": "conv-travel",
+    "mapping": {
+      "root-conv-travel": {
+        "id": "root-conv-travel",
+        "message": null,
+        "parent": null,
+        "children": [
+          "conv-travel-m0"
+        ]
+      },
+      "conv-travel-m0": {
+        "id": "conv-travel-m0",
+        "message": {
+          "id": "conv-travel-m0",
+          "author": {
+            "role": "user"
+          },
+          "recipient": "all",
+          "create_time": 1750000000,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "What's a good 5-day itinerary for a trip to Japan in the spring?"
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "root-conv-travel",
+        "children": [
+          "conv-travel-m1"
+        ]
+      },
+      "conv-travel-m1": {
+        "id": "conv-travel-m1",
+        "message": {
+          "id": "conv-travel-m1",
+          "author": {
+            "role": "assistant"
+          },
+          "recipient": "all",
+          "create_time": 1750000005,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "Here's a 5-day itinerary covering Tokyo and Kyoto..."
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "conv-travel-m0",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "conv-debug",
+    "title": "conv-debug",
+    "mapping": {
+      "root-conv-debug": {
+        "id": "root-conv-debug",
+        "message": null,
+        "parent": null,
+        "children": [
+          "conv-debug-m0"
+        ]
+      },
+      "conv-debug-m0": {
+        "id": "conv-debug-m0",
+        "message": {
+          "id": "conv-debug-m0",
+          "author": {
+            "role": "user"
+          },
+          "recipient": "all",
+          "create_time": 1750100000,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "Can you help me debug this Python function? I keep getting an error message."
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "root-conv-debug",
+        "children": [
+          "conv-debug-m1"
+        ]
+      },
+      "conv-debug-m1": {
+        "id": "conv-debug-m1",
+        "message": {
+          "id": "conv-debug-m1",
+          "author": {
+            "role": "assistant"
+          },
+          "recipient": "all",
+          "create_time": 1750100005,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "Sure, can you share the traceback?"
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "conv-debug-m0",
+        "children": [
+          "conv-debug-m2"
+        ]
+      },
+      "conv-debug-m2": {
+        "id": "conv-debug-m2",
+        "message": {
+          "id": "conv-debug-m2",
+          "author": {
+            "role": "user"
+          },
+          "recipient": "all",
+          "create_time": 1750100010,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "It says IndexError on line 12."
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "conv-debug-m1",
+        "children": [
+          "conv-debug-m3"
+        ]
+      },
+      "conv-debug-m3": {
+        "id": "conv-debug-m3",
+        "message": {
+          "id": "conv-debug-m3",
+          "author": {
+            "role": "assistant"
+          },
+          "recipient": "all",
+          "create_time": 1750100015,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "That usually means you're accessing a list index that's out of range..."
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "conv-debug-m2",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "conv-web-search",
+    "title": "conv-web-search",
+    "mapping": {
+      "root-conv-web-search": {
+        "id": "root-conv-web-search",
+        "message": null,
+        "parent": null,
+        "children": [
+          "conv-web-search-m0"
+        ]
+      },
+      "conv-web-search-m0": {
+        "id": "conv-web-search-m0",
+        "message": {
+          "id": "conv-web-search-m0",
+          "author": {
+            "role": "user"
+          },
+          "recipient": "all",
+          "create_time": 1750200000,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "What's the latest news on the upcoming election?"
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "root-conv-web-search",
+        "children": [
+          "conv-web-search-m1"
+        ]
+      },
+      "conv-web-search-m1": {
+        "id": "conv-web-search-m1",
+        "message": {
+          "id": "conv-web-search-m1",
+          "author": {
+            "role": "assistant"
+          },
+          "recipient": "web",
+          "create_time": 1750200005,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              ""
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "conv-web-search-m0",
+        "children": [
+          "conv-web-search-m2"
+        ]
+      },
+      "conv-web-search-m2": {
+        "id": "conv-web-search-m2",
+        "message": {
+          "id": "conv-web-search-m2",
+          "author": {
+            "role": "tool"
+          },
+          "recipient": "assistant",
+          "create_time": 1750200010,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "search results..."
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "conv-web-search-m1",
+        "children": [
+          "conv-web-search-m3"
+        ]
+      },
+      "conv-web-search-m3": {
+        "id": "conv-web-search-m3",
+        "message": {
+          "id": "conv-web-search-m3",
+          "author": {
+            "role": "assistant"
+          },
+          "recipient": "all",
+          "create_time": 1750200015,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "Based on recent coverage, here's what's happening..."
+            ]
+          },
+          "metadata": {
+            "model_slug": "gpt-5.3-chat",
+            "reasoning_status": null
+          }
+        },
+        "parent": "conv-web-search-m2",
+        "children": []
+      }
+    }
+  }
+]

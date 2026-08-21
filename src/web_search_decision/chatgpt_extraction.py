@@ -1,13 +1,36 @@
-import ast
+"""Parses raw ChatGPT export files into a per-turn summary dataframe.
+
+Reads data/chatgpt/user_<i>/conversations.json for i in range(NUM_USERS)
+(see README.md's "Exporting Your Own Data") and, for every turn (one user
+message + the assistant's response to it), extracts which tools were
+called, reasoning/thinking-mode flags, message history, timing, and a
+topic label -- writing the result to outputs/metadata/data_summary.* and
+outputs/metadata/web_data_summary.* (parquet/pickle/csv).
+
+Run directly as `python -m src.web_search_decision.chatgpt_extraction`.
+The parallel module for Claude/Grok/DeepSeek exports is
+src.web_search_decision.other_platforms_extraction.
+"""
+
+import json
 import sys
 
 sys.setrecursionlimit(5000)
-from tqdm import tqdm
 from pathlib import Path
-from datetime import datetime
+
 import pandas as pd
-from src.utils.chatgpt_conversation_utils import *
-from urllib.parse import urlparse
+from tqdm import tqdm
+
+from src.utils.chatgpt_conversation_utils import (
+    DATA_BASE_PATH,
+    OUTPUT_PATH,
+    load_topics,
+    normalize_timestamp,
+    sort_conversation,
+)
+from src.utils.common_io import load_json
+from src.utils.topic_classifier import classify_topic
+
 try:
     from langdetect import detect
 except ImportError:
@@ -18,6 +41,11 @@ NUM_USERS = 1
 
 
 def load_whole_data():
+    """Parse every user's conversations.json into a list of per-turn rows.
+
+    Returns (all_data, num_conversations, num_turns, num_msgs, num_tool_usage),
+    where all_data is a list of rows matching main()'s DataFrame columns.
+    """
     all_data = []
     num_conversations = 0
     num_turns = 0
@@ -29,6 +57,8 @@ def load_whole_data():
     def emit_turn(
         user_id, conv, turn_msgs, conv_starter, user_msg_history, assistant_msg_history
     ):
+        """Build one output row (see main()'s DataFrame columns) from the
+        messages making up a single user-prompt-to-assistant-response turn."""
         nonlocal num_tool_usage
 
         main_tool_calls = []
@@ -36,15 +66,11 @@ def load_whole_data():
         thinking_path = []
         openai_models = []
         interactions = []
-        user_query = []
         thoughts = ""
         for turn_msg in turn_msgs:
             role = turn_msg.get("author", {}).get("name", "")
             if not role:
                 role = turn_msg.get("author", {}).get("role", "")
-
-            if not user_query and role == "user":
-                user_query = turn_msg.get("content", {}).get("parts", [])
 
             recipient = turn_msg.get("recipient", "all")
             ts = turn_msg.get("create_time")
@@ -65,12 +91,7 @@ def load_whole_data():
                 main_tool_calls.append(recipient)
                 num_tool_usage += 1
 
-        reasoning = False
-        for path in reasoning_path:
-            if path:
-                reasoning = True
-                break
-
+        reasoning = any(reasoning_path)
         thinking = "thoughts" in thinking_path
 
         time_ = pd.NaT
@@ -83,8 +104,17 @@ def load_whole_data():
                 break
             except (TypeError, ValueError):
                 continue
-        topic_ = str(topic_lookup.get(conv["id"], "Other"))
-        topic = topic_ if topic_ != "nan" else "Other"
+
+        topic_label = topic_lookup.get(conv["id"])
+        if topic_label is None or str(topic_label).strip().lower() == "nan":
+            # No annotation available for this conversation (the common
+            # case outside the paper's own dataset) -- classify it from its
+            # opening message instead of defaulting to "Other".
+            first_user_message = user_msg_history[0] if user_msg_history else ""
+            topic = classify_topic(first_user_message)
+        else:
+            topic = str(topic_label)
+
         try:
             language = detect("\n".join([str(x) for x in user_msg_history]))
         except Exception:
@@ -118,10 +148,9 @@ def load_whole_data():
         if not file_path.exists():
             continue
 
-        with open(file_path, "r") as f:
-            data = json.load(f)
+        data = load_json(file_path)
 
-        for conv_idx, conv in enumerate(data):
+        for conv in data:
             num_conversations += 1
             mapping = sort_conversation(conv["mapping"])
             user_msg_history = []
@@ -191,6 +220,7 @@ def load_whole_data():
 
 
 def load_whole_data_from_file(fmt, base_dir=None):
+    """Load a previously extracted data_summary.<fmt> back into a DataFrame."""
     metadata_dir = Path(base_dir) if base_dir else Path(f"{OUTPUT_PATH}/metadata")
     if fmt == "csv":
         df = pd.read_csv(metadata_dir / "data_summary.csv")
@@ -204,6 +234,8 @@ def load_whole_data_from_file(fmt, base_dir=None):
 
 
 def load_web_data_from_file(fmt, base_dir=None):
+    """Load a previously extracted web_data_summary.<fmt> back into a DataFrame
+    (data_summary.* filtered down to turns that invoked a Web-search tool)."""
     metadata_dir = Path(base_dir) if base_dir else Path(f"{OUTPUT_PATH}/metadata")
     if fmt == "csv":
         df = pd.read_csv(metadata_dir / "web_data_summary.csv")
@@ -217,6 +249,9 @@ def load_web_data_from_file(fmt, base_dir=None):
 
 
 def main():
+    """Extract all ChatGPT conversations and write data_summary.* /
+    web_data_summary.* under outputs/metadata/."""
+    Path(f"{OUTPUT_PATH}/metadata").mkdir(parents=True, exist_ok=True)
     all_data, num_conversations, num_turns, num_msgs, num_tool_usage = load_whole_data()
     # Convert to DataFrame
     df = pd.DataFrame(

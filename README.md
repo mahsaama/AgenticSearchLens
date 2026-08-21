@@ -124,16 +124,16 @@ above into per-turn dataframes (`outputs/<platform>/metadata/data_summary.*` and
 `web_data_summary.*`, in parquet/pickle/csv):
 
 ```bash
-python -m src.web_search_decision.data_extraction                                    # ChatGPT
-python -m src.web_search_decision.data_extraction_other_cai --platform claude         # Claude
-python -m src.web_search_decision.data_extraction_other_cai --platform grok           # Grok
-python -m src.web_search_decision.data_extraction_other_cai --platform deepseek       # DeepSeek
+python -m src.web_search_decision.chatgpt_extraction                                    # ChatGPT
+python -m src.web_search_decision.other_platforms_extraction --platform claude         # Claude
+python -m src.web_search_decision.other_platforms_extraction --platform grok           # Grok
+python -m src.web_search_decision.other_platforms_extraction --platform deepseek       # DeepSeek
 ```
 
 Load the results back with:
 
 ```python
-from src.web_search_decision.data_extraction import load_whole_data_from_file, load_web_data_from_file
+from src.web_search_decision.chatgpt_extraction import load_whole_data_from_file, load_web_data_from_file
 
 df = load_whole_data_from_file("pkl")
 web_df = load_web_data_from_file("pkl")
