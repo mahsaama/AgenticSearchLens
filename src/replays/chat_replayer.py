@@ -6,7 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
-from src.utils.utils import *
+from src.utils.common_io import *
 import pandas as pd
 from src.web_search_decision.data_extraction import load_whole_data_from_file, load_web_data_from_file
 from tqdm import tqdm

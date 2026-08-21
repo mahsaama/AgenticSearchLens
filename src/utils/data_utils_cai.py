@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
-from src.utils.utils import *
+from src.utils.common_io import *
 
 
 def normalize_timestamp(ts, platform):

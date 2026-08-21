@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from src.utils.utils import OUTPUT_PATH
+from src.utils.common_io import OUTPUT_PATH
 from openai import OpenAI
 from tqdm import tqdm
 from src.prompts.evaluator_prompts import (

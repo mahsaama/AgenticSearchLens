@@ -10,7 +10,7 @@ import logging
 import pandas as pd
 from tqdm import tqdm
 from openai import OpenAI
-from src.utils.utils import *
+from src.utils.common_io import *
 from src.prompts.evaluator_prompts import *
 import random
 

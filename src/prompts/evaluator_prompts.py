@@ -1,3 +1,13 @@
+"""LLM-judge prompt templates shared across the pipeline.
+
+Every prompt used to drive an LLM judge (response-quality scoring, query-type
+and query-reformulation classification, claim extraction/comparison, source
+specificity, ...) lives here as a plain SYSTEM_PROMPT_* / USER_PROMPT_*
+string pair, so that no other module defines its own prompt text inline.
+Callers `.format(...)` the USER_PROMPT_* templates with the fields named in
+their `{placeholders}`; SYSTEM_PROMPT_* templates are used as-is.
+"""
+
 ####### 5-POINT LIKERT EVALUATION #######
 
 SYSTEM_PROMPT_FACTUALITY_5LIKERT = """

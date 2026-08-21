@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.colors import qualitative
 from sklearn.metrics import cohen_kappa_score, accuracy_score
-from src.utils.utils import *
+from src.utils.common_io import *
 from src.utils.data_utils import *
 from src.utils.paper import with_paper_style, styler
 from src.web_search_decision.data_extraction import load_web_data_from_file, load_whole_data_from_file

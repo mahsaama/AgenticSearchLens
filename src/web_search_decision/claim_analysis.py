@@ -20,7 +20,7 @@ from src.prompts.evaluator_prompts import (
 )
 from src.replays.extract_replay_artifacts import _has_web_tool_call, _infer_provider
 from src.utils.paper import styler, with_paper_style
-from src.utils.utils import OUTPUT_PATH, load_json, to_json
+from src.utils.common_io import OUTPUT_PATH, load_json, to_json
 
 
 load_dotenv()

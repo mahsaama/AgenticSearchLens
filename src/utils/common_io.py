@@ -1,11 +1,20 @@
+"""Shared path constants and JSON read/write helpers used across the pipeline.
+
+DATA_BASE_PATH / OUTPUT_PATH are the default locations for raw platform
+exports and generated analysis artifacts, respectively; most modules read
+them through `from src.utils.common_io import *` and interpolate them into
+their own more specific paths (e.g. f"{OUTPUT_PATH}/<module>/...").
+"""
+
 import json
 import os
 
 DATA_BASE_PATH = "data/chatgpt"
 OUTPUT_PATH = "./outputs"
 
+
 def load_json(file_path):
-    """Helper function to load JSON files."""
+    """Load and parse a JSON file, returning None (and logging) on failure."""
     try:
         with open(file_path, 'r') as file:
             return json.load(file)
@@ -13,17 +22,6 @@ def load_json(file_path):
         print(f"Error loading JSON file {file_path}: {e}")
         return None
 
-def load_jsonl(file_path):
-    """Helper function to load JSONL files."""
-    data = {}
-    try:
-        with open(file_path, 'r') as file:
-            for i, line in enumerate(file):
-                data[str(i)] = json.loads(line)
-        return data
-    except Exception as e:
-        print(f"Error loading JSONL file {file_path}: {e}")
-        return None
 
 def to_json(data, file_path, indent=4):
     """
@@ -39,7 +37,7 @@ def to_json(data, file_path, indent=4):
         dir_name = os.path.dirname(file_path)
         if dir_name:
             os.makedirs(dir_name, exist_ok=True)
-            
+
         if ext == ".json":
             with open(file_path, "w") as file:
                 json.dump(data, file, indent=indent, ensure_ascii=False)
@@ -60,5 +58,3 @@ def to_json(data, file_path, indent=4):
 
     except Exception as e:
         print(f"Error saving JSON file {file_path}: {e}")
-
-
