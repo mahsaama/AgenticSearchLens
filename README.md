@@ -181,14 +181,21 @@ a function fails in a way that isn't obviously about missing data:
   "Other", extraction now falls back to `topic_classifier.classify_topic()`,
   a small dependency-free keyword classifier applied to each conversation's
   opening message.
-- **ChatGPT web-search detection covers two export formats.** Older/plugin-era
-  exports route a tool call through a separate message with an explicit
-  `recipient` (e.g. `"browser"`); current (2025+) exports don't — the only
-  signal is that the assistant's answer message carries a non-empty
-  `metadata.search_result_groups`. `extraction.py`'s ChatGPT loader checks
-  both, so turn/tool-call counts stay accurate either way. If your own export
-  still comes back with 0 Web-search turns, that's the first thing to check
-  against your actual JSON's message metadata shape.
+- **ChatGPT web-search detection is a two-step process across export
+  formats.** Older/plugin-era exports route a tool call through a message
+  explicitly routed to a named tool (`recipient` set to something like
+  `"browser"`/`"web"`); current (2025+) exports don't — the assistant's
+  answer message just carries a non-empty `metadata.search_result_groups`
+  (or, when that's absent, a `"thoughts"` block with non-empty `tool_icons`,
+  e.g. for a single-page fetch that never populates search_result_groups).
+  `extraction.py`'s ChatGPT loader checks both eras' signals when building
+  each turn's `tools` list; `web_call_mask()`/`_chatgpt_has_web_call()` then
+  do the same two-step check on that list (step 1: known legacy recipient
+  names; step 2: the `"web_search"` marker the loader injects for the
+  current format) instead of substring-matching the free-text `interactions`
+  trace the old version relied on. If your own export still comes back with
+  0 Web-search turns, that's the first thing to check against your actual
+  JSON's message metadata shape.
 - **`response_and_sources.pkl`.** `source_selection.py`'s
   `count_unique_retrieved_safe_cited()` (and related functions) read
   `outputs/[<platform>/]metadata/response_and_sources.pkl`, which is

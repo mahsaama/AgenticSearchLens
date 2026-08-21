@@ -146,24 +146,59 @@ def _iter_platform_files(data_base_path, conversations_key=None):
 # ---------- Web-call detection ----------
 
 GROK_WEB_TOOLS = {
-    "WebSearch", "BrowsePage", "XThreadFetch", "XSearch",
-    "XUserSearch", "ViewXVideo", "ImageSearch", "PdfSearch", "PdfBrowse",
+    "WebSearch",
 }
 DEEPSEEK_WEB_TOOLS = {
-    "SEARCH", "READ_LINK", "TOOL_SEARCH", "TOOL_OPEN", "TOOL_FIND",
+    "SEARCH",
 }
+
+
+# ChatGPT's `tools` column holds whatever load_chatgpt_data() pushed into
+# main_tool_calls for a turn -- either a legacy recipient name (older/
+# plugin-era exports) or the "web_search" marker load_chatgpt_data() injects
+# for current exports (see its flush_turn()). Legacy recipient names known
+# to mean "the browsing tool ran": exact matches plus a substring check,
+# since the exact identifier drifted across ChatGPT's tool-naming eras
+# (plugin-era "browser", later "web"/"web.run", ...) and we don't have
+# enough historical exports on hand to enumerate every variant precisely.
+_CHATGPT_LEGACY_WEB_RECIPIENTS = {"browser", "web", "web.run"}
+_CHATGPT_MODERN_WEB_MARKER = "web_search"
+
+
+def _chatgpt_has_web_call(tools):
+    """Two-step web-search detection for one ChatGPT turn's `tools` list,
+    since the export wire format for signaling it changed over time:
+
+    step 1 (legacy/plugin-era exports) -- the turn contains a message
+    explicitly routed to a known browsing-tool recipient name;
+    step 2 (current/2025+ exports) -- no such message exists; instead the
+    turn contains the "web_search" marker load_chatgpt_data() injects from
+    metadata.search_result_groups / a thoughts block's tool_icons.
+
+    Old exports are only ever expected to satisfy step 1, current exports
+    only step 2 -- but both are checked unconditionally, in case a single
+    account's export spans both eras.
+    """
+    for tool in tools or []:
+        tool_lower = str(tool).lower()
+        if tool_lower == _CHATGPT_MODERN_WEB_MARKER:
+            return True  # step 2: current export format
+        if tool_lower in _CHATGPT_LEGACY_WEB_RECIPIENTS or "web" in tool_lower:
+            return True  # step 1: legacy/plugin-era export format
+    return False
 
 
 def web_call_mask(df, platform):
     """Boolean Series flagging turns that invoked a Web-search tool.
 
-    Each platform exposes tool usage differently (ChatGPT: free-text
-    "interactions" trace; Claude: tool names, any containing "web"; Grok/
-    DeepSeek: fixed tool-name sets), so this centralizes the per-platform
-    heuristic previously duplicated inline in main()'s web_data_summary split.
+    Each platform exposes tool usage differently (ChatGPT: see
+    _chatgpt_has_web_call's two-step check on the `tools` column; Claude:
+    tool names, any containing "web"; Grok/DeepSeek: fixed tool-name sets),
+    so this centralizes the per-platform heuristic previously duplicated
+    inline in main()'s web_data_summary split.
     """
     if platform == "chatgpt":
-        return df["interactions"].apply(lambda x: "web" in str(x))
+        return df["tools"].apply(_chatgpt_has_web_call)
     elif platform == "claude":
         return df["tools"].apply(
             lambda ts: any("web" in str(t).lower() for t in (ts or []))
@@ -243,6 +278,7 @@ def load_chatgpt_data():
                 models = []
                 interactions = []
                 thoughts = ""
+                turn_has_modern_web_search = False  # dedup guard, see below
 
                 for turn_msg in turn_msgs:
                     author = turn_msg.get("author", {})
@@ -269,17 +305,34 @@ def load_chatgpt_data():
                         # (recipient="browser", "web", "dalle.text2im", ...).
                         main_tool_calls.append(recipient)
                         num_tool_usage += 1
-                    elif ts and role_ == "assistant" and metadata_.get("search_result_groups"):
+                    elif (
+                        ts
+                        and role_ == "assistant"
+                        and not turn_has_modern_web_search
+                        and (
+                            metadata_.get("search_result_groups")
+                            or (thinking_type == "thoughts" and metadata_.get("tool_icons"))
+                        )
+                    ):
                         # Current (2025+) export format has no separate
-                        # tool-routed message -- a web search happened iff
-                        # the assistant's answer message metadata carries
-                        # actual retrieved results. Same signal
-                        # source_selection.py/response_generation.py/
-                        # query_reformulations.py already read to extract
-                        # retrieved sources, kept consistent here.
+                        # tool-routed message -- there are two signals a web
+                        # search happened instead, checked in order:
+                        # (a) the assistant's answer message metadata carries
+                        #     actual retrieved results (search_result_groups) --
+                        #     same signal source_selection.py/
+                        #     response_generation.py/query_reformulations.py
+                        #     already read to extract retrieved sources;
+                        # (b) a "thoughts" block with non-empty tool_icons
+                        #     (site favicons) -- fires even when (a) is
+                        #     absent, e.g. a single-page fetch that never
+                        #     populates search_result_groups.
+                        # `turn_has_modern_web_search` stops a turn whose
+                        # thoughts *and* answer message both carry the
+                        # signal from being counted as two tool calls.
                         main_tool_calls.append("web_search")
                         num_tool_usage += 1
                         interactions.append(f"{role_}:web_search")
+                        turn_has_modern_web_search = True
 
                 reasoning = any(reasoning_path)
                 thinking = "thoughts" in thinking_path
