@@ -1,5 +1,8 @@
-# Data & outputs (never commit: donated conversation data is ERB-restricted
-# and must not leave secured storage; outputs/ is derived from it).
+# Data & outputs (never commit: real exported/donated conversation data is
+# ERB-restricted and must not leave secured storage; outputs/ is derived
+# from it). A handful of synthetic sample files under data/ are tracked
+# anyway via `git add -f` as pipeline fixtures — this rule still protects
+# any *real* export you drop in the same data/<platform>/user_0/ paths.
 data/
 outputs/
 
