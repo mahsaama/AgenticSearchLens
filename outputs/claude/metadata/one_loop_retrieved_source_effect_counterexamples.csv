@@ -1,0 +1,1 @@
+user_id,conv_id,turn_id,topic,time,web_queries,all_new_words_from_sources,all_new_words_from_user_queries,all_new_words_from_assistant_queries,all_new_words_from_thoughts,all_new_words_from_memories,all_new_words_from_pk

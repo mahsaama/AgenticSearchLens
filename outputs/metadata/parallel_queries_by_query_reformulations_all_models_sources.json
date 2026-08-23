@@ -1,0 +1,10 @@
+{
+    "platforms_plotted": [
+        "claude",
+        "grok"
+    ],
+    "platform_data_sources": {
+        "claude": "./outputs/claude/metadata/query_reformulation_with_thought_src_mem.pkl",
+        "grok": "./outputs/grok/metadata/query_reformulation_with_thought_src_mem.pkl"
+    }
+}
