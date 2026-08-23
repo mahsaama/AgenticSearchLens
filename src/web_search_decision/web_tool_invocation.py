@@ -456,12 +456,25 @@ def _tool_to_category_lookup(path):
 
 
 def web_call_trend_over_time(df, platform="chatgpt"):
-    df = df.copy()
-    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/{platform}/metadata/all_tools_categorized.json")
-    df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
+    """Per-platform monthly trend: all tool calls vs. web-call turns vs.
+    turns that used some other (non-web) tool.
 
+    "With web call"/"Without web call" used to come from a tools ->
+    category lookup checking for "Web & Browsing", which needs a hand-built
+    outputs/<platform>/metadata/all_tools_categorized.json that doesn't
+    exist for any of the 4 platforms -- see
+    web_call_trend_over_time_all_convai's docstring for the same fix
+    applied there. Uses _has_web_call_for_platform (extraction.py's own
+    per-platform detection) instead, so there's no lookup file to go
+    missing and results can't disagree with what extraction.py itself
+    calls a web-call turn.
+    """
+    df = df.copy()
     df["month"] = pd.to_datetime(df["month"])
     df["tool_used"] = df["tools"].apply(lambda x: isinstance(x, list) and len(x) > 0)
+    df["has_web_call"] = df.apply(
+        lambda row: _has_web_call_for_platform(row, platform), axis=1
+    )
 
     monthly_tooly_turns = (
         df.groupby("month")["tool_used"]
@@ -478,31 +491,29 @@ def web_call_trend_over_time(df, platform="chatgpt"):
         name="All tool calls",
     ))
 
-    cat = "Web & Browsing"
-    df["cat_used"] = df["categories"].apply(lambda x: isinstance(x, list) and cat in x)
-    monthly_tooly_turns = (
-        df.groupby("month")["cat_used"]
+    monthly_web_turns = (
+        df.groupby("month")["has_web_call"]
         .mean()
         .reset_index(name="cat_tooly_turns")
         .sort_values("month")
     )
     fig.add_trace(go.Scatter(
-        x=monthly_tooly_turns["month"],
-        y=monthly_tooly_turns["cat_tooly_turns"],
+        x=monthly_web_turns["month"],
+        y=monthly_web_turns["cat_tooly_turns"],
         mode="lines+markers",
         name=f"With web call",
     ))
 
-    df["cat_used"] = df["categories"].apply(lambda x: isinstance(x, list) and len(x) > 0 and cat not in x)
-    monthly_tooly_turns = (
-        df.groupby("month")["cat_used"]
+    df["non_web_tool_used"] = df["tool_used"] & ~df["has_web_call"]
+    monthly_non_web_turns = (
+        df.groupby("month")["non_web_tool_used"]
         .mean()
         .reset_index(name="cat_tooly_turns")
         .sort_values("month")
     )
     fig.add_trace(go.Scatter(
-        x=monthly_tooly_turns["month"],
-        y=monthly_tooly_turns["cat_tooly_turns"],
+        x=monthly_non_web_turns["month"],
+        y=monthly_non_web_turns["cat_tooly_turns"],
         mode="lines+markers",
         name=f"Without web call",
     ))
