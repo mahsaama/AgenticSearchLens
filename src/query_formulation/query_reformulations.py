@@ -534,9 +534,9 @@ def _gather_query_reform_effective_factors_deepseek(df):
     )
 
 
-def compute_semantic_and_syntactic_similarity():
+def compute_semantic_and_syntactic_similarity(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
     metric_cols = [
@@ -622,17 +622,17 @@ def compute_semantic_and_syntactic_similarity():
     df.reset_index(drop=True, inplace=True)
     print(len(df))
     df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.csv",
         index=False,
     )
     df.to_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
 
 
-def plot_semantic_and_syntactic_similarity():
+def plot_semantic_and_syntactic_similarity(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
 
     cols = [
@@ -667,22 +667,23 @@ def plot_semantic_and_syntactic_similarity():
         yaxis_title="Score",
         xaxis_title="Metric",
     )
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     name = "query_similarity_violin_plot"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{name}.html")
     fig = with_paper_style(fig, config=styler(18, 14))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=18))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{name}.pdf", format="pdf")
 
 
-def web_query_tokens_source_detection():
+def web_query_tokens_source_detection(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _add_web_query_token_source_columns(df)
 
     df.reset_index(drop=True, inplace=True)
-    _save_dataframe(df, "query_reformulation_with_thought_src_mem_v3")
+    _save_dataframe(df, "query_reformulation_with_thought_src_mem_v3", platform=platform)
 
 
 DEFAULT_WEB_QUERY_TOKEN_SOURCE_FACTOR_COLS = {
@@ -704,6 +705,7 @@ def _plot_web_query_tokens_source_detection_from_df(
     factor_cols=None,
     base_file_name="web_query_token_source_detection",
     skip_source_for_one_loop=True,
+    platform="chatgpt",
 ):
     factor_cols = dict(factor_cols or DEFAULT_WEB_QUERY_TOKEN_SOURCE_FACTOR_COLS)
     user_prompt_col = "all_new_words_from_user_queries"
@@ -801,12 +803,12 @@ def _plot_web_query_tokens_source_detection_from_df(
         )
         fig.update_yaxes(tickformat=".0%")
 
-        os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+        os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(22, 14))
         fig.update_xaxes(tickfont=dict(size=22))
         fig.update_yaxes(tickfont=dict(size=22))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+        fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     def _plot_bar_subset(subset_df, file_name, title_suffix):
         if len(subset_df) == 0:
@@ -850,12 +852,12 @@ def _plot_web_query_tokens_source_detection_from_df(
         )
         fig.update_yaxes(tickformat=".0%", range=[0, max(shares) * 1.15])
 
-        os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+        os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 14))
         fig.update_xaxes(tickfont=dict(size=14))
         fig.update_yaxes(tickfont=dict(size=18))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+        fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     one_loop_df = plot_df[plot_df["num_loops"] == 1].copy()
     multi_loop_df = plot_df[plot_df["num_loops"] > 1].copy()
@@ -882,21 +884,22 @@ def _plot_web_query_tokens_source_detection_from_df(
     )
 
 
-def plot_web_query_tokens_source_detection():
+def plot_web_query_tokens_source_detection(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
     )
-    _plot_web_query_tokens_source_detection_from_df(df)
+    _plot_web_query_tokens_source_detection_from_df(df, platform=platform)
 
 
 def plot_web_query_tokens_source_detection_over_time(
     factor_cols=None,
     file_name="web_query_token_source_detection_over_time",
     tick_interval_months=2,
+    platform="chatgpt",
 ):
     factor_cols = factor_cols or DEFAULT_WEB_QUERY_TOKEN_SOURCE_FACTOR_COLS
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
     ).copy()
 
     for col in ["web_queries"] + list(factor_cols.keys()):
@@ -990,10 +993,10 @@ def plot_web_query_tokens_source_detection_over_time(
             margin=dict(b=90),
         )
         fig.update_yaxes(tickformat=".0%")
-        os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{subset_file_name}.html")
+        os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{subset_file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.35))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{subset_file_name}.pdf", format="pdf")
+        fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{subset_file_name}.pdf", format="pdf")
 
         records = monthly.copy()
         records["month"] = records["month"].dt.strftime("%Y-%m")
@@ -1017,9 +1020,9 @@ def plot_web_query_tokens_source_detection_over_time(
     }
 
 
-def check_retrieved_source_effect_for_one_loop():
+def check_retrieved_source_effect_for_one_loop(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
     )
 
     for col in [
@@ -1066,7 +1069,6 @@ def check_retrieved_source_effect_for_one_loop():
         "topic",
         "time",
         "web_queries",
-        "all_new_words",
         "all_new_words_from_sources",
         "all_new_words_from_user_queries",
         "all_new_words_from_assistant_queries",
@@ -1076,7 +1078,7 @@ def check_retrieved_source_effect_for_one_loop():
     ]
     violating_df = violating_df[inspect_cols].reset_index(drop=True)
     violating_df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/one_loop_retrieved_source_effect_counterexamples.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/one_loop_retrieved_source_effect_counterexamples.csv",
         index=False,
     )
 
@@ -1095,6 +1097,7 @@ def _plot_number_of_loops_histogram_from_df(
     drop_zero_loop_rows=True,
     trend_file_name="number_of_query_reformulations_and_parallel_queries_over_time",
     trend_tick_interval_months=2,
+    platform="chatgpt",
 ):
     bucket_order = ([] if drop_zero_loop_rows else ["0"]) + ["1", "2", "3+"]
     parallel_plot_x_order = ["1", "2", "3+"]
@@ -1211,14 +1214,14 @@ def _plot_number_of_loops_histogram_from_df(
         yaxis=dict(range=[0, max(y) * 1.15 if y else 1]),
     )
     fig.update_yaxes(ticksuffix="%")
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     file_name = number_file_name
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.update_xaxes(tickfont=dict(size=18))
     fig.update_yaxes(tickfont=dict(size=18))
     fig.write_image(
-        f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf"
+        f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf"
     )
     to_json(
         [
@@ -1226,7 +1229,7 @@ def _plot_number_of_loops_histogram_from_df(
             for label in x
             if label in loop_samples
         ],
-        f"{OUTPUT_PATH}/{CONF}/{samples_file_name}.json",
+        f"{OUTPUT_PATH}/{platform}/{CONF}/{samples_file_name}.json",
     )
 
     fig = go.Figure()
@@ -1276,12 +1279,12 @@ def _plot_number_of_loops_histogram_from_df(
     )
     fig.update_yaxes(ticksuffix="%")
     file_name = parallel_file_name
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.update_xaxes(tickfont=dict(size=18))
     fig.update_yaxes(tickfont=dict(size=18))
     fig.write_image(
-        f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf"
+        f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf"
     )
 
     trend_records = []
@@ -1345,10 +1348,10 @@ def _plot_number_of_loops_histogram_from_df(
                 margin=dict(b=90),
             )
             file_name = trend_file_name
-            fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+            fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
             fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.2))
             fig.write_image(
-                f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf"
+                f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf"
             )
 
             trend_records = monthly_trends.copy()
@@ -1365,7 +1368,7 @@ def _plot_number_of_loops_histogram_from_df(
     }
 
 
-def plot_number_of_loops_histogram():
+def plot_number_of_loops_histogram(platform="chatgpt"):
     platform_configs = [
         ("openai", "ChatGPT"),
         ("claude", "Claude"),
@@ -1382,7 +1385,7 @@ def plot_number_of_loops_histogram():
     def _platform_candidate_paths(platform):
         if platform == "openai":
             return [
-                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
+                f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
             ]
         return [
             f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl",
@@ -1449,9 +1452,9 @@ def plot_number_of_loops_histogram():
         }
 
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
-    results = _plot_number_of_loops_histogram_from_df(df)
+    results = _plot_number_of_loops_histogram_from_df(df, platform=platform)
 
     subplot_payloads = []
     platform_data_sources = {}
@@ -1556,6 +1559,8 @@ def plot_number_of_loops_histogram():
             showarrow=False,
             font=dict(size=24),
         )
+        # Combined all-platform comparison -- stays flat, not nested under
+        # the single `platform` this function's histogram half uses.
         os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
         combined_fig.write_html(
             f"{OUTPUT_PATH}/{CONF}/parallel_queries_by_query_reformulations_all_models.html"
@@ -1574,7 +1579,7 @@ def plot_number_of_loops_histogram():
                 "platforms_plotted": [item["platform"] for item in subplot_payloads],
                 "platform_data_sources": platform_data_sources,
             },
-            f"{OUTPUT_PATH}/chatgpt/metadata/parallel_queries_by_query_reformulations_all_models_sources.json",
+            f"{OUTPUT_PATH}/metadata/parallel_queries_by_query_reformulations_all_models_sources.json",
         )
 
     return results
@@ -1584,9 +1589,10 @@ def plot_number_of_query_reformulations_over_time(
     drop_zero_loop_rows=True,
     file_name="number_of_query_reformulations_over_time",
     tick_interval_months=2,
+    platform="chatgpt",
 ):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1643,10 +1649,10 @@ def plot_number_of_query_reformulations_over_time(
         ),
         margin=dict(b=90),
     )
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     records = monthly.copy()
     records["month"] = records["month"].dt.strftime("%Y-%m")
@@ -1657,9 +1663,10 @@ def plot_number_of_parallel_queries_over_time(
     drop_zero_loop_rows=True,
     file_name="number_of_parallel_queries_over_time",
     tick_interval_months=2,
+    platform="chatgpt",
 ):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1736,10 +1743,10 @@ def plot_number_of_parallel_queries_over_time(
         ),
         margin=dict(b=90),
     )
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     records = monthly.copy()
     records["month"] = records["month"].dt.strftime("%Y-%m")
@@ -1750,12 +1757,13 @@ def plot_number_of_fanout_queries_and_iterations_over_time(
     drop_zero_loop_rows=True,
     file_name="number_of_query_reformulations_and_parallel_queries_over_time",
     tick_interval_months=1,
+    platform="chatgpt",
 ):
     xaxis_start = pd.Timestamp("2024-09-01")
     xaxis_end = pd.Timestamp("2026-01-31")
     full_month_range = pd.date_range(start=xaxis_start, end=xaxis_end, freq="MS")
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1871,10 +1879,10 @@ def plot_number_of_fanout_queries_and_iterations_over_time(
         ),
         margin=dict(b=90),
     )
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(20, 18), legend_pos=(0.8, 1.3))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     records = monthly.copy()
     records["month"] = records["month"].dt.strftime("%Y-%m")
@@ -2557,12 +2565,12 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
     }
 
 
-def distribution_of_web_query_and_thoughts_over_time():
+def distribution_of_web_query_and_thoughts_over_time(platform="chatgpt"):
     df_all_turns = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df_with_web_query = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
 
     def has_non_empty_nested_list(value):
@@ -2593,14 +2601,19 @@ def distribution_of_web_query_and_thoughts_over_time():
         .nunique()
         .reset_index(name="web_query_turns")
     )
-    monthly_thought_turns = (
-        df_with_web_query[
-            df_with_web_query["thoughts_list"].apply(has_non_empty_nested_list)
-        ]
-        .groupby("month")["turn_id"]
-        .nunique()
-        .reset_index(name="thought_turns")
-    )
+    df_with_thoughts = df_with_web_query[
+        df_with_web_query["thoughts_list"].apply(has_non_empty_nested_list)
+    ]
+    # Guard against pandas dropping all columns (incl. "month") when boolean-mask
+    # filtering leaves zero rows -- groupby("month") would otherwise KeyError.
+    if len(df_with_thoughts) == 0:
+        monthly_thought_turns = pd.DataFrame(columns=["month", "thought_turns"])
+    else:
+        monthly_thought_turns = (
+            df_with_thoughts.groupby("month")["turn_id"]
+            .nunique()
+            .reset_index(name="thought_turns")
+        )
     monthly = (
         monthly_total_turns
         .merge(monthly_web_query_turns, on="month", how="left")
@@ -2645,15 +2658,16 @@ def distribution_of_web_query_and_thoughts_over_time():
     )
     fig.update_yaxes(tickformat=".0%")
 
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     file_name = "distribution_of_web_query_and_thoughts_over_time"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
 
-def count_models_with_web_queries():
+def count_models_with_web_queries(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     ).copy()
 
     if "openai_models" not in df.columns:
@@ -2804,9 +2818,9 @@ def _normalize_query_reason_label(value):
     return label
 
 
-def reasons_for_another_web_query():
+def reasons_for_another_web_query(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
     df = _filter_query_reformulation_df_for_reason(df).copy()
@@ -3077,27 +3091,29 @@ def reasons_for_another_web_query():
 
     records_df = pd.DataFrame(records)
     records_df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_web_query_transition_reasons.csv",
         index=False,
     )
     records_df.to_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_web_query_transition_reasons.pkl"
     )
     to_json(
         records,
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.json",
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_web_query_transition_reasons.json",
     )
     return records_df
 
 
-def plot_reasons_for_another_web_query_distribution():
+def plot_reasons_for_another_web_query_distribution(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_web_query_transition_reasons.pkl"
     ).copy()
 
     if df.empty:
         print("No query-transition reason data found.")
         return pd.DataFrame()
+
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
 
     iteration_totals_before = Counter()
     iteration_reason_counts_before = Counter()
@@ -3335,9 +3351,9 @@ def plot_reasons_for_another_web_query_distribution():
         )
         fig.update_yaxes(tickformat=".0%", range=[-0.05, y_upper+0.05])
 
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(20, 20), legend_pos=(0.9, 1.2))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+        fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     for _, row in df.iterrows():
         normalized_reason_transitions = _safe_json_value(
@@ -3529,19 +3545,19 @@ def plot_reasons_for_another_web_query_distribution():
         print("No iteration-rate rows to plot.")
         return pd.DataFrame()
 
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     plot_df_before.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration.csv",
         index=False,
     )
     if len(query_plot_df_before) > 0:
         query_plot_df_before.to_csv(
-            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_reason_rates_by_iteration_query_level_before_validation.csv",
+            f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_web_query_reason_rates_by_iteration_query_level_before_validation.csv",
             index=False,
         )
     if len(plot_df_after) > 0:
         plot_df_after.to_csv(
-            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration_after_validation.csv",
+            f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration_after_validation.csv",
             index=False,
         )
 
@@ -3902,9 +3918,10 @@ def _detect_language_safe(text):
 def detect_user_and_web_query_languages(
     input_path=None,
     output_stem="query_reformulations_user_and_web_query_languages",
+    platform="chatgpt",
 ):
     input_path = input_path or (
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     if input_path.endswith(".pkl"):
         df = pd.read_pickle(input_path).copy()
@@ -3981,10 +3998,10 @@ def detect_user_and_web_query_languages(
         records.extend(web_query_records)
 
     records_df = pd.DataFrame(records)
-    _save_dataframe(records_df, output_stem)
+    _save_dataframe(records_df, output_stem, platform=platform)
     to_json(
         records_df.to_dict(orient="records"),
-        f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.json",
+        f"{OUTPUT_PATH}/{platform}/metadata/{output_stem}.json",
     )
 
     if len(records_df) == 0:
@@ -4001,10 +4018,10 @@ def detect_user_and_web_query_languages(
         )
     )
     summary_stem = f"{output_stem}_summary"
-    _save_dataframe(summary_df, summary_stem)
+    _save_dataframe(summary_df, summary_stem, platform=platform)
     to_json(
         summary_df.to_dict(orient="records"),
-        f"{OUTPUT_PATH}/chatgpt/metadata/{summary_stem}.json",
+        f"{OUTPUT_PATH}/{platform}/metadata/{summary_stem}.json",
     )
 
     print("\nDetected language summary:")
@@ -4016,9 +4033,10 @@ def plot_user_and_web_query_language_patterns(
     input_stem="query_reformulations_user_and_web_query_languages",
     output_file_name="query_reformulations_user_and_web_query_language_patterns",
     top_n_pairs=10,
+    platform="chatgpt",
 ):
-    input_pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.pkl"
-    input_csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.csv"
+    input_pkl_path = f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl"
+    input_csv_path = f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.csv"
     if os.path.exists(input_pkl_path):
         df = pd.read_pickle(input_pkl_path).copy()
     else:
@@ -4131,17 +4149,17 @@ def plot_user_and_web_query_language_patterns(
     )
     pair_summary["percentage"] = pair_summary["num_samples"] / len(language_pairs)
 
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     language_count_summary.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_web_language_count_summary.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}_web_language_count_summary.csv",
         index=False,
     )
     pair_summary.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_top_language_pairs.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}_top_language_pairs.csv",
         index=False,
     )
     language_pairs.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_language_pairs.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}_language_pairs.csv",
         index=False,
     )
 
@@ -4197,9 +4215,9 @@ def plot_user_and_web_query_language_patterns(
         height=560,
         margin=dict(t=90, b=80, l=80, r=40),
     )
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{output_file_name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{output_file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{output_file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{output_file_name}.pdf", format="pdf")
 
     print("\nWeb query language-count summary:")
     print(language_count_summary.to_string(index=False))
@@ -4344,9 +4362,9 @@ def _add_web_query_token_source_columns(df):
     return df
 
 
-def _save_dataframe(df, output_stem):
-    csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.csv"
-    pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.pkl"
+def _save_dataframe(df, output_stem, platform="chatgpt"):
+    csv_path = f"{OUTPUT_PATH}/{platform}/metadata/{output_stem}.csv"
+    pkl_path = f"{OUTPUT_PATH}/{platform}/metadata/{output_stem}.pkl"
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     df.to_csv(csv_path, index=False)
     df.to_pickle(pkl_path)
@@ -4481,10 +4499,10 @@ def _base_query_record(row):
     }
 
 
-def _save_query_eval_records(records, output_stem):
+def _save_query_eval_records(records, output_stem, platform="chatgpt"):
     results_df = pd.DataFrame(records)
-    _save_dataframe(results_df, output_stem)
-    to_json(records, f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.json")
+    _save_dataframe(results_df, output_stem, platform=platform)
+    to_json(records, f"{OUTPUT_PATH}/{platform}/metadata/{output_stem}.json")
     return results_df
 
 
@@ -4493,6 +4511,7 @@ def _evaluate_type_of_user_and_web_query_df(
     output_stem,
     model_name="gpt-4o-mini",
     client=None,
+    platform="chatgpt",
 ):
     client = client or OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     num_wq = 0
@@ -4555,17 +4574,18 @@ def _evaluate_type_of_user_and_web_query_df(
         records.append(row_record)
 
     print(num_wq)
-    return _save_query_eval_records(records, output_stem)
+    return _save_query_eval_records(records, output_stem, platform=platform)
 
 
-def type_of_user_and_web_query():
+def type_of_user_and_web_query(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _filter_query_reformulation_df(df)
     return _evaluate_type_of_user_and_web_query_df(
         df,
         output_stem="query_reformulations_user_query_types",
+        platform=platform,
     )
 
 
@@ -4574,6 +4594,7 @@ def _evaluate_relation_of_user_to_web_query_df(
     output_stem,
     model_name="gpt-4o-mini",
     client=None,
+    platform="chatgpt",
 ):
     client = client or OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     records = []
@@ -4633,17 +4654,18 @@ def _evaluate_relation_of_user_to_web_query_df(
         )
         records.append(row_record)
 
-    return _save_query_eval_records(records, output_stem)
+    return _save_query_eval_records(records, output_stem, platform=platform)
 
 
-def relation_of_user_to_web_query():
+def relation_of_user_to_web_query(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _filter_query_reformulation_df_for_relation(df)
     return _evaluate_relation_of_user_to_web_query_df(
         df,
         output_stem="query_reformulations_user_web_query_relations",
+        platform=platform,
     )
 
 
@@ -5201,12 +5223,12 @@ def _build_user_and_web_query_type_temporal_df(df):
     return monthly_counts
 
 
-def plot_user_and_web_query_type_distribution():
+def plot_user_and_web_query_type_distribution(platform="chatgpt"):
     user_type_pkl_path = (
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_query_types.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_user_query_types.pkl"
     )
     user_type_csv_path = (
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_query_types.csv"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_user_query_types.csv"
     )
     if os.path.exists(user_type_pkl_path):
         df = pd.read_pickle(user_type_pkl_path).copy()
@@ -5214,7 +5236,7 @@ def plot_user_and_web_query_type_distribution():
         df = pd.read_csv(user_type_csv_path).copy()
 
     source_df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     source_df = _filter_query_reformulation_df(source_df).copy()
 
@@ -5743,6 +5765,7 @@ def _build_query_specificity_stage_df(df, max_web_stage_bucket=3):
 def plot_query_specificity_distribution_by_iteration(
     input_stem="query_reformulations_query_specificity",
     output_file_name="query_specificity_distribution_by_iteration",
+    platform="chatgpt",
 ):
     platform_configs = [
         ("openai", "ChatGPT"),
@@ -5798,16 +5821,16 @@ def plot_query_specificity_distribution_by_iteration(
     def _platform_specificity_candidates(platform):
         if platform in {"openai", "chatgpt"}:
             return [
-                f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.pkl",
-                f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.csv",
+                f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl",
+                f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.csv",
             ]
         return [
             f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl",
             f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.csv",
         ]
 
-    input_pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.pkl"
-    input_csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.csv"
+    input_pkl_path = f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl"
+    input_csv_path = f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.csv"
     if os.path.exists(input_pkl_path):
         df = pd.read_pickle(input_pkl_path).copy()
     else:
@@ -5818,9 +5841,9 @@ def plot_query_specificity_distribution_by_iteration(
         print("No query specificity rows to plot.")
         return pd.DataFrame()
 
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     plot_df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}.csv",
         index=False,
     )
 
@@ -5925,9 +5948,9 @@ def plot_query_specificity_distribution_by_iteration(
             font=dict(size=20),
         )
 
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{plot_base_name}.html")
+        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{plot_base_name}.html")
         fig = with_paper_style(fig, config=styler(20, 18), legend_pos=(1, 1.25))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{plot_base_name}.pdf", format="pdf")
+        fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{plot_base_name}.pdf", format="pdf")
 
     _write_specificity_distribution_plot(plot_df, output_file_name)
 
@@ -5958,7 +5981,7 @@ def plot_query_specificity_distribution_by_iteration(
     if len(specificity_stage_frames) > 1:
         combined_specificity_df = pd.concat(specificity_stage_frames, ignore_index=True)
         combined_specificity_df.to_csv(
-            f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_all_platforms.csv",
+            f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}_all_platforms.csv",
             index=False,
         )
         to_json(
@@ -5970,7 +5993,7 @@ def plot_query_specificity_distribution_by_iteration(
                 ],
                 "platform_data_sources": specificity_source_paths,
             },
-            f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_all_platforms_sources.json",
+            f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}_all_platforms_sources.json",
         )
 
     overall_rows = []
@@ -6117,7 +6140,7 @@ def plot_query_specificity_distribution_by_iteration(
             f"{output_file_name}_overall_specificity_direction"
         )
         overall_df.to_csv(
-            f"{OUTPUT_PATH}/chatgpt/metadata/{overall_output_file_name}.csv",
+            f"{OUTPUT_PATH}/{platform}/metadata/{overall_output_file_name}.csv",
             index=False,
         )
         to_json(
@@ -6128,7 +6151,7 @@ def plot_query_specificity_distribution_by_iteration(
                 ],
                 "platform_data_sources": source_paths,
             },
-            f"{OUTPUT_PATH}/chatgpt/metadata/{overall_output_file_name}_sources.json",
+            f"{OUTPUT_PATH}/{platform}/metadata/{overall_output_file_name}_sources.json",
         )
 
         line_fig = go.Figure()
@@ -6193,7 +6216,7 @@ def plot_query_specificity_distribution_by_iteration(
         )
         line_fig.update_yaxes(ticksuffix="%")
         line_fig.write_html(
-            f"{OUTPUT_PATH}/{CONF}/{overall_output_file_name}.html"
+            f"{OUTPUT_PATH}/{platform}/{CONF}/{overall_output_file_name}.html"
         )
         line_fig = with_paper_style(
             line_fig,
@@ -6201,7 +6224,7 @@ def plot_query_specificity_distribution_by_iteration(
             # legend_pos=(0.9, 1.2),
         )
         line_fig.write_image(
-            f"{OUTPUT_PATH}/{CONF}/{overall_output_file_name}.pdf",
+            f"{OUTPUT_PATH}/{platform}/{CONF}/{overall_output_file_name}.pdf",
             format="pdf",
         )
 
@@ -6211,7 +6234,7 @@ def plot_query_specificity_distribution_by_iteration(
             f"{output_file_name}_dimension_specificity_direction"
         )
         dimension_direction_df.to_csv(
-            f"{OUTPUT_PATH}/chatgpt/metadata/{dimension_output_file_name}.csv",
+            f"{OUTPUT_PATH}/{platform}/metadata/{dimension_output_file_name}.csv",
             index=False,
         )
         to_json(
@@ -6222,7 +6245,7 @@ def plot_query_specificity_distribution_by_iteration(
                 ],
                 "platform_data_sources": source_paths,
             },
-            f"{OUTPUT_PATH}/chatgpt/metadata/{dimension_output_file_name}_sources.json",
+            f"{OUTPUT_PATH}/{platform}/metadata/{dimension_output_file_name}_sources.json",
         )
 
         if overall_rows:
@@ -6330,7 +6353,7 @@ def plot_query_specificity_distribution_by_iteration(
                 f"{dimension_output_file_name}__{platform}"
             )
             per_platform_line_fig.write_html(
-                f"{OUTPUT_PATH}/{CONF}/{per_platform_file_name}.html"
+                f"{OUTPUT_PATH}/{platform}/{CONF}/{per_platform_file_name}.html"
             )
             per_platform_line_fig = with_paper_style(
                 per_platform_line_fig,
@@ -6338,7 +6361,7 @@ def plot_query_specificity_distribution_by_iteration(
                 # legend_pos=(0.9, 1.18),
             )
             per_platform_line_fig.write_image(
-                f"{OUTPUT_PATH}/{CONF}/{per_platform_file_name}.pdf",
+                f"{OUTPUT_PATH}/{platform}/{CONF}/{per_platform_file_name}.pdf",
                 format="pdf",
             )
 
@@ -6350,6 +6373,7 @@ def _plot_user_web_query_relation_distribution_from_df(
     file_name="user_web_query_relation_distribution",
     venn_file_name="user_web_query_relation_venn",
     assignment_file_name="query_reformulations_user_web_query_relation_venn_assignments.csv",
+    platform="chatgpt",
 ):
     relation_order = [
         "extractive",
@@ -6434,7 +6458,7 @@ def _plot_user_web_query_relation_distribution_from_df(
         ]
     )
     assignment_path = (
-        f"{OUTPUT_PATH}/chatgpt/metadata/"
+        f"{OUTPUT_PATH}/{platform}/metadata/"
         f"{assignment_file_name}"
     )
     assignment_df.to_csv(
@@ -6477,10 +6501,10 @@ def _plot_user_web_query_relation_distribution_from_df(
         margin=dict(l=40, r=40, t=40, b=40),
     )
 
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 12), legend_pos=None)
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     venn_fig = go.Figure()
     circle_specs = [
@@ -6546,22 +6570,22 @@ def _plot_user_web_query_relation_distribution_from_df(
         paper_bgcolor="white",
     )
 
-    venn_fig.write_html(f"{OUTPUT_PATH}/{CONF}/{venn_file_name}.html")
+    venn_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{venn_file_name}.html")
     venn_fig = with_paper_style(venn_fig, config=styler(18, 16), legend_pos=None)
-    venn_fig.write_image(f"{OUTPUT_PATH}/{CONF}/{venn_file_name}.pdf", format="pdf")
+    venn_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{venn_file_name}.pdf", format="pdf")
 
 
-def plot_user_web_query_relation_distribution():
+def plot_user_web_query_relation_distribution(platform="chatgpt"):
     df = pd.read_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_web_query_relations.csv"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_user_web_query_relations.csv"
     )
     _plot_user_web_query_relation_distribution_from_df(df)
 
 
-def query_specificity_evaluation():
+def query_specificity_evaluation(platform="chatgpt"):
     output_stem = "query_reformulations_query_specificity"
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _filter_query_reformulation_df(df)
 
@@ -6683,11 +6707,12 @@ def query_specificity_evaluation():
         records.append(row_record)
 
         if len(records) % 20 == 0:
-            _save_query_eval_records(records, output_stem)
+            _save_query_eval_records(records, output_stem, platform=platform)
 
     return _save_query_eval_records(
         records,
         output_stem=output_stem,
+        platform=platform,
     )
 
 

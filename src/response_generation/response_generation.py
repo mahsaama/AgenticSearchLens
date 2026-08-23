@@ -706,6 +706,7 @@ def response_source_similarity(
         ],
         inplace=True,
     )
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/metadata", exist_ok=True)
     df.to_csv(
         f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_similarity.csv",
         index=False,

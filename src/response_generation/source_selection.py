@@ -4414,6 +4414,7 @@ def add_retrieved_safe_reliability_scores_to_topical_judge_ranks(platform="chatg
     for score_col, scores in score_columns.items():
         df[score_col] = scores
 
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/metadata", exist_ok=True)
     df.to_pickle(
         f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks.pkl"
     )
