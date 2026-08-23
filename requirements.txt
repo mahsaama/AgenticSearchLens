@@ -6,6 +6,11 @@
 
 anthropic==0.93.0
 beautifulsoup4==4.14.3
+# Transitive dep of readability-lxml (unpinned there), pinned explicitly here
+# because pip otherwise resolves the newest chardet, which is >= requests'
+# own supported-version ceiling and makes every `import requests` print a
+# RequestsDependencyWarning.
+chardet<6.0.0
 curl_cffi==0.15.0
 httpx==0.28.1
 kaleido==1.2.0
