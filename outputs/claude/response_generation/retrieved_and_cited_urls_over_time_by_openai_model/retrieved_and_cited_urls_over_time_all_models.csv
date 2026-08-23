@@ -1,0 +1,2 @@
+time_period,response_count,avg_retrieved_url_count,avg_cited_url_count,avg_cited_retrieved_count,total_retrieved_url_count,total_cited_url_count,total_cited_retrieved_count,citation_rate,grounding_rate,model
+2026-08-01,1,20.0,11.0,11.0,20,11,11,0.55,1.0,Unknown

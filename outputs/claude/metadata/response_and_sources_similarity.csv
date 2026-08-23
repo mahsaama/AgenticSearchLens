@@ -1,0 +1,1 @@
+user_id,conv_id,turn_id,conv_starter,topic,language,tools,reasoning,assistant_msg_history,time,month,asistant_response,user_query,retrieved_sources_similarity,safe_sources_similarity,cited_sources_similarity

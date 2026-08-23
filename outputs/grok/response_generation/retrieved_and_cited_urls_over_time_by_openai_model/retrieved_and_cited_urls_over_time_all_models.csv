@@ -1,0 +1,2 @@
+time_period,response_count,avg_retrieved_url_count,avg_cited_url_count,avg_cited_retrieved_count,total_retrieved_url_count,total_cited_url_count,total_cited_retrieved_count,citation_rate,grounding_rate,model
+2026-08-01,2,35.0,11.5,11.5,70,23,23,0.32857142857142857,1.0,grok-3

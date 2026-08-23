@@ -1888,7 +1888,7 @@ def plot_claim_bucket_tranco_rank_comparison(
     if len(rank_df) == 0:
         raise ValueError("No claim-level Tranco ranks found for the selected buckets.")
 
-    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     rank_df.to_csv(f"{output_dir}/{file_name}.csv", index=False)
 
@@ -3116,7 +3116,7 @@ def plot_response_source_nli_entailment_score_boxplot(
         .reset_index()
     )
 
-    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     summary_df.to_csv(f"{output_dir}/{file_name}.csv", index=False)
 
@@ -3200,7 +3200,7 @@ def plot_response_source_nli_entailment_score_boxplots_all(platform="chatgpt"):
         return pd.DataFrame()
 
     combined_summary_df = pd.concat(summary_frames, ignore_index=True)
-    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     combined_summary_df.to_csv(
         f"{output_dir}/response_source_nli_entailment_score_boxplot_all_summary.csv",

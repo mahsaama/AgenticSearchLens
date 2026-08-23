@@ -794,7 +794,7 @@ def plot_response_source_quality_summary(platform="chatgpt"):
     df = _load_response_source_similarity_frames(platform=platform)
     if len(df) == 0:
         return
-    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
 
     row_key_cols = [
@@ -1295,7 +1295,7 @@ def plot_retrieved_and_cited_urls_over_time(
         except Exception as e:
             logger.warning("Could not write retrieved/cited URL over-time PDF: %s", e)
 
-    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
 
     summary_df = _build_summary_df(_load_response_and_sources_df(platform=platform))

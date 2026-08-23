@@ -519,10 +519,12 @@ def web_call_trend_over_time(df, platform="chatgpt"):
         margin=dict(b=90),
     )
     fig.update_yaxes(tickformat=".0%")
-    file_name = f"tooly_turns_rate_over_time_{platform}"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
+    file_name = "tooly_turns_rate_over_time"
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 17))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
 def web_call_trend_over_time_all_convai(df):
@@ -615,303 +617,6 @@ def web_call_trend_over_time_all_convai(df):
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
 
-
-def web_call_trend_over_time_by_model(df, platform="chatgpt"):
-    df = df.copy()
-    # ChatGPT-only whitelist (the paper's specific model list) -- there's no
-    # equivalent authoritative list for Claude/Grok/DeepSeek, so those plot
-    # whatever models actually appear instead of filtering to a fixed set.
-    selected_models = ['gpt-4-1', 'gpt-4-1-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-5', 'gpt-5-instant', 'gpt-5-mini', 'gpt-5-thinking', 'gpt-5-2', 'gpt-5-2-thinking', 'o3', 'o3-mini', 'text-davinci-002-render-sha']
-    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/{platform}/metadata/all_tools_categorized.json")
-    df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
-    df["month"] = pd.to_datetime(df["month"])
-    df["model"] = df["openai_models"].apply(_primary_model)
-    df = df[df["month"] >= pd.Timestamp("2024-01-01")].copy()
-
-    cat = "Web & Browsing"
-    df["cat_used"] = df["categories"].apply(lambda x: isinstance(x, list) and cat in x)
-    plot_df = (
-        df.groupby(["month", "model"])["cat_used"]
-        .mean()
-        .reset_index(name="web_call_rate")
-        .sort_values(["model", "month"])
-    )
-    plot_df = plot_df[plot_df["model"].str.lower() != "unknown"].copy()
-    if platform == "chatgpt":
-        plot_df = plot_df[plot_df["model"].isin(selected_models)].copy()
-    else:
-        selected_models = sorted(plot_df["model"].unique())
-
-    color_pool = (
-        qualitative.Light24
-        + qualitative.Set3
-        + qualitative.Alphabet
-        + qualitative.Dark24
-    )
-
-    fig = go.Figure()
-    for idx, model in enumerate(selected_models):
-        if model not in set(plot_df["model"].unique()):
-            continue
-        model_df = plot_df[plot_df["model"] == model]
-        fig.add_trace(
-            go.Scatter(
-                x=model_df["month"],
-                y=model_df["web_call_rate"],
-                mode="lines+markers",
-                name=model,
-                line=dict(color=color_pool[idx % len(color_pool)]),
-                marker=dict(color=color_pool[idx % len(color_pool)]),
-            )
-        )
-
-    fig.update_layout(
-        xaxis_title="Month",
-        yaxis_title="Turns with Web Call (%)",
-        xaxis=dict(
-            tickmode="linear",
-            dtick="M2",
-            tickformat="%b %Y",
-            tickangle=-45,
-        ),
-        # margin=dict(b=90),
-    )
-    fig.update_yaxes(tickformat=".0%")
-    file_name = f"web_call_trend_over_time_by_model_{platform}"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
-    fig = with_paper_style(fig, config=styler(18, 14), legend_pos=(0.8, 1.8))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
-
-
-def web_call_stacked_bar_by_platform_year(platform_configs=None):
-    if platform_configs is None:
-        platform_configs = [
-            ("openai", "OpenAI"),
-            ("claude", "Claude"),
-            ("grok", "Grok"),
-            ("deepseek", "DeepSeek"),
-        ]
-    year_map = {
-        "openai": [2024, 2025],
-        "claude": [2024, 2025],
-        "grok": [2025, 2026],
-        "deepseek": [2024, 2025],
-    }
-
-    def _load_platform_df(platform):
-        # This file's "openai" convention maps to extraction.py's "chatgpt".
-        return load_whole_data_from_file(
-            fmt="pkl", platform="chatgpt" if platform == "openai" else platform
-        )
-
-    plot_frames = []
-    for platform, display_name in platform_configs:
-        try:
-            df = _load_platform_df(platform).copy()
-        except Exception as e:
-            print(f"Failed to load data for `{platform}`: {e}")
-            continue
-
-        if "topic" not in df.columns:
-            print(f"Skipping `{platform}` because `topic` column is missing.")
-            continue
-        if "month" not in df.columns:
-            print(f"Skipping `{platform}` because `month` column is missing.")
-            continue
-
-        df["month"] = pd.to_datetime(df["month"], errors="coerce")
-        df = df[df["month"].notna()].copy()
-        df["year"] = df["month"].dt.year
-        selected_years = year_map.get(platform, [2024, 2025])
-        df = df[df["year"].isin(selected_years)].copy()
-        df["topic"] = df["topic"].fillna("Other").apply(_normalize_topic_name)
-        df = df[
-            ~df["topic"].astype(str).str.lower().isin({"other", "uncategorized", "misc"})
-        ].copy()
-        if df.empty:
-            year_text = "/".join(str(year) for year in selected_years)
-            print(f"No platform-year-topic rows found for `{platform}` in {year_text}.")
-            continue
-
-        platform_df = (
-            df.groupby(["year", "topic"])
-            .size()
-            .reset_index(name="count")
-        )
-        platform_df["platform"] = platform
-        platform_df["platform_display"] = display_name
-        platform_df["bar_label"] = platform_df["year"].apply(
-            lambda year: f"{display_name} {year}"
-        )
-        plot_frames.append(platform_df)
-
-    if not plot_frames:
-        print("No platform-year-topic rows found for the requested platform/year pairs.")
-        return pd.DataFrame()
-
-    plot_df = pd.concat(plot_frames, ignore_index=True)
-    plot_df["total_turns"] = (
-        plot_df.groupby(["platform", "year"])["count"]
-        .transform("sum")
-    )
-    plot_df["topic_share"] = plot_df["count"].div(
-        plot_df["total_turns"].replace(0, pd.NA)
-    ).fillna(0.0)
-
-    topic_order = (
-        plot_df.groupby("topic")["count"]
-        .sum()
-        .sort_values(ascending=False)
-        .index
-        .tolist()
-    )
-    other_topics = sorted(
-        topic for topic in plot_df["topic"].unique() if topic not in topic_order
-    )
-    topic_order = topic_order + other_topics
-
-    available_labels = set(plot_df["bar_label"])
-    bar_order = []
-    for platform, display_name in platform_configs:
-        for year in year_map.get(platform, [2024, 2025]):
-            label = f"{display_name} {year}"
-            if label in available_labels:
-                bar_order.append(label)
-
-    bar_year_topic_tuples = []
-    for platform, display_name in platform_configs:
-        for year in year_map.get(platform, [2024, 2025]):
-            label = f"{display_name} {year}"
-            for topic in topic_order:
-                bar_year_topic_tuples.append((display_name, year, label, topic))
-
-    platform_year_index = pd.MultiIndex.from_tuples(
-        bar_year_topic_tuples,
-        names=["platform_display", "year", "bar_label", "topic"],
-    )
-    plot_df = (
-        plot_df.set_index(["platform_display", "year", "bar_label", "topic"])
-        .reindex(platform_year_index)
-        .reset_index()
-    )
-    for col in ["count", "total_turns", "topic_share"]:
-        if col in plot_df.columns:
-            plot_df[col] = pd.to_numeric(plot_df[col], errors="coerce").fillna(0)
-    plot_df["total_turns"] = (
-        plot_df.groupby(["bar_label"])["count"]
-        .transform("sum")
-    )
-    plot_df["topic_share"] = plot_df["count"].div(
-        plot_df["total_turns"].replace(0, pd.NA)
-    ).fillna(0.0)
-
-    plot_df["bar_label"] = pd.Categorical(
-        plot_df["bar_label"], categories=bar_order, ordered=True
-    )
-    plot_df["topic"] = pd.Categorical(
-        plot_df["topic"], categories=topic_order, ordered=True
-    )
-    plot_df = plot_df.sort_values(["topic", "bar_label"])
-
-    fig = go.Figure()
-    color_pool = (
-        qualitative.Light24
-        + qualitative.Set3
-        + qualitative.Alphabet
-        + qualitative.Dark24
-    )
-    legend_year = int(sorted(plot_df["year"].dropna().unique())[0])
-
-    for idx, topic in enumerate(topic_order):
-        topic_df = plot_df[plot_df["topic"] == topic].copy()
-        if topic_df.empty:
-            continue
-        for year in sorted(topic_df["year"].dropna().unique()):
-            year_df = topic_df[topic_df["year"] == year].copy()
-            if year_df.empty or year_df["total_turns"].sum() == 0:
-                continue
-            fig.add_trace(
-                go.Bar(
-                    x=year_df["topic_share"],
-                    y=year_df["bar_label"].astype(str),
-                    name=topic,
-                    legendgroup=str(topic),
-                    orientation="h",
-                    marker_color=color_pool[idx % len(color_pool)],
-                    showlegend=bool(year == legend_year),
-                    customdata=year_df[["year", "count", "total_turns"]],
-                    hovertemplate=(
-                        "Platform: %{y}<br>"
-                        "Year: %{customdata[0]}<br>"
-                        f"Topic: {topic}<br>"
-                        "Share: %{x:.1%}<br>"
-                        "Topic turns: %{customdata[1]}<br>"
-                        "Total turns: %{customdata[2]}"
-                        "<extra></extra>"
-                    ),
-                )
-            )
-
-    fig.update_layout(
-        barmode="stack",
-        xaxis_title="Topic share of all turns",
-        yaxis_title="Platform",
-        legend_title="",
-        margin=dict(l=110, r=30, t=220, b=70),
-        yaxis=dict(
-            categoryorder="array",
-            categoryarray=list(reversed(bar_order)),
-        ),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.1,
-            xanchor="left",
-            x=-0.2,
-            traceorder="normal",
-            font=dict(size=10),
-            itemsizing="constant",
-        ),
-    )
-    fig.update_xaxes(tickformat=".0%", range=[0, 1])
-    file_name = "web_call_stacked_bar_by_platform_year"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
-    fig = with_paper_style(fig, config=styler(18, 14), legend_pos=(-0.2, 1.1))
-    fig.update_xaxes(tickfont=dict(size=14))
-    fig.update_yaxes(tickfont=dict(size=16))
-    fig.update_layout(
-        margin=dict(l=110, r=30, t=220, b=70),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.1,
-            xanchor="left",
-            x=-0.2,
-            traceorder="normal",
-            font=dict(size=10),
-            itemsizing="constant",
-        )
-    )
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
-    return plot_df
-
-
-def web_call_stacked_bar_by_model_year(df=None):
-    return web_call_stacked_bar_by_platform_year()
-
-
-def print_available_models(df):
-    df = df.copy()
-    df["model"] = df["openai_models"].apply(_primary_model)
-    models = sorted(
-        model
-        for model in df["model"].dropna().unique()
-        if isinstance(model, str) and model.lower() != "unknown"
-    )
-    print(models)
-    return models
-
-
 def topic_distribution_of_web_data(web_df, platform="chatgpt"):
     # in the turns that trigger web call, what is the percentage of each one: what are the important topics that had called web?
     # bar plot
@@ -943,12 +648,14 @@ def topic_distribution_of_web_data(web_df, platform="chatgpt"):
         ),
     )
     fig.update_yaxes(tickformat=".0%")
-    file_name = f"topic_distribution_of_web_data_{platform}"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
+    file_name = "topic_distribution_of_web_data"
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=10))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 #      topic  rate                                                                                  
 # 0                           Finance  6440                                                                                  
@@ -1038,12 +745,14 @@ def topic_distriction_of_whole_data(df, platform="chatgpt"):
         ),
     )
     fig.update_yaxes(tickformat=".0%")
-    file_name = f"topic_distribution_of_whole_data_{platform}"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
+    file_name = "topic_distribution_of_whole_data"
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=10))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
 def topic_prompt_volume_and_web_rate_over_time(df, top_k=5, platform="chatgpt"):
@@ -1051,7 +760,7 @@ def topic_prompt_volume_and_web_rate_over_time(df, top_k=5, platform="chatgpt"):
     # platform-dispatched detection is used instead of a "web" substring
     # match on `interactions`.
     df = df.copy()
-    output_dir = f"{OUTPUT_PATH}/{CONF}/topic_prompt_volume_and_web_rate_over_time/{platform}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}/topic_prompt_volume_and_web_rate_over_time"
     os.makedirs(output_dir, exist_ok=True)
 
     df["topic"] = df["topic"].fillna("Other").apply(_normalize_topic_name)
@@ -1837,12 +1546,6 @@ def plot_web_call_tool_intent_distribution(
     return plot_df
 
 
-def subset_selection_for_policy_evaluation_by_human():
-    df = pd.read_csv(f"{OUTPUT_PATH}/chatgpt/metadata/web_calls_characterization.csv").reset_index()
-    subset = df.sample(100)
-    subset.to_csv(f"{OUTPUT_PATH}/chatgpt/metadata/web_calls_characterization_subset_for_human_eval.csv", index=False)
-
-
 def count_model_used(web_df, platform="chatgpt"):
     # Count model usage across all web-call turns. A turn can list multiple models,
     # so we report both total mentions and the final/primary model per turn.
@@ -1907,8 +1610,8 @@ def count_model_used(web_df, platform="chatgpt"):
 if __name__ == "__main__":
     # Run every per-platform analysis once for each platform we have
     # extracted data for (see src.utils.common_io.PLATFORMS); each writes
-    # its own platform-suffixed output so results from different platforms
-    # never overwrite each other.
+    # under its own outputs/<platform>/web_tool_invocation/ so results from
+    # different platforms never overwrite each other.
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     chatgpt_full_df = None
     for platform in PLATFORMS:
@@ -1929,7 +1632,6 @@ if __name__ == "__main__":
         print(f"[{platform}] # turns with web call:", len(web_df))
 
         web_call_trend_over_time(full_df, platform=platform)
-        web_call_trend_over_time_by_model(full_df, platform=platform)
         topic_distriction_of_whole_data(full_df, platform=platform)
         topic_distribution_of_web_data(web_df, platform=platform)
         count_model_used(web_df, platform=platform)
