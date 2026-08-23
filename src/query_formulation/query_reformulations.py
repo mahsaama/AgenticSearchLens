@@ -42,7 +42,7 @@ from langdetect import detect
 from functools import lru_cache
 import numpy as np
 from collections import Counter
-from openai import OpenAI
+from src.utils.llm_judge import run_judge
 from src.prompts.evaluator_prompts import *
 
 
@@ -2134,49 +2134,6 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
         "median_iterations_per_prompt": primary_summary["median_iterations_per_prompt"],
     }
 
-def _parse_eval_json(text):
-    text = (text or "").strip()
-    if not text:
-        return {}
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and start < end:
-        candidate = text[start : end + 1]
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
-            try:
-                return ast.literal_eval(candidate)
-            except (ValueError, SyntaxError):
-                return {}
-    return {}
-
-
-def _run_judge(client, model_name, system_prompt, user_prompt):
-    # Keep evaluator calls tool-free: this judge should only classify the
-    # provided text and must not browse or invoke external tools.
-    response = client.responses.create(
-        model=model_name,
-        tools=[],
-        tool_choice="none",
-        input=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0
-    )
-    raw_text = response.output_text
-    return {
-        "raw_judgment": raw_text,
-        "parsed_judgment": _parse_eval_json(raw_text),
-    }
-
 
 def _safe_json_value(value, default=None):
     if default is None:
@@ -3431,9 +3388,6 @@ def query_specificity_evaluation(platform="chatgpt"):
     )
     df = _filter_query_reformulation_df(df)
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    model_name = "gpt-4o-mini"
-
     specificity_dimensions = {
         "temporal": (
             SYSTEM_PROMPT_TEMPORAL_SPECIFICITY,
@@ -3462,9 +3416,8 @@ def query_specificity_evaluation(platform="chatgpt"):
         for dimension, (system_prompt, user_prompt_template) in (
             specificity_dimensions.items()
         ):
-            eval_result = _run_judge(
-                client=client,
-                model_name=model_name,
+            eval_result = run_judge(
+                platform,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt_template.format(QUERY=query_text),
             )
