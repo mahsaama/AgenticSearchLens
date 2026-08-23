@@ -1,9 +1,13 @@
 {
     "top_topics_from_whole_data": [
+        "Travel",
         "Programming"
     ],
-    "top_topics_from_web_data": [],
+    "top_topics_from_web_data": [
+        "Travel"
+    ],
     "selected_topics": [
+        "Travel",
         "Programming"
     ]
 }

@@ -27,7 +27,7 @@ from collections import Counter
 # "Misc" has no keywords -- like "Other", it's a fallback only, never a match.
 _TOPIC_KEYWORDS = {
     "Travel": ["travel", "trip", "flight", "vacation", "hotel", "itinerary",
-               "destination", "passport", "visa", "tourist", "tourism", "airbnb"],
+               "destination", "passport", "visa", "tourist", "tourism", "airbnb", "best places"],
     "Cars": ["car ", "vehicle", "engine", "mileage", "tire", "dealership",
              "suv", "sedan", "mechanic", "driving", "car’s", "car's"],
     "Mobile phones": ["phone", "iphone", "android", "smartphone", "samsung",
