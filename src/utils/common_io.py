@@ -12,6 +12,12 @@ import os
 DATA_BASE_PATH = "data/chatgpt"
 OUTPUT_PATH = "./outputs"
 
+# The four platforms this pipeline has data/extraction support for. Analysis
+# entry points (each file's __main__ block, mainly) loop over this instead
+# of hardcoding a single platform, so `python -m src.some.module` runs
+# against all of them by default.
+PLATFORMS = ["chatgpt", "claude", "grok", "deepseek"]
+
 
 def load_json(file_path):
     """Load and parse a JSON file, returning None (and logging) on failure."""

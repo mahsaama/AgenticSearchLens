@@ -455,9 +455,9 @@ def _tool_to_category_lookup(path):
     }
 
 
-def web_call_trend_over_time(df):
+def web_call_trend_over_time(df, platform="chatgpt"):
     df = df.copy()
-    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/chatgpt/metadata/all_tools_categorized.json")
+    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/{platform}/metadata/all_tools_categorized.json")
     df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
 
     df["month"] = pd.to_datetime(df["month"])
@@ -519,7 +519,7 @@ def web_call_trend_over_time(df):
         margin=dict(b=90),
     )
     fig.update_yaxes(tickformat=".0%")
-    file_name = "tooly_turns_rate_over_time"
+    file_name = f"tooly_turns_rate_over_time_{platform}"
     fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 17))
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
@@ -616,10 +616,13 @@ def web_call_trend_over_time_all_convai(df):
 
 
 
-def web_call_trend_over_time_by_model(df):
+def web_call_trend_over_time_by_model(df, platform="chatgpt"):
     df = df.copy()
+    # ChatGPT-only whitelist (the paper's specific model list) -- there's no
+    # equivalent authoritative list for Claude/Grok/DeepSeek, so those plot
+    # whatever models actually appear instead of filtering to a fixed set.
     selected_models = ['gpt-4-1', 'gpt-4-1-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-5', 'gpt-5-instant', 'gpt-5-mini', 'gpt-5-thinking', 'gpt-5-2', 'gpt-5-2-thinking', 'o3', 'o3-mini', 'text-davinci-002-render-sha']
-    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/chatgpt/metadata/all_tools_categorized.json")
+    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/{platform}/metadata/all_tools_categorized.json")
     df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
     df["month"] = pd.to_datetime(df["month"])
     df["model"] = df["openai_models"].apply(_primary_model)
@@ -634,7 +637,10 @@ def web_call_trend_over_time_by_model(df):
         .sort_values(["model", "month"])
     )
     plot_df = plot_df[plot_df["model"].str.lower() != "unknown"].copy()
-    plot_df = plot_df[plot_df["model"].isin(selected_models)].copy()
+    if platform == "chatgpt":
+        plot_df = plot_df[plot_df["model"].isin(selected_models)].copy()
+    else:
+        selected_models = sorted(plot_df["model"].unique())
 
     color_pool = (
         qualitative.Light24
@@ -671,7 +677,7 @@ def web_call_trend_over_time_by_model(df):
         # margin=dict(b=90),
     )
     fig.update_yaxes(tickformat=".0%")
-    file_name = "web_call_trend_over_time_by_model"
+    file_name = f"web_call_trend_over_time_by_model_{platform}"
     fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 14), legend_pos=(0.8, 1.8))
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
@@ -906,7 +912,7 @@ def print_available_models(df):
     return models
 
 
-def topic_distribution_of_web_data(web_df):
+def topic_distribution_of_web_data(web_df, platform="chatgpt"):
     # in the turns that trigger web call, what is the percentage of each one: what are the important topics that had called web?
     # bar plot
     topic_counts = (
@@ -937,7 +943,7 @@ def topic_distribution_of_web_data(web_df):
         ),
     )
     fig.update_yaxes(tickformat=".0%")
-    file_name = "topic_distribution_of_web_data"
+    file_name = f"topic_distribution_of_web_data_{platform}"
     fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10))
     fig.update_xaxes(tickfont=dict(size=10))
@@ -987,15 +993,17 @@ def topic_distribution_of_web_data(web_df):
 # 39                   Event Planning    30
 
  
-def topic_distriction_of_whole_data(df):
+def topic_distriction_of_whole_data(df, platform="chatgpt"):
     # in the whole turns, rate of each topic calling the web over number of all turns with that topic: what topics are more prune to call web?
-    # bar plot. ChatGPT-only (no platform param): uses the `tools` column's
-    # two-step web-call detection (see _chatgpt_has_web_call's docstring)
-    # instead of a plain "web" substring match on `interactions`, which
-    # missed legacy exports whose recipient was e.g. "browser".
+    # bar plot. Web-call detection dispatches on `platform` via
+    # _has_web_call_for_platform (see its docstring) rather than a plain
+    # "web" substring match on `interactions`, which missed legacy exports
+    # whose recipient was e.g. "browser".
     df["topic"] = df["topic"].fillna("Other").apply(_normalize_topic_name)
     df = df[(df["topic"] != "Other") & (df["topic"] != "Misc")].copy()
-    df["has_web_call"] = df["tools"].apply(_chatgpt_has_web_call)
+    df["has_web_call"] = df.apply(
+        lambda row: _has_web_call_for_platform(row, platform), axis=1
+    )
     all_topics = sorted(
         set(df["topic"].dropna().astype(str))
         | {
@@ -1030,7 +1038,7 @@ def topic_distriction_of_whole_data(df):
         ),
     )
     fig.update_yaxes(tickformat=".0%")
-    file_name = "topic_distribution_of_whole_data"
+    file_name = f"topic_distribution_of_whole_data_{platform}"
     fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10))
     fig.update_xaxes(tickfont=dict(size=10))
@@ -1038,12 +1046,12 @@ def topic_distriction_of_whole_data(df):
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
 
-def topic_prompt_volume_and_web_rate_over_time(df, top_k=5):
-    # ChatGPT-only (no platform param) -- see topic_distriction_of_whole_data's
-    # comment on why `tools` + _chatgpt_has_web_call is used instead of a
-    # "web" substring match on `interactions`.
+def topic_prompt_volume_and_web_rate_over_time(df, top_k=5, platform="chatgpt"):
+    # See _has_web_call_for_platform's docstring on why `tools` +
+    # platform-dispatched detection is used instead of a "web" substring
+    # match on `interactions`.
     df = df.copy()
-    output_dir = f"{OUTPUT_PATH}/{CONF}/topic_prompt_volume_and_web_rate_over_time"
+    output_dir = f"{OUTPUT_PATH}/{CONF}/topic_prompt_volume_and_web_rate_over_time/{platform}"
     os.makedirs(output_dir, exist_ok=True)
 
     df["topic"] = df["topic"].fillna("Other").apply(_normalize_topic_name)
@@ -1054,7 +1062,9 @@ def topic_prompt_volume_and_web_rate_over_time(df, top_k=5):
         print("No topic rows available after filtering.")
         return pd.DataFrame()
 
-    df["has_web_call"] = df["tools"].apply(_chatgpt_has_web_call)
+    df["has_web_call"] = df.apply(
+        lambda row: _has_web_call_for_platform(row, platform), axis=1
+    )
     df["month"] = pd.to_datetime(df["month"], errors="coerce")
     df = df[df["month"].notna()].copy()
     df["month"] = df["month"].dt.to_period("M").dt.to_timestamp()
@@ -1833,7 +1843,7 @@ def subset_selection_for_policy_evaluation_by_human():
     subset.to_csv(f"{OUTPUT_PATH}/chatgpt/metadata/web_calls_characterization_subset_for_human_eval.csv", index=False)
 
 
-def count_model_used(web_df):
+def count_model_used(web_df, platform="chatgpt"):
     # Count model usage across all web-call turns. A turn can list multiple models,
     # so we report both total mentions and the final/primary model per turn.
     df = web_df.copy()
@@ -1885,25 +1895,49 @@ def count_model_used(web_df):
         .reset_index(name="count")
     )
 
-    print("\nModel mentions across `openai_models`:")
+    print(f"\n[{platform}] Model mentions across `openai_models`:")
     print(all_model_counts.to_string(index=False))
 
-    print("\nPrimary model per turn:")
+    print(f"\n[{platform}] Primary model per turn:")
     print(primary_model_counts.to_string(index=False))
 
     return all_model_counts, primary_model_counts
 
 
 if __name__ == "__main__":
-    full_df = load_whole_data_from_file(fmt="pkl")
-    print("# all turns:", len(full_df))
-    web_df = load_web_data_from_file(fmt="pkl")
-    print("# turns with web call:", len(web_df))
+    # Run every per-platform analysis once for each platform we have
+    # extracted data for (see src.utils.common_io.PLATFORMS); each writes
+    # its own platform-suffixed output so results from different platforms
+    # never overwrite each other.
+    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
+    chatgpt_full_df = None
+    for platform in PLATFORMS:
+        try:
+            full_df = load_whole_data_from_file(fmt="pkl", platform=platform)
+        except Exception as e:
+            print(f"[{platform}] Skipping -- failed to load extracted data: {e}")
+            continue
+        print(f"[{platform}] # all turns:", len(full_df))
+        if platform == "chatgpt":
+            chatgpt_full_df = full_df
 
-    web_call_trend_over_time(full_df)
-    web_call_trend_over_time_all_convai(full_df)
-    web_call_trend_over_time_by_model(full_df)
-    topic_distriction_of_whole_data(full_df)
-    topic_distribution_of_web_data(web_df)
-    count_model_used(web_df)
-    topic_prompt_volume_and_web_rate_over_time(full_df, top_k=5)
+        try:
+            web_df = load_web_data_from_file(fmt="pkl", platform=platform)
+        except Exception as e:
+            print(f"[{platform}] No web_data_summary found ({e}); using an empty web_df.")
+            web_df = full_df.iloc[0:0].copy()
+        print(f"[{platform}] # turns with web call:", len(web_df))
+
+        web_call_trend_over_time(full_df, platform=platform)
+        web_call_trend_over_time_by_model(full_df, platform=platform)
+        topic_distriction_of_whole_data(full_df, platform=platform)
+        topic_distribution_of_web_data(web_df, platform=platform)
+        count_model_used(web_df, platform=platform)
+        topic_prompt_volume_and_web_rate_over_time(full_df, top_k=5, platform=platform)
+
+    # Cross-platform comparison plot: combines all four platforms into one
+    # figure by design, so it runs once (not per platform), seeded with
+    # ChatGPT's df -- see its own docstring/_load_platform_df for how it
+    # loads the other three itself.
+    if chatgpt_full_df is not None:
+        web_call_trend_over_time_all_convai(chatgpt_full_df)
