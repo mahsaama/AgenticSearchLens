@@ -1524,22 +1524,41 @@ def plot_retrieved_url_counts_over_time_by_model(platform="chatgpt"):
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def plot_retrieved_cited_positions(separate_cited_external_internal=False):
-    # ChatGPT-only: reads extract_retrieved_cited_source()'s output, which
-    # has no Claude/Grok/DeepSeek equivalent (see save_topic_to_domains_json()'s
-    # comment).
-    os.makedirs(f"{OUTPUT_PATH}/chatgpt/{CONF}", exist_ok=True)
+def plot_retrieved_cited_positions(separate_cited_external_internal=False, platform="chatgpt"):
+    """Per-source retrieved/cited "Rank" position over web-query "Loop"
+    iteration.
+
+    Reads response_and_sources.pkl -- produced for every platform by
+    response_generation.extract_response_and_sources[_other_platforms] --
+    rather than the ChatGPT-only retrieved_cited_extracted_from_srcs.pkl
+    this used to be tied to. ref_index/turn_index (the source's rank
+    within its retrieval batch, and which web-query loop it came from) are
+    only populated by ChatGPT's extractor (and ref_index alone by
+    DeepSeek's, via its SEARCH fragments' cite_index) -- Claude/Grok's
+    srcs_retrieved/srcs_cited entries carry neither field, since their
+    simpler single-shot tool-call flow doesn't track either concept the
+    same way. For sources missing them, this falls back to: rank = the
+    source's own 0-based position within its row's srcs_retrieved/
+    srcs_cited list (still a meaningful "how early did this source
+    appear" signal), and turn_index = 0 (one implicit loop), so every
+    platform gets a real, if less granular, plot instead of being
+    silently excluded.
+    """
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl"
     ).copy()
 
-    def _valid_ref_index(value):
+    def _valid_ref_index(value, fallback=None):
         try:
             rank = float(value)
         except (TypeError, ValueError):
-            return np.nan
+            rank = np.nan
         if not np.isfinite(rank) or rank < 0:
-            return np.nan
+            if fallback is None:
+                return np.nan
+            rank = float(fallback)
         # Source ranks are 0-indexed in metadata; shift by +1 for plotting so
         # log10(rank) starts at 0 instead of negative values.
         return rank + 1.0
@@ -1563,16 +1582,16 @@ def plot_retrieved_cited_positions(separate_cited_external_internal=False):
             if isinstance(item, dict) and item.get("url", "")
         }
         retrieved_ref_indices = []
-        for item in row["srcs_retrieved"]:
+        for list_idx, item in enumerate(row["srcs_retrieved"]):
             if not isinstance(item, dict):
                 continue
-            ref_index = _valid_ref_index(item.get("ref_index"))
+            ref_index = _valid_ref_index(item.get("ref_index"), fallback=list_idx)
             if not np.isfinite(ref_index):
                 continue
             retrieved_ref_indices.append(ref_index)
             turn_index = item.get("turn_index")
             if turn_index is None:
-                continue
+                turn_index = 0
             plot_rows.append(
                 {
                     "group": "Retrieved URLs",
@@ -1584,10 +1603,10 @@ def plot_retrieved_cited_positions(separate_cited_external_internal=False):
         cited_ref_indices = []
         cited_external_ref_indices = []
         cited_internal_ref_indices = []
-        for item in row["srcs_cited"]:
+        for list_idx, item in enumerate(row["srcs_cited"]):
             if not isinstance(item, dict):
                 continue
-            ref_index = _valid_ref_index(item.get("ref_index"))
+            ref_index = _valid_ref_index(item.get("ref_index"), fallback=list_idx)
             if not np.isfinite(ref_index):
                 continue
             if separate_cited_external_internal:
@@ -1604,7 +1623,7 @@ def plot_retrieved_cited_positions(separate_cited_external_internal=False):
                 cited_ref_indices.append(ref_index)
             turn_index = item.get("turn_index")
             if turn_index is None:
-                continue
+                turn_index = 0
             plot_rows.append(
                 {
                     "group": group_name,
@@ -1697,7 +1716,7 @@ def plot_retrieved_cited_positions(separate_cited_external_internal=False):
         if separate_cited_external_internal:
             file_name += "_split_cited"
         fig = with_paper_style(fig, config=styler(18, 16))
-        fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
+        fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
     if len(avg_rank_df) == 0:
         return
@@ -1798,7 +1817,7 @@ def plot_retrieved_cited_positions(separate_cited_external_internal=False):
         # width=900,
         yaxis=dict(range=[main_rank_min, main_rank_max], autorange=False),
     )
-    violin_fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
+    violin_fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
 def _as_list(value):
@@ -1929,10 +1948,104 @@ def _plot_retrieved_cited_ranks(plot_rows, file_name, yaxis_title, platform="cha
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def plot_retrieved_cited_tranco_ranks(platform="chatgpt"):
+TRANCO_LIST_URL = "https://tranco-list.eu/top-1m.csv.zip"
+TRANCO_CACHE_PATH = f"{OUTPUT_PATH}/tranco/top-1m.csv"
+
+
+def _download_tranco_list(cache_path=TRANCO_CACHE_PATH):
+    """Download and cache the Tranco top-1M domain ranking (see
+    https://tranco-list.eu) as a plain rank,domain CSV at `cache_path`.
+    Domain popularity isn't platform-specific, so this is one shared,
+    flat cache rather than nested under any platform's own folder."""
+    import zipfile
+    from io import BytesIO
+
+    print(f"Downloading Tranco list from {TRANCO_LIST_URL} ...")
+    response = requests.get(TRANCO_LIST_URL, timeout=60)
+    response.raise_for_status()
+    with zipfile.ZipFile(BytesIO(response.content)) as archive:
+        csv_names = [name for name in archive.namelist() if name.endswith(".csv")]
+        if not csv_names:
+            raise ValueError(
+                f"Tranco archive from {TRANCO_LIST_URL} contained no CSV file."
+            )
+        csv_bytes = archive.read(csv_names[0])
+
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    with open(cache_path, "wb") as f:
+        f.write(csv_bytes)
+    print(f"Saved Tranco list to {cache_path} ({len(csv_bytes)} bytes).")
+    return cache_path
+
+
+def _load_tranco_rank_lookup(cache_path=TRANCO_CACHE_PATH, force_refresh=False):
+    """{normalized_domain: rank} for every domain in the cached Tranco
+    top-1M list (rank 1 = most popular), downloading it first if not
+    already cached or `force_refresh` is set."""
+    if force_refresh or not os.path.exists(cache_path):
+        _download_tranco_list(cache_path=cache_path)
+
+    tranco_df = pd.read_csv(cache_path, header=None, names=["rank", "domain"])
+    tranco_df["domain"] = tranco_df["domain"].astype(str).map(_normalize_domain_for_top_plots)
+    tranco_df = tranco_df[tranco_df["domain"] != ""]
+    # Keep the best (lowest/most-popular) rank if a normalized domain
+    # collides with another entry (e.g. two subdomains both folding to the
+    # same normalized apex domain).
+    tranco_df = tranco_df.sort_values("rank").drop_duplicates(subset=["domain"], keep="first")
+    return dict(zip(tranco_df["domain"], tranco_df["rank"].astype(int)))
+
+
+def add_tranco_ranks_to_response_and_sources(platform="chatgpt", force_refresh=False):
+    """Add ranks_srcs_retrieved/ranks_srcs_cited columns (Tranco rank per
+    entry in srcs_retrieved/srcs_cited, -1 for a domain outside the top-1M
+    or otherwise unranked) to response_and_sources.pkl and save the result
+    as response_and_sources_with_tranco_ranks.pkl -- the file
+    evaluate_source_tranco_ranks()/plot_retrieved_cited_tranco_ranks() read.
+    """
+    rank_lookup = _load_tranco_rank_lookup(force_refresh=force_refresh)
+
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl"
     ).copy()
+
+    def _ranks_for_sources(items):
+        ranks = []
+        for item in _as_list(items):
+            if not isinstance(item, dict):
+                ranks.append(-1)
+                continue
+            domain = _normalize_domain_for_top_plots(item.get("domain", ""))
+            if not domain:
+                domain = _normalize_domain_for_top_plots(
+                    urlparse(str(item.get("url", ""))).netloc
+                )
+            ranks.append(rank_lookup.get(domain, -1))
+        return ranks
+
+    df["ranks_srcs_retrieved"] = df["srcs_retrieved"].apply(_ranks_for_sources)
+    df["ranks_srcs_cited"] = df["srcs_cited"].apply(_ranks_for_sources)
+
+    output_dir = f"{OUTPUT_PATH}/{platform}/metadata"
+    os.makedirs(output_dir, exist_ok=True)
+    df.to_pickle(f"{output_dir}/response_and_sources_with_tranco_ranks.pkl")
+    df.to_csv(f"{output_dir}/response_and_sources_with_tranco_ranks.csv", index=False)
+
+    ranked_retrieved = sum(1 for ranks in df["ranks_srcs_retrieved"] for r in ranks if r > 0)
+    ranked_cited = sum(1 for ranks in df["ranks_srcs_cited"] for r in ranks if r > 0)
+    print(
+        f"[{platform}] Tranco-ranked {ranked_retrieved} retrieved and "
+        f"{ranked_cited} cited source(s) across {len(df)} rows."
+    )
+    return df
+
+
+def plot_retrieved_cited_tranco_ranks(platform="chatgpt"):
+    tranco_ranks_path = (
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_tranco_ranks.pkl"
+    )
+    if not os.path.exists(tranco_ranks_path):
+        add_tranco_ranks_to_response_and_sources(platform=platform)
+    df = pd.read_pickle(tranco_ranks_path).copy()
     plot_rows = _build_retrieved_cited_rank_plot_rows(
         df,
         retrieved_rank_col="ranks_srcs_retrieved",
@@ -1951,16 +2064,17 @@ def evaluate_source_tranco_ranks(
     grounding_level="turn",
     platform="chatgpt",
 ):
-    # response_and_sources_with_tranco_ranks.pkl is a research-only artifact
-    # (an external Tranco top-1M-domains ranking pass) not produced by
-    # anything in this repo, for any platform -- same category of gap as
-    # all_tools_categorized.json/web_calls_characterization.csv (see
-    # README's "Pipeline Order & Known Gaps").
+    # response_and_sources_with_tranco_ranks.pkl is produced by
+    # add_tranco_ranks_to_response_and_sources() -- generate it here if
+    # missing rather than requiring a separate manual step first.
     grounding_level = _validated_grounding_level(grounding_level)
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-    df = pd.read_pickle(
+    tranco_ranks_path = (
         f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_tranco_ranks.pkl"
-    ).copy()
+    )
+    if not os.path.exists(tranco_ranks_path):
+        add_tranco_ranks_to_response_and_sources(platform=platform)
+    df = pd.read_pickle(tranco_ranks_path).copy()
 
     def _as_list(value):
         if isinstance(value, list):
@@ -2226,9 +2340,10 @@ def get_encoding(model):
 
 if __name__ == "__main__":
     # extract_retrieved_cited_source reads ChatGPT's raw turn_msgs wire
-    # format directly -- no Claude/Grok/DeepSeek equivalent (see
-    # plot_retrieved_cited_positions' comment below), so this step stays a
-    # single ChatGPT-only call rather than a platform loop.
+    # format directly -- no Claude/Grok/DeepSeek equivalent -- but is only
+    # needed for _load_domain_plot_df's richer ChatGPT domain data
+    # (plot_top_domains); plot_retrieved_cited_positions now reads
+    # response_and_sources.pkl instead, so it runs for every platform below.
     web_df = load_web_data_from_file(fmt="pkl", platform="chatgpt")
     print(f"Loaded web data: {len(web_df)}")
     extract_retrieved_cited_source(web_df)
@@ -2244,22 +2359,22 @@ if __name__ == "__main__":
             grounding_level="conversation",
             platform=platform,
         )
+        plot_retrieved_cited_positions(
+            separate_cited_external_internal=True,
+            platform=platform,
+        )
         try:
             evaluate_source_tranco_ranks(
                 separate_cited_external_internal=True,
                 grounding_level="conversation",
                 platform=platform,
             )
-        except FileNotFoundError as e:
-            # response_and_sources_with_tranco_ranks.pkl is a research-only
-            # artifact not produced by anything in this repo, for any
-            # platform -- see evaluate_source_tranco_ranks' own comment.
+        except Exception as e:
+            # evaluate_source_tranco_ranks generates
+            # response_and_sources_with_tranco_ranks.pkl itself if missing
+            # (downloading the Tranco list on first use) -- this now only
+            # catches a genuine failure (e.g. no network access).
             print(f"[{platform}] Skipping evaluate_source_tranco_ranks -- {e}")
-
-    # plot_retrieved_cited_positions reads extract_retrieved_cited_source's
-    # ChatGPT-only output above -- no Claude/Grok/DeepSeek equivalent, so
-    # this also stays a single ChatGPT-only call.
-    plot_retrieved_cited_positions(separate_cited_external_internal=True)
 
     # Combined/cross-platform: each of these already loops over all 4
     # platforms internally (or is inherently ChatGPT-model-specific), so
