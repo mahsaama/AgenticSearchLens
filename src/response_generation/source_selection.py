@@ -742,7 +742,7 @@ def compute_average_citations_and_retrievals_per_response(
         )
 
 
-def compute_average_citations_and_retrievals_per_response_by_openai_model(
+def compute_average_citations_and_retrievals_per_response_by_model(
     unique=False,
     grounding_level="turn",
 ):
@@ -847,57 +847,13 @@ def plot_retrieved_urls_per_web_query_histogram(unique=False, bins=40):
         model_output_dir = f"{OUTPUT_PATH}/{model}/{CONF}"
         os.makedirs(model_output_dir, exist_ok=True)
         file_name = "retrieved_urls_per_web_query_histogram"
-        html_path = f"{model_output_dir}/{file_name}.html"
         pdf_path = f"{model_output_dir}/{file_name}.pdf"
-        print(f"Writing histogram HTML: {html_path}")
         fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
         try:
             print(f"Writing histogram PDF: {pdf_path}")
             fig.write_image(pdf_path, format="pdf")
         except Exception as exc:
             print(f"Failed to write histogram PDF for {model}: {exc}")
-
-
-def save_topic_to_domains_json():
-    # ChatGPT-only: reads extract_retrieved_cited_source()'s output, which
-    # has no Claude/Grok/DeepSeek equivalent (same raw-wire-format
-    # dependency as plot_retrieved_cited_positions() etc. below).
-    df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_cited_extracted_from_srcs.pkl"
-    ).copy()
-
-    topic_to_domains = {}
-    for _, row in df.iterrows():
-        topic = row.get("topic", "Other")
-        if pd.isna(topic):
-            topic = "Other"
-        if str(topic).strip().lower() == "other":
-            continue
-
-        if topic not in topic_to_domains:
-            topic_to_domains[topic] = set()
-
-        topic_to_domains[topic].update(
-            item.get("domain", "")
-            for item in row["srcs_retrieved"]
-            if isinstance(item, dict) and item.get("domain", "")
-        )
-        topic_to_domains[topic].update(
-            item.get("domain", "")
-            for item in row["srcs_cited"]
-            if isinstance(item, dict) and item.get("domain", "")
-        )
-
-    topic_to_domains = {
-        topic: sorted(values)
-        for topic, values in topic_to_domains.items()
-    }
-
-    to_json(
-        topic_to_domains,
-        f"{OUTPUT_PATH}/chatgpt/metadata/topic_to_domains.json",
-    )
-
 
 def _normalize_domain_for_top_plots(domain):
     if not isinstance(domain, str):
@@ -1268,91 +1224,6 @@ def plot_top_domains(
         y_tickfont_size=14,
     )
 
-def _load_domain_rank_lookup(platform):
-    path = f"{OUTPUT_PATH}/{platform}/{CONF}/retrieved_domains_sorted.csv"
-    df = pd.read_csv(path).copy()
-    if "domain" not in df.columns:
-        raise ValueError(f"Missing `domain` column in {path}")
-    df = df.dropna(subset=["domain"]).copy()
-    df["domain"] = df["domain"].astype(str).map(_normalize_domain_for_top_plots)
-    df = df[df["domain"] != ""].copy().reset_index(drop=True)
-    df["rank"] = np.arange(1, len(df) + 1)
-    return dict(zip(df["domain"], df["rank"])), df
-
-
-def plot_chatgpt_claude_retrieved_domain_rank_scatter(top_k=100):
-    chatgpt_rank_lookup, chatgpt_df = _load_domain_rank_lookup("chatgpt")
-    claude_rank_lookup, claude_df = _load_domain_rank_lookup("claude")
-
-    chatgpt_top = chatgpt_df.head(top_k).copy()
-    chatgpt_top["other_rank"] = chatgpt_top["domain"].map(claude_rank_lookup)
-
-    claude_top = claude_df.head(top_k).copy()
-    claude_top["other_rank"] = claude_top["domain"].map(chatgpt_rank_lookup)
-
-    fig = make_subplots(
-        rows=1,
-        cols=2,
-        subplot_titles=[
-            f"ChatGPT Top {top_k}: Claude Rank",
-            f"Claude Top {top_k}: ChatGPT Rank",
-        ],
-        horizontal_spacing=0.14,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=chatgpt_top["rank"],
-            y=chatgpt_top["other_rank"],
-            mode="markers",
-            marker=dict(size=8, color="#3765E5"),
-            text=chatgpt_top["domain"],
-            hovertemplate="Domain=%{text}<br>ChatGPT rank=%{x}<br>Claude rank=%{y}<extra></extra>",
-            showlegend=False,
-        ),
-        row=1,
-        col=1,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=claude_top["rank"],
-            y=claude_top["other_rank"],
-            mode="markers",
-            marker=dict(size=8, color="#E45756"),
-            text=claude_top["domain"],
-            hovertemplate="Domain=%{text}<br>Claude rank=%{x}<br>ChatGPT rank=%{y}<extra></extra>",
-            showlegend=False,
-        ),
-        row=1,
-        col=2,
-    )
-
-    max_rank = max(len(chatgpt_df), len(claude_df))
-    fig.update_xaxes(title_text="Source Rank", row=1, col=1)
-    fig.update_yaxes(title_text="Other Platform Rank", row=1, col=1)
-    fig.update_xaxes(title_text="Source Rank", row=1, col=2)
-    fig.update_yaxes(title_text="Other Platform Rank", row=1, col=2)
-    fig.update_xaxes(range=[0, top_k + 1])
-    fig.update_yaxes(range=[0, max_rank + 1], autorange="reversed")
-    fig.update_layout(
-        margin=dict(l=70, b=70, t=60, r=30),
-    )
-
-    output_dir = f"{OUTPUT_PATH}/{CONF}"
-    os.makedirs(output_dir, exist_ok=True)
-    file_name = "chatgpt_claude_retrieved_domain_rank_scatter"
-    fig = with_paper_style(fig, config=styler(18, 10), legend_pos=None)
-    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
-
-    chatgpt_top.to_csv(
-        f"{output_dir}/chatgpt_top_{top_k}_domains_with_claude_ranks.csv",
-        index=False,
-    )
-    claude_top.to_csv(
-        f"{output_dir}/claude_top_{top_k}_domains_with_chatgpt_ranks.csv",
-        index=False,
-    )
-
 
 def evaluate_unique_retrieved_domains_by_platform():
     platforms = PLATFORMS
@@ -1463,134 +1334,6 @@ def evaluate_unique_retrieved_domains_by_platform():
         index=False,
     )
     return result_df
-
-
-def compare_domain_reliability_by_source_type(model_name="gpt-4o-mini", temperature=0.0):
-    # ChatGPT-only: reads extract_retrieved_cited_source()'s output,
-    # which has no Claude/Grok/DeepSeek equivalent (see plot_subset_
-    # condition_counts()'s comment).
-    df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_cited_extracted_from_srcs.pkl"
-    ).copy()
-    results_path = (
-        f"{OUTPUT_PATH}/chatgpt/{CONF}/domain_reliability_evaluation/"
-        f"{model_name}/{temperature}/results.json"
-    )
-    reliability_results = load_json(results_path)
-
-    reliability_lookup = {}
-    for topic, topic_results in reliability_results.items():
-        reliability_lookup[topic] = {}
-        for domain, raw_result in topic_results.items():
-            score = None
-            if isinstance(raw_result, str) and raw_result.strip():
-                try:
-                    score = json.loads(raw_result).get("reliability_score")
-                except json.JSONDecodeError:
-                    score = None
-            elif isinstance(raw_result, dict):
-                if "reliability_score" in raw_result:
-                    score = raw_result.get("reliability_score")
-                elif "Output" in raw_result and raw_result["Output"]:
-                    try:
-                        score = json.loads(raw_result["Output"]).get("reliability_score")
-                    except json.JSONDecodeError:
-                        score = None
-            if score is not None:
-                reliability_lookup[topic][domain] = float(score)
-
-    def _avg_score(row, col_name):
-        topic_scores = reliability_lookup.get(row["topic"], {})
-        domains = sorted(
-            {
-                item.get("domain", "")
-                for item in row[col_name]
-                if isinstance(item, dict) and item.get("domain", "")
-            }
-        )
-        scores = [topic_scores[d] for d in domains if d in topic_scores]
-        if not scores:
-            return np.nan
-        return float(np.mean(scores))
-
-    df["retrieved_reliability"] = df.apply(
-        lambda row: _avg_score(row, "srcs_retrieved"), axis=1
-    )
-    df["cited_reliability"] = df.apply(
-        lambda row: _avg_score(row, "srcs_cited"), axis=1
-    )
-
-    plot_df = df.dropna(subset=["retrieved_reliability", "cited_reliability"]).copy()
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Violin(
-            y=plot_df["retrieved_reliability"],
-            name="Retrieved",
-            box_visible=True,
-            meanline_visible=True,
-            showlegend=False,
-        )
-    )
-    fig.add_trace(
-        go.Violin(
-            y=plot_df["cited_reliability"],
-            name="Cited",
-            box_visible=True,
-            meanline_visible=True,
-            showlegend=False,
-        )
-    )
-    fig.update_layout(
-        xaxis_title="Source Type",
-        yaxis_title="Average Domain Reliability",
-    )
-    fig.update_yaxes(range=[1, 5])
-
-    output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
-    os.makedirs(output_dir, exist_ok=True)
-    file_name = "domain_reliability_by_source_type"
-    fig = with_paper_style(fig, config=styler(18, 14))
-    fig.update_xaxes(tickfont=dict(size=10))
-    fig.update_yaxes(tickfont=dict(size=10))
-    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
-
-    ttest_results = {}
-    comparisons = [
-        ("retrieved_reliability", "cited_reliability", "retrieved_vs_cited"),
-    ]
-    for left_col, right_col, label in comparisons:
-        paired = plot_df[[left_col, right_col]].dropna()
-        if len(paired) == 0:
-            continue
-        stat, pvalue = ttest_rel(paired[left_col], paired[right_col])
-        ttest_results[label] = {
-            "n": int(len(paired)),
-            "mean_left": float(paired[left_col].mean()),
-            "mean_right": float(paired[right_col].mean()),
-            "t_statistic": float(stat),
-            "p_value": float(pvalue),
-        }
-
-    to_json(
-        ttest_results,
-        f"{output_dir}/{file_name}_paired_ttests.json",
-    )
-    plot_df[
-        [
-            "user_id",
-            "conv_id",
-            "turn_id",
-            "topic",
-            "retrieved_reliability",
-            "cited_reliability",
-        ]
-    ].to_csv(
-        f"{output_dir}/{file_name}_samples.csv",
-        index=False,
-    )
-
-    return ttest_results
 
 
 def plot_url_counts_over_time(separate_cited_external_internal=False, platform="chatgpt"):
@@ -1717,266 +1460,6 @@ def plot_url_counts_over_time(separate_cited_external_internal=False, platform="
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def plot_grounding_rate_violin_over_time(platform="chatgpt"):
-    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-    df = _prepare_source_count_df(platform)
-
-    rows = []
-    for _, row in df.iterrows():
-        retrieved_urls = {
-            _normalize_url_for_source_matching(item.get("url", ""))
-            for item in row.get("srcs_retrieved", [])
-            if isinstance(item, dict) and item.get("url", "")
-        }
-        cited_urls = {
-            _normalize_url_for_source_matching(item.get("url", ""))
-            for item in row.get("srcs_cited", [])
-            if isinstance(item, dict) and item.get("url", "")
-        }
-        cited_urls = {url for url in cited_urls if url}
-        if len(cited_urls) == 0:
-            continue
-
-        cited_external_urls = cited_urls & retrieved_urls
-        cited_internal_urls = cited_urls - retrieved_urls
-        grounding_rate = len(cited_external_urls) / len(cited_urls)
-        unexplained_rate = len(cited_internal_urls) / len(cited_urls)
-
-        rows.append(
-            {
-                "user_id": row.get("user_id"),
-                "conv_id": row.get("conv_id"),
-                "turn_id": row.get("turn_id"),
-                "time": row.get("time"),
-                "month": row.get("month"),
-                "num_cited_urls": int(len(cited_urls)),
-                "num_cited_external_urls": int(len(cited_external_urls)),
-                "num_cited_internal_urls": int(len(cited_internal_urls)),
-                "grounding_rate": float(grounding_rate),
-                "unexplained_rate": float(unexplained_rate),
-            }
-        )
-
-    plot_df = pd.DataFrame(rows)
-    if len(plot_df) == 0:
-        return plot_df
-
-    plot_df["month"] = pd.to_datetime(plot_df["month"], errors="coerce")
-    plot_df = plot_df.dropna(subset=["month"]).sort_values("month")
-    if len(plot_df) == 0:
-        return plot_df
-
-    plot_df["month_label"] = plot_df["month"].dt.strftime("%b %Y")
-    month_order = (
-        plot_df[["month", "month_label"]]
-        .drop_duplicates()
-        .sort_values("month")["month_label"]
-        .tolist()
-    )
-    tickvals_every_2_months = month_order[::2] if month_order else []
-    shown_months = set(tickvals_every_2_months)
-    plot_df = plot_df[plot_df["month_label"].isin(shown_months)].copy()
-    if len(plot_df) == 0:
-        return plot_df
-    shown_month_order = [m for m in month_order if m in shown_months]
-    month_to_pos = {m: float(i) for i, m in enumerate(shown_month_order)}
-    plot_df["month_pos"] = plot_df["month_label"].map(month_to_pos)
-    x_offset = 0.15
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Violin(
-            x=plot_df["month_pos"] - x_offset,
-            y=plot_df["grounding_rate"],
-            name="Grounding Rate (Cited Retrieved/External)",
-            marker_color="#00CC96",
-            box_visible=True,
-            meanline_visible=True,
-            showlegend=True,
-            width=0.42,
-        )
-    )
-    fig.add_trace(
-        go.Violin(
-            x=plot_df["month_pos"] + x_offset,
-            y=plot_df["unexplained_rate"],
-            name="Unexplained Rate (Cited Internal)",
-            marker_color="#E45756",
-            box_visible=True,
-            meanline_visible=True,
-            showlegend=True,
-            width=0.42,
-        )
-    )
-
-    fig.update_layout(
-        xaxis_title="Month",
-        yaxis_title="Grounding Rate",
-        xaxis=dict(
-            tickmode="array",
-            tickvals=[month_to_pos[m] for m in shown_month_order],
-            ticktext=shown_month_order,
-            tickangle=-30,
-            range=[-0.6, max(len(shown_month_order) - 0.4, 0.6)],
-        ),
-        violinmode="overlay",
-        margin=dict(b=120),
-    )
-    fig.update_yaxes(tickformat=".0%")
-
-    file_name = "grounding_rate_violin_over_time"
-    fig = with_paper_style(fig, config=styler(18, 16))
-    fig.update_xaxes(
-        tickangle=-30,
-        tickmode="array",
-        tickvals=[month_to_pos[m] for m in shown_month_order],
-        ticktext=shown_month_order,
-    )
-    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
-
-    monthly_stats = (
-        plot_df.groupby(["month", "month_label"])
-        .agg(
-            grounding_rate_mean=("grounding_rate", "mean"),
-            grounding_rate_std=("grounding_rate", "std"),
-            unexplained_rate_mean=("unexplained_rate", "mean"),
-            unexplained_rate_std=("unexplained_rate", "std"),
-            num_turns=("grounding_rate", "count"),
-        )
-        .reset_index()
-        .sort_values("month")
-    )
-    grounding_std = monthly_stats["grounding_rate_std"].fillna(0)
-    unexplained_std = monthly_stats["unexplained_rate_std"].fillna(0)
-    grounding_lower = (
-        monthly_stats["grounding_rate_mean"] - grounding_std
-    ).clip(lower=0, upper=1)
-    grounding_upper = (
-        monthly_stats["grounding_rate_mean"] + grounding_std
-    ).clip(lower=0, upper=1)
-    unexplained_lower = (
-        monthly_stats["unexplained_rate_mean"] - unexplained_std
-    ).clip(lower=0, upper=1)
-    unexplained_upper = (
-        monthly_stats["unexplained_rate_mean"] + unexplained_std
-    ).clip(lower=0, upper=1)
-
-    mean_std_fig = go.Figure()
-    mean_std_fig.add_trace(
-        go.Scatter(
-            x=monthly_stats["month_label"],
-            y=grounding_lower,
-            mode="lines",
-            line=dict(width=0),
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-    mean_std_fig.add_trace(
-        go.Scatter(
-            x=monthly_stats["month_label"],
-            y=grounding_upper,
-            mode="lines",
-            line=dict(width=0),
-            fill="tonexty",
-            fillcolor="rgba(0, 204, 150, 0.2)",
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-    mean_std_fig.add_trace(
-        go.Scatter(
-            x=monthly_stats["month_label"],
-            y=monthly_stats["grounding_rate_mean"],
-            mode="lines+markers",
-            name="Grounding Rate (Cited Retrieved/External)",
-            marker_color="#00CC96",
-            line=dict(color="#00CC96"),
-        )
-    )
-    mean_std_fig.add_trace(
-        go.Scatter(
-            x=monthly_stats["month_label"],
-            y=unexplained_lower,
-            mode="lines",
-            line=dict(width=0),
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-    mean_std_fig.add_trace(
-        go.Scatter(
-            x=monthly_stats["month_label"],
-            y=unexplained_upper,
-            mode="lines",
-            line=dict(width=0),
-            fill="tonexty",
-            fillcolor="rgba(228, 87, 86, 0.2)",
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-    mean_std_fig.add_trace(
-        go.Scatter(
-            x=monthly_stats["month_label"],
-            y=monthly_stats["unexplained_rate_mean"],
-            mode="lines+markers",
-            name="Unexplained Rate (Cited Internal)",
-            marker_color="#E45756",
-            line=dict(color="#E45756"),
-        )
-    )
-    mean_std_fig.update_layout(
-        xaxis_title="Month",
-        yaxis_title="Average Rate",
-        xaxis=dict(
-            categoryorder="array",
-            categoryarray=shown_month_order,
-            tickmode="array",
-            tickvals=shown_month_order,
-            tickangle=-30,
-        ),
-        margin=dict(b=120),
-    )
-    mean_std_fig.update_yaxes(tickformat=".0%")
-
-    mean_std_file_name = "grounding_rate_mean_std_over_time"
-    mean_std_fig = with_paper_style(mean_std_fig, config=styler(18, 16))
-    mean_std_fig.update_xaxes(
-        tickangle=-30,
-        tickmode="array",
-        tickvals=shown_month_order,
-    )
-    mean_std_fig.write_image(
-        f"{OUTPUT_PATH}/{platform}/{CONF}/{mean_std_file_name}.pdf",
-        format="pdf",
-    )
-    monthly_stats.to_csv(
-        f"{OUTPUT_PATH}/{platform}/{CONF}/{mean_std_file_name}_monthly_stats.csv",
-        index=False,
-    )
-
-    plot_df[
-        [
-            "user_id",
-            "conv_id",
-            "turn_id",
-            "time",
-            "month",
-            "num_cited_urls",
-            "num_cited_external_urls",
-            "num_cited_internal_urls",
-            "grounding_rate",
-            "unexplained_rate",
-        ]
-    ].to_csv(
-        f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}_samples.csv",
-        index=False,
-    )
-
-    return plot_df
-
-
 def plot_retrieved_url_counts_over_time_by_model(platform="chatgpt"):
     df = _prepare_source_count_df(platform)
     if "model" not in df.columns:
@@ -2040,78 +1523,6 @@ def plot_retrieved_url_counts_over_time_by_model(platform="chatgpt"):
     fig = with_paper_style(fig, config=styler(18, 18), legend_pos=(0.8, 1.8))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
-
-def _plot_url_counts_grouped(df, group_col, file_name, xaxis_title, platform="chatgpt"):
-    grouped = (
-        df.groupby(group_col)[["num_retrieved_urls", "num_cited_urls"]]
-        .agg(["mean", "sem"])
-        .reset_index()
-    )
-    grouped = grouped.sort_values(("num_cited_urls", "mean"), ascending=False)
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Bar(
-            x=grouped[group_col],
-            y=grouped[("num_retrieved_urls", "mean")],
-            name="Retrieved URLs",
-            error_y=dict(
-                type="data",
-                array=grouped[("num_retrieved_urls", "sem")].fillna(0),
-                visible=True,
-            ),
-        )
-    )
-    fig.add_trace(
-        go.Bar(
-            x=grouped[group_col],
-            y=grouped[("num_cited_urls", "mean")],
-            name="Cited URLs",
-            error_y=dict(
-                type="data",
-                array=grouped[("num_cited_urls", "sem")].fillna(0),
-                visible=True,
-            ),
-        )
-    )
-    fig.update_layout(
-        barmode="group",
-        xaxis_title=xaxis_title,
-        yaxis_title="Average # URLs per Turn",
-        xaxis=dict(tickangle=-30),
-    )
-    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
-    os.makedirs(output_dir, exist_ok=True)
-    fig = with_paper_style(fig, config=styler(18, 20))
-    fig.update_xaxes(tickfont=dict(size=10))
-    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
-
-
-def plot_url_counts_by_model(platform="chatgpt"):
-    df = _prepare_source_count_df(platform)
-    if "model" not in df.columns:
-        print(f"[{platform}] No `models` column in response_and_sources.pkl; skipping.")
-        return
-    df = df[df["model"].str.lower() != "unknown"].copy()
-    _plot_url_counts_grouped(
-        df,
-        group_col="model",
-        file_name="url_counts_by_model",
-        xaxis_title="Model",
-        platform=platform,
-    )
-
-
-def plot_url_counts_by_topic(platform="chatgpt"):
-    df = _prepare_source_count_df(platform)
-    df = df[df["topic"].fillna("").str.lower() != "other"].copy()
-    _plot_url_counts_grouped(
-        df,
-        group_col="topic",
-        file_name="url_counts_by_topic",
-        xaxis_title="Topic",
-        platform=platform,
-    )
 
 def plot_retrieved_cited_positions(separate_cited_external_internal=False):
     # ChatGPT-only: reads extract_retrieved_cited_source()'s output, which
@@ -2417,13 +1828,6 @@ def _as_valid_number(value, min_value=None):
     return number
 
 
-def _load_first_existing_pickle(paths):
-    for path in paths:
-        if os.path.exists(path):
-            return pd.read_pickle(path).copy()
-    raise FileNotFoundError(f"None of these files exist: {paths}")
-
-
 def _build_retrieved_cited_rank_plot_rows(
     df,
     retrieved_rank_col,
@@ -2541,224 +1945,6 @@ def plot_retrieved_cited_tranco_ranks(platform="chatgpt"):
         yaxis_title="Tranco Rank",
         platform=platform,
     )
-
-
-def plot_retrieved_cited_judge_ranks(platform="chatgpt"):
-    df = _load_first_existing_pickle(
-        [
-            f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks.pkl",
-            f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks_v2.pkl",
-        ]
-    )
-    plot_rows = _build_retrieved_cited_rank_plot_rows(
-        df,
-        retrieved_rank_col="reliability_scores_srcs_retrieved",
-        cited_rank_col="reliability_scores_srcs_cited",
-        rank_transform=lambda score: 5 - score,
-    )
-    _plot_retrieved_cited_ranks(
-        plot_rows,
-        file_name="retrieved_cited_judge_ranks",
-        yaxis_title="Judge Rank (5 - Score)",
-        platform=platform,
-    )
-
-
-def plot_citations_round():
-    # ChatGPT-only: reads extract_retrieved_cited_source()'s output, which
-    # has no Claude/Grok/DeepSeek equivalent (see save_topic_to_domains_json()'s
-    # comment).
-    os.makedirs(f"{OUTPUT_PATH}/chatgpt/{CONF}", exist_ok=True)
-    df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_cited_extracted_from_srcs.pkl"
-    ).copy()
-
-    round_counts = {}
-    for _, row in df.iterrows():
-        cited_turns = [
-            item.get("turn_index")
-            for item in row["srcs_cited"]
-            if isinstance(item, dict) and item.get("turn_index") is not None
-        ]
-        for cited_turn in cited_turns:
-            round_counts[cited_turn] = round_counts.get(cited_turn, 0) + 1
-
-    if not round_counts:
-        return
-
-    plot_df = (
-        pd.DataFrame(
-            {
-                "round": list(round_counts.keys()),
-                "count": list(round_counts.values()),
-            }
-        )
-        .sort_values("round")
-    )
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Bar(
-            x=plot_df["round"],
-            y=plot_df["count"],
-            text=plot_df["count"],
-            textposition="auto",
-            showlegend=False,
-        )
-    )
-    fig.update_layout(
-        xaxis_title="Citation Round",
-        yaxis_title="Number of Citations",
-    )
-    file_name = "citation_round_distribution"
-    fig = with_paper_style(fig, config=styler(18, 16))
-    fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
-
-
-def check_url(url):
-    if not isinstance(url, str):
-        return False
-
-    url = url.strip()
-    if not url:
-        return False
-
-    parsed = urlparse(url)
-    if not parsed.scheme:
-        url = f"https://{url}"
-        parsed = urlparse(url)
-
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        return False
-
-    session = requests.Session()
-    session.headers.update(HEADERS)
-
-    existing_statuses = {200, 201, 202, 204, 206, 301, 302, 303, 307, 308, 401, 403, 405, 406, 429}
-
-    try:
-        response = session.head(
-            url,
-            allow_redirects=True,
-            timeout=TIMEOUT,
-        )
-        if response.status_code in existing_statuses:
-            return True
-    except requests.RequestException:
-        pass
-
-    try:
-        response = session.get(
-            url,
-            allow_redirects=True,
-            timeout=TIMEOUT,
-            stream=True,
-            headers={**HEADERS, "Range": "bytes=0-0"},
-        )
-        return response.status_code in existing_statuses
-    except requests.RequestException:
-        return False
-    finally:
-        session.close()
-    
-
-    # # Step 1: Format check
-    # parsed = urlparse(url)
-    # if parsed.scheme not in ("http", "https") or not parsed.netloc:
-    #     return False
-
-    # host = parsed.netloc
-
-    # # Step 2: DNS Resolution
-    # try:
-    #     ip = socket.gethostbyname(host)
-    # except Exception:
-    #     return False
-
-    # # Step 3: TCP Connection
-    # port = 443 if parsed.scheme == "https" else 80
-    # try:
-    #     sock = socket.create_connection((host, port), timeout=TIMEOUT)
-    # except Exception:
-    #     return False
-
-    # # Step 4: SSL Handshake (HTTPS only)
-    # if parsed.scheme == "https":
-    #     try:
-    #         context = ssl.create_default_context()
-    #         sock = context.wrap_socket(sock, server_hostname=host)
-    #     except Exception:
-    #         return False
-
-    # # Step 5: HTTP Request (with browser headers)
-    # try:
-    #     response = requests.get(
-    #         url, headers=HEADERS, timeout=TIMEOUT, allow_redirects=True
-    #     )
-    #     return True
-    # except requests.exceptions.Timeout:
-    #     return False
-    # except requests.exceptions.RequestException:
-    #     return False
-
-
-def plot_hallucination_rate_over_time(df, total_col, hallucinated_col, file_name, yaxis_title, platform="chatgpt"):
-    plot_df = df.copy()
-    plot_df["month"] = pd.to_datetime(plot_df["month"], errors="coerce")
-    plot_df = plot_df.dropna(subset=["month"])
-
-    monthly = (
-        plot_df.groupby("month")[[total_col, hallucinated_col]]
-        .sum()
-        .sort_index()
-    )
-    if len(monthly) == 0:
-        return
-
-    full_month_range = pd.date_range(
-        start=monthly.index.min(),
-        end=monthly.index.max(),
-        freq="MS",
-    )
-    monthly = monthly.reindex(full_month_range, fill_value=0).rename_axis("month").reset_index()
-    monthly["hallucination_rate"] = (
-        monthly[hallucinated_col] / monthly[total_col].replace(0, pd.NA)
-    )
-    monthly["hallucination_rate"] = monthly["hallucination_rate"].fillna(0)
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=monthly["month"],
-            y=monthly["hallucination_rate"],
-            mode="lines+markers",
-            connectgaps=True,
-            marker=dict(size=7),
-            showlegend=False,
-        )
-    )
-    fig.update_layout(
-        xaxis_title="Month",
-        yaxis_title=yaxis_title,
-        xaxis=dict(
-            tickmode="linear",
-            dtick="M2",
-            tickformat="%b %Y",
-            tickangle=-30,
-        ),
-        margin=dict(b=90),
-    )
-    fig.update_yaxes(tickformat=".0%")
-    fig.add_vline(
-        x=pd.Timestamp("2024-11-01"),
-        line_width=2,
-        line_dash="dash",
-        line_color="black",
-    )
-    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
-    os.makedirs(output_dir, exist_ok=True)
-    fig = with_paper_style(fig, config=styler(18, 17))
-    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 def evaluate_source_tranco_ranks(
     separate_cited_external_internal=False,
@@ -3038,150 +2224,53 @@ def get_encoding(model):
         return tiktoken.get_encoding("o200k_base")  # fallback
     
 
-def count_token_density():
-    # ChatGPT-only: reads extract_retrieved_cited_source()'s output
-    # (no Claude/Grok/DeepSeek equivalent) and uses a ChatGPT-specific
-    # model whitelist, same as web_tool_invocation.py's now-removed
-    # web_call_trend_over_time_by_model().
-    output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
-    os.makedirs(output_dir, exist_ok=True)
-    max_token_count = 6000
-    token_bin_size = 250
-    selected_models = [
-        'gpt-4o',
-        'gpt-4o-mini',
-        'gpt-5',
-        'gpt-5-mini',
-        # 'gpt-5-thinking',
-        'gpt-5-2',
-        # 'o3',
-    ]
-    df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_cited_extracted_from_srcs.pkl"
-    )
-    df["model"] = df["models"].apply(_primary_model)
-
-    rows = []
-    for _, row in df.iterrows():
-        sources = row["srcs_retrieved"]
-        model = row["model"]
-        if model == "Unknown":
-            continue
-
-        token_count = 0
-        for src in sources:
-            if not isinstance(src, dict):
-                continue
-            text = f"{src.get('url', '')} {src.get('title', '')} {src.get('snippet', '')}"
-            encoding = get_encoding(model)
-            tokens = encoding.encode(text)
-            token_count += len(tokens)
-
-        rows.append({"model": model, "token_count": token_count})
-
-    all_token_df = pd.DataFrame(rows)
-    if all_token_df.empty:
-        return
-
-    fig_all = go.Figure()
-    fig_all.add_trace(
-        go.Histogram(
-            x=all_token_df["token_count"],
-            name="All Models",
-            opacity=0.8,
-            xbins=dict(start=0, end=max_token_count, size=token_bin_size),
-        )
-    )
-    fig_all.update_layout(
-        xaxis_title="Token Count per Retrieved Sources",
-        yaxis_title="Frequency",
-        margin=dict(b=80),
-        xaxis=dict(range=[0, max_token_count]),
-    )
-
-    file_name = "token_density_all_models"
-    fig_all = with_paper_style(fig_all, config=styler(18, 16), legend_pos=None)
-    fig_all.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
-
-    token_df = all_token_df[all_token_df["model"].isin(selected_models)].copy()
-    if token_df.empty:
-        return
-
-    fig = go.Figure()
-    for model in sorted(token_df["model"].unique()):
-        model_counts = token_df[token_df["model"] == model]["token_count"]
-        fig.add_trace(
-            go.Histogram(
-                x=model_counts,
-                name=model,
-                opacity=0.9,
-                xbins=dict(start=0, end=max_token_count, size=token_bin_size),
-            )
-        )
-
-    fig.update_layout(
-        barmode="group",
-        bargap=0.05,
-        bargroupgap=0.0,
-        xaxis_title="Token Count per Retrieved Sources",
-        yaxis_title="Frequency",
-        legend_title="Model",
-        margin=dict(b=80),
-        xaxis=dict(range=[0, max_token_count]),
-    )
-
-    file_name = "token_density_by_model"
-    fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.2))
-    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
-
-    token_df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/token_density_by_model.csv", index=False
-    )
-    all_token_df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/token_density_all_models.csv", index=False
-    )
-
-
 if __name__ == "__main__":
-    web_df = load_web_data_from_file(fmt="pkl")
+    # extract_retrieved_cited_source reads ChatGPT's raw turn_msgs wire
+    # format directly -- no Claude/Grok/DeepSeek equivalent (see
+    # plot_retrieved_cited_positions' comment below), so this step stays a
+    # single ChatGPT-only call rather than a platform loop.
+    web_df = load_web_data_from_file(fmt="pkl", platform="chatgpt")
     print(f"Loaded web data: {len(web_df)}")
     extract_retrieved_cited_source(web_df)
 
-    # count_unique_retrieved_cited() needs
-    # response_generation.extract_response_and_sources(web_df) run first --
-    # it reads a different file than the line above produces. See
-    # _prepare_source_count_df()'s docstring.
-    # print(count_unique_retrieved_cited())
+    # Per-platform analyses: each writes under its own
+    # outputs/<platform>/source_selection/ so results from different
+    # platforms never overwrite each other.
+    for platform in PLATFORMS:
+        plot_url_counts_over_time(separate_cited_external_internal=True, platform=platform)
+        plot_retrieved_url_counts_over_time_by_model(platform=platform)
+        plot_top_domains(
+            separate_cited_external_internal=True,
+            grounding_level="conversation",
+            platform=platform,
+        )
+        try:
+            evaluate_source_tranco_ranks(
+                separate_cited_external_internal=True,
+                grounding_level="conversation",
+                platform=platform,
+            )
+        except FileNotFoundError as e:
+            # response_and_sources_with_tranco_ranks.pkl is a research-only
+            # artifact not produced by anything in this repo, for any
+            # platform -- see evaluate_source_tranco_ranks' own comment.
+            print(f"[{platform}] Skipping evaluate_source_tranco_ranks -- {e}")
 
-    # plot_url_counts_over_time(separate_cited_external_internal=True)
-    # plot_grounding_rate_violin_over_time()
-    # plot_retrieved_url_counts_over_time_by_model()
-    # plot_url_counts_by_model()
-    # plot_url_counts_by_topic()
+    # plot_retrieved_cited_positions reads extract_retrieved_cited_source's
+    # ChatGPT-only output above -- no Claude/Grok/DeepSeek equivalent, so
+    # this also stays a single ChatGPT-only call.
+    plot_retrieved_cited_positions(separate_cited_external_internal=True)
 
-    # plot_retrieved_cited_positions(separate_cited_external_internal=True)
-    # plot_citations_round()
+    # Combined/cross-platform: each of these already loops over all 4
+    # platforms internally (or is inherently ChatGPT-model-specific), so
+    # they run once, not per platform. plot_top_domains must have already
+    # run for every platform above -- evaluate_unique_retrieved_domains_by_
+    # platform() reads its retrieved_domains_sorted.csv output for each.
+    compute_average_citations_and_retrievals_per_response(grounding_level="conversation")
+    compute_average_citations_and_retrievals_per_response_by_model(
+        grounding_level="conversation"
+    )
+    plot_retrieved_urls_per_web_query_histogram()
+    evaluate_unique_retrieved_domains_by_platform()
 
-    # evaluate_source_tranco_ranks(separate_cited_external_internal=False, grounding_level="conversation")
-    # evaluate_source_tranco_ranks(separate_cited_external_internal=True, grounding_level="conversation")
-    # evaluate_source_topical_judge_ranks()
-
-    # plot_top_domains(separate_cited_external_internal=True, grounding_level="conversation")
-    # plot_top_domains(separate_cited_external_internal=False, grounding_level="conversation")
-    # plot_top_domains_by_selected_topics(separate_cited_external_internal=True)
-    # plot_top_domains_by_model(separate_cited_external_internal=True)
-
-    # venn_diagram_of_sources()
-
-    # compute_average_citations_and_retrievals_per_response(grounding_level="conversation")
-    # compute_average_citations_and_retrievals_per_response_by_openai_model(
-    #     grounding_level="conversation"
-    # )
-    # plot_retrieved_urls_per_web_query_histogram()
-
-    # _user_prompt_domain_counter()
-
-    # evaluate_unique_retrieved_domains_by_platform()
-
-    # plot_chatgpt_claude_retrieved_domain_rank_scatter()
     pass

@@ -1359,8 +1359,10 @@ def plot_retrieved_and_cited_urls_over_time(
 
 
 if __name__ == "__main__":
-    # Run the extraction stage for every platform we have extracted
-    # data_summary/web_data_summary for (see src.utils.common_io.PLATFORMS).
+    # Run every stage for every platform we have extracted
+    # data_summary/web_data_summary for (see src.utils.common_io.PLATFORMS);
+    # each writes under its own outputs/<platform>/response_generation/ so
+    # results from different platforms never overwrite each other.
     for platform in PLATFORMS:
         try:
             web_df = load_web_data_from_file(fmt="pkl", platform=platform)
@@ -1375,7 +1377,15 @@ if __name__ == "__main__":
             extract_response_and_sources_other_platforms(web_df, platform)
 
         asyncio.run(extract_urls_content(force_refresh=True, platform=platform))
-        # plot_response_source_quality_summary(platform=platform)
+
+        try:
+            response_source_similarity(platform=platform)
+        except Exception as e:
+            print(f"[{platform}] Skipping response_source_similarity -- {e}")
+            continue
+
+        plot_response_source_quality_summary(platform=platform)
+        plot_retrieved_and_cited_urls_over_time(platform=platform)
 
     # ea.response_source_nli_sentence_based(nli_method="judge", chunking_method="claim", claim_selection_mode="all", source_text_mode="snippet")
     # ea.plot_response_source_nli_sentence_based_judge(
