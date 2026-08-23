@@ -634,7 +634,12 @@ def _print_source_count_summaries_for_df(
         else:
             retrieved_urls = current_retrieved_urls
 
-        cited_external_count = sum(1 for url in cited_urls if url in retrieved_urls)
+        # Domain-level match, not exact URL -- see _domain_from_url's
+        # docstring for why.
+        retrieved_domains = {_domain_from_url(u) for u in retrieved_urls}
+        cited_external_count = sum(
+            1 for url in cited_urls if _domain_from_url(url) in retrieved_domains
+        )
         cited_external_counts.at[row_idx] = cited_external_count
         cited_internal_counts.at[row_idx] = len(cited_urls) - cited_external_count
 
@@ -826,6 +831,19 @@ def _normalize_url_for_source_matching(url):
     return normalized
 
 
+def _domain_from_url(url):
+    """Normalized domain for a URL (see _normalize_domain_for_top_plots),
+    used to classify a cited source as "external/retrieved" by DOMAIN
+    rather than exact URL: a cited page counts as retrieved if its domain
+    was searched, even if that specific page isn't itself among the
+    recorded search-result URLs. ChatGPT's exported search_result_groups
+    metadata doesn't capture every URL the web tool actually visited (a
+    cited URL can be entirely absent from search_result_groups while its
+    domain clearly was searched), so exact-URL matching under-counted
+    "external" citations; this is the intentionally looser definition."""
+    return _normalize_domain_for_top_plots(urlparse(str(url or "")).netloc)
+
+
 def _validated_grounding_level(grounding_level):
     valid_grounding_levels = {"turn", "conversation"}
     if grounding_level not in valid_grounding_levels:
@@ -911,6 +929,12 @@ def _cited_domain_counter_split(df, top_k=20, grounding_level="turn"):
             previous_retrieved_by_conv,
             grounding_level,
         )
+        # Domain-level match, not exact URL: a cited page counts as
+        # "external/retrieved" if its domain was searched, even if that
+        # specific page isn't itself among the recorded search-result
+        # URLs -- see _domain_from_url's docstring for why exact-URL
+        # matching under-counts "external" citations.
+        retrieved_domains = {_domain_from_url(u) for u in retrieved_urls}
 
         for item in cited_items:
             if not isinstance(item, dict):
@@ -926,22 +950,7 @@ def _cited_domain_counter_split(df, top_k=20, grounding_level="turn"):
             if not domain:
                 continue
 
-            # External/internal split must be determined via exact URL
-            # overlap only (not domain): a cited URL only counts as
-            # "external/retrieved" if that literal URL is itself in
-            # srcs_retrieved. Deliberately strict, not a bug -- but note
-            # "internal"/"Parametric" is a bit of a misnomer for what
-            # lands here: it means "not traceable to a recorded
-            # search-result URL", not necessarily "hallucinated from
-            # training data". ChatGPT's exported search_result_groups
-            # metadata doesn't capture every URL the web tool actually
-            # visited (confirmed against this repo's own sample data: a
-            # cited URL can be entirely absent from search_result_groups
-            # anywhere in the turn, same domain as a retrieved URL but a
-            # genuinely different article), so a same-domain, different-
-            # page citation lands in "internal" here even though it was
-            # very likely fetched via the same web tool call.
-            is_external = cited_url in retrieved_urls
+            is_external = domain in retrieved_domains
 
             if is_external:
                 external_counts[domain] = external_counts.get(domain, 0) + 1
@@ -1301,8 +1310,10 @@ def plot_url_counts_over_time(separate_cited_external_internal=False, platform="
 
     if separate_cited_external_internal:
         def _count_cited_external_internal_urls(row):
-            retrieved_urls = {
-                _normalize_url_for_source_matching(item.get("url", ""))
+            # Domain-level match, not exact URL -- see _domain_from_url's
+            # docstring for why.
+            retrieved_domains = {
+                _domain_from_url(item.get("url", ""))
                 for item in row.get("srcs_retrieved", [])
                 if isinstance(item, dict) and item.get("url", "")
             }
@@ -1314,7 +1325,7 @@ def plot_url_counts_over_time(separate_cited_external_internal=False, platform="
                 cited_url = _normalize_url_for_source_matching(item.get("url", ""))
                 if not cited_url:
                     continue
-                if cited_url in retrieved_urls:
+                if _domain_from_url(cited_url) in retrieved_domains:
                     cited_external_urls.add(cited_url)
                 else:
                     cited_internal_urls.add(cited_url)
@@ -1804,10 +1815,9 @@ def evaluate_source_tranco_ranks(
                 previous_retrieved_by_conv,
                 grounding_level,
             )
-            # Exact-URL external/internal split -- see
-            # _cited_domain_counter_split's comment on why "internal" here
-            # means "not traceable to a recorded search-result URL", not
-            # necessarily hallucinated/parametric knowledge.
+            # Domain-level external/internal split, not exact URL -- see
+            # _domain_from_url's docstring for why.
+            retrieved_domains = {_domain_from_url(u) for u in retrieved_urls}
             cited_sources = _as_list(getattr(row, "srcs_cited", []))
             external_mask = []
             internal_mask = []
@@ -1817,7 +1827,7 @@ def evaluate_source_tranco_ranks(
                     internal_mask.append(False)
                     continue
                 cited_url = _normalize_url_for_source_matching(item.get("url", ""))
-                is_external = bool(cited_url and cited_url in retrieved_urls)
+                is_external = bool(cited_url and _domain_from_url(cited_url) in retrieved_domains)
                 external_mask.append(is_external)
                 internal_mask.append(not is_external)
 

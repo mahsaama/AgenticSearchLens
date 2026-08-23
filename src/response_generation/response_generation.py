@@ -1127,6 +1127,7 @@ def plot_retrieved_and_cited_urls_over_time(
     along with citation rate and grounding rate.
     """
     from src.response_generation.source_selection import (
+        _domain_from_url,
         _normalized_urls_from_sources,
         _validated_grounding_level,
     )
@@ -1193,8 +1194,11 @@ def plot_retrieved_and_cited_urls_over_time(
             else:
                 retrieved_urls = current_retrieved_urls
 
+            # Domain-level match, not exact URL -- see _domain_from_url's
+            # docstring for why.
+            retrieved_domains = {_domain_from_url(u) for u in retrieved_urls}
             cited_external_count_by_index[row_index] = sum(
-                1 for url in cited_urls if url in retrieved_urls
+                1 for url in cited_urls if _domain_from_url(url) in retrieved_domains
             )
 
         df["cited_retrieved_count"] = df.index.map(
