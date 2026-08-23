@@ -3,19 +3,25 @@ output): rates each replayed response's factuality, completeness, and
 relevance on a 5-point Likert scale, both with Web search on ("auto") and
 forced off ("none").
 
-Run directly (`python -m src.replays.chat_replayer_evaluation`) to score the
-models configured in the __main__ block below; import `openai_inference()`
-to drive it programmatically. Requires OPENAI_API_KEY in .env.
+Each replayed response is judged by its OWN platform's model (see
+src.utils.llm_judge.JUDGE_MODEL_BY_PLATFORM) -- a deepseek-v4-flash reply
+is judged by DeepSeek's own judge model, not a single fixed evaluator,
+consistent with every other judge in this codebase
+(query_reformulations.query_specificity_evaluation,
+entailment_analysis.evaluate_claim_factuality). The judge platform is
+inferred from the replayed model's name (chat_replayer._infer_provider_
+from_model), not passed in separately.
+
+Run directly (`python -m src.replays.chat_replayer_evaluation`) to score
+the models configured in the __main__ block below; import
+`evaluate_replay_results()` to drive it programmatically. Requires the
+relevant provider API key(s) in .env (see llm_judge.py).
 """
 
-import ast
-import json
-import os
 from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from openai import OpenAI
 from tqdm import tqdm
 
 from src.prompts.evaluator_prompts import (
@@ -24,24 +30,75 @@ from src.prompts.evaluator_prompts import (
     SYSTEM_PROMPT_RELEVANCE_5LIKERT,
     USER_PROMPT_5LIKERT,
 )
+from src.replays.chat_replayer import _infer_provider_from_model
 from src.utils.common_io import OUTPUT_PATH, load_json, to_json
+from src.utils.llm_judge import judge_model_for_platform, run_judge
 
 load_dotenv()
 
+# chat_replayer._infer_provider_from_model returns "openai" for ChatGPT;
+# llm_judge.JUDGE_MODEL_BY_PLATFORM keys it as "chatgpt".
+_PROVIDER_TO_JUDGE_PLATFORM = {
+    "openai": "chatgpt",
+    "claude": "claude",
+    "grok": "grok",
+    "deepseek": "deepseek",
+}
 
-def openai_inference(model_name, data, filename, temperature=0.0, save_every=5):
+
+def judge_platform_for_replay_model(replay_model):
+    """Which platform's own judge model should score a response replayed
+    by `replay_model` (e.g. "deepseek-v4-flash" -> "deepseek")."""
+    provider = _infer_provider_from_model(replay_model)
+    return _PROVIDER_TO_JUDGE_PLATFORM.get(provider, "chatgpt")
+
+
+def _web_call_count(result):
+    """True if a replay result's raw API response shows the replayed model
+    actually searched (as opposed to just being allowed to), across both
+    response shapes chat_replayer.py's providers can produce: an OpenAI/
+    Grok Responses-API `output` list containing a `web_search_call` item,
+    or a Claude/DeepSeek Messages-API `content` list containing a
+    `server_tool_use`/`web_search_tool_result` block."""
+    if not isinstance(result, dict):
+        return False
+    response = result.get("response", {})
+    if not isinstance(response, dict):
+        return False
+
+    output_items = response.get("output", [])
+    if isinstance(output_items, list) and any(
+        isinstance(item, dict) and item.get("type") == "web_search_call"
+        for item in output_items
+    ):
+        return True
+
+    content_blocks = response.get("content", [])
+    if isinstance(content_blocks, list) and any(
+        isinstance(block, dict)
+        and block.get("type") in ("server_tool_use", "web_search_tool_result")
+        for block in content_blocks
+    ):
+        return True
+
+    return False
+
+
+def evaluate_replay_results(replay_model, data, filename, save_every=5):
     """Score every replay result in `data` (a {result_key: replay_result}
-    dict, as produced by chat_replayer.replayer()) with `model_name` as the
-    LLM judge, for both the "auto" (Web search allowed) and "none" (Web
-    search forced off) replay modes.
+    dict, as produced by chat_replayer.replayer()) using the judge model
+    for `replay_model`'s own platform (see judge_platform_for_replay_model/
+    llm_judge.JUDGE_MODEL_BY_PLATFORM), for both the "auto" (Web search
+    allowed) and "none" (Web search forced off) replay modes.
 
     Writes/resumes from
-    outputs/chatgpt/metadata/preference_evaluation/<model_name>/<temperature>/<filename>.{json,csv,pkl},
+    outputs/<platform>/metadata/preference_evaluation/<filename>.{json,csv,pkl},
     saving incrementally every `save_every` scored rows so an interrupted
-    run can pick back up without re-scoring what's already done. Returns the
-    final results as a DataFrame.
+    run can pick back up without re-scoring what's already done. Returns
+    the final results as a DataFrame.
     """
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    platform = judge_platform_for_replay_model(replay_model)
+    judge_model = judge_model_for_platform(platform)
     response_modes = ["auto", "none"]
 
     likert_metrics = {
@@ -50,80 +107,32 @@ def openai_inference(model_name, data, filename, temperature=0.0, save_every=5):
         "relevance_5likert": SYSTEM_PROMPT_RELEVANCE_5LIKERT,
     }
 
-    def parse_eval_json(text):
-        """Best-effort parse of the judge's JSON verdict: try the whole
-        response as JSON, then fall back to the largest {...} substring
-        (as JSON, then as a Python literal), else {}."""
-        text = (text or "").strip()
-        if not text:
-            return {}
-
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            pass
-
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and start < end:
-            candidate = text[start : end + 1]
-            try:
-                return json.loads(candidate)
-            except json.JSONDecodeError:
-                try:
-                    return ast.literal_eval(candidate)
-                except (ValueError, SyntaxError):
-                    return {}
-        return {}
-
     def run_eval(system_prompt, user_prompt):
-        """Send one judge request (Web search forced on, so the judge can
-        verify claims against current sources) and return the raw text
-        alongside its parsed JSON verdict."""
-        msg = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
+        """Send one judge request (Web search on, so the judge can verify
+        claims against current sources) using `platform`'s own model, and
+        return the raw text alongside its parsed JSON verdict.
 
-        response = client.responses.create(
-            model=model_name,
-            tools=[{"type": "web_search"}],
-            tool_choice="required",
-            input=msg,
-        )
-        raw_text = response.output_text
-        return {
-            "raw_judgment": raw_text,
-            "parsed_judgment": parse_eval_json(raw_text),
-        }
-
-    def _web_call_count(result):
-        """True if a replay result's raw API response includes a
-        web_search_call output item (i.e. the replayed model actually
-        searched, as opposed to just being allowed to)."""
-        if not isinstance(result, dict):
-            return False
-        response = result.get("response", {})
-        if not isinstance(response, dict):
-            return False
-        output_items = response.get("output", [])
-        if not isinstance(output_items, list):
-            return False
-        return any(
-            1
-            for item in output_items
-            if isinstance(item, dict) and item.get("type") == "web_search_call"
+        max_tokens is higher than run_judge's own default: the same token
+        budget has to cover both the judge's own web-search tool-use turns
+        and its final Likert-JSON answer, and the replayed responses being
+        fact-checked here can be long real chat outputs -- 1024 was
+        occasionally getting exhausted mid-search, before any final text.
+        """
+        return run_judge(
+            platform,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            require_web_search=True,
+            max_tokens=4096,
         )
 
-    output_dir = Path(
-        f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{model_name}/{temperature}"
-    )
+    output_dir = Path(f"{OUTPUT_PATH}/{platform}/metadata/preference_evaluation")
     output_dir.mkdir(parents=True, exist_ok=True)
     output_json_path = output_dir / f"{filename}.json"
 
     def load_existing_records():
-        """Previously-scored rows for this (model, temperature, filename),
-        if any -- lets a re-run resume instead of re-scoring everything."""
+        """Previously-scored rows for this (platform, filename), if any --
+        lets a re-run resume instead of re-scoring everything."""
         if not output_json_path.exists():
             return []
         existing = load_json(output_json_path)
@@ -149,7 +158,7 @@ def openai_inference(model_name, data, filename, temperature=0.0, save_every=5):
         if isinstance(record, dict) and record.get("result_key")
     }
 
-    print(f"Evaluating {len(data)} prompts ...")
+    print(f"[{platform}] Judge model: {judge_model}. Evaluating {len(data)} prompts ...")
     for result_key, results in tqdm(data.items(), total=len(data)):
         prompt = results.get("user_prompt", result_key)
         row = records_by_result_key.get(result_key, {})
@@ -163,6 +172,8 @@ def openai_inference(model_name, data, filename, temperature=0.0, save_every=5):
                 "sample_source": row.get("sample_source", results.get("sample_source")),
                 "conv_id": row.get("conv_id", results.get("conv_id")),
                 "turn_id": row.get("turn_id", results.get("turn_id")),
+                "judge_platform": platform,
+                "judge_model": judge_model,
             }
         )
 
@@ -218,9 +229,6 @@ def openai_inference(model_name, data, filename, temperature=0.0, save_every=5):
 
 
 if __name__ == "__main__":
-    # evaluator_models = ["gpt-5.4-mini", "gpt-5.4-nano-2026-03-17"]
-    evaluator_models = ["gpt-5.6-luna"]
-    # replay_models = ["gpt-4o-mini", "invivo"]
     replay_models = [
         # "gpt-5-mini-2025-08-07",
         # "gpt-5.3-chat-latest",
@@ -228,11 +236,10 @@ if __name__ == "__main__":
         # "claude-sonnet-4-6",
         "deepseek-v4-flash",
     ]
-    for eval_model in evaluator_models:
-        print(f"Evaluator: {eval_model}")
-        for replay_model in replay_models:
-            print(f"Replayer model: {replay_model}")
-            data = load_json(
-                f"{OUTPUT_PATH}/replays/{replay_model}.json"
-            )
-            openai_inference(eval_model, data, replay_model)
+    for replay_model in replay_models:
+        judge_platform = judge_platform_for_replay_model(replay_model)
+        print(f"Replayer model: {replay_model} (judged by {judge_platform})")
+        data = load_json(
+            f"{OUTPUT_PATH}/replays/{replay_model}.json"
+        )
+        evaluate_replay_results(replay_model, data, replay_model)

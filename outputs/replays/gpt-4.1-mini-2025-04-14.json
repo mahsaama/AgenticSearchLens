@@ -1,0 +1,1476 @@
+{
+    "web::6a8712d5-bc24-83ed-a880-52106c9c8a40::aa46c3d4-d77f-41cd-922a-bda37bb6d346": {
+        "sample_idx": 0,
+        "result_key": "web::6a8712d5-bc24-83ed-a880-52106c9c8a40::aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+        "user_prompt": "What are the News today?",
+        "prompt": [
+            {
+                "role": "user",
+                "content": "What are the News today?"
+            }
+        ],
+        "developer_prompt": null,
+        "sample_source": "web",
+        "conv_id": "6a8712d5-bc24-83ed-a880-52106c9c8a40",
+        "turn_id": "aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+        "invivo_model": "gpt-5-6",
+        "replay_model": "gpt-4.1-mini-2025-04-14",
+        "replay_provider": "openai",
+        "invivo_response": "Here\u2019s a quick roundup of the **biggest stories today, Thursday, August 20, 2026**:\n\n- \ud83c\uddfa\ud83c\udde6 **Russia launches a major missile attack on Kyiv.** At least **16 people have been killed and more than 40 injured**, according to Ukrainian officials. Residential areas and other civilian infrastructure were hit. \ue200cite\ue202turn0search2\ue202turn0search10\ue201\n- \ud83c\uddf7\ud83c\uddfa **Ukraine is striking back at Russian energy infrastructure.** Ukrainian drones reportedly hit an oil refinery in Tatarstan and an oil terminal in Krasnodar, while Russia is increasingly importing gasoline because of fuel shortages. \ue200cite\ue202turn0search1\ue202turn0news5\ue201\n- \ud83c\uddfa\ud83c\uddf8\ud83c\uddee\ud83c\uddf7 **Trump escalates economic pressure on Iran.** President Trump is threatening countries that continue supporting Iran economically, shifting emphasis toward an intensified sanctions and economic campaign. \ue200cite\ue202turn0news25\ue202turn0news17\ue201\n- \ud83c\udde9\ud83c\uddea **Germany is dealing with severe weather and energy pressures.** A tornado struck F\u00fcrstenwalde in Brandenburg, while diesel prices continue rising and the Rhine is experiencing exceptionally low water levels amid drought. \ue200cite\ue202turn0search27\ue202turn0news15\ue202turn0search26\ue201\n- \ud83c\udfd2 **NHL and FC Bayern announce a major hockey partnership.** The organizations have agreed to a multiyear strategic partnership aimed at expanding ice hockey's profile in Germany. \ue200cite\ue202turn0news23\ue201\n- \ud83d\udcb0 **Global borrowing costs remain a concern.** Long-term government bond yields in the US, Germany and Japan have reached multi-decade highs, reflecting concerns about inflation and government finances. \ue200cite\ue202turn0news39\ue201\n\n**The biggest developing story right now is the escalation around Iran and the continuing Russia\u2013Ukraine war.**\n\nI can also give you a **Germany-only**, **US-only**, **world**, **business/markets**, or **technology** news briefing.",
+        "auto": {
+            "output_text": "Here are some of the top news stories for Sunday, August 23, 2026:\n\n**International Affairs**\n\n- **U.S.-Iran Conflict**: Iran's President Masoud Pezeshkian declared victory over the United States, stating that the world has \"approved\" Iran's success and calling for the end of the war. In response, the U.S. is shifting its strategy towards economic warfare. ([cbsnews.com](https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai))\n\n- **UK Traffic Incident**: A tragic accident near Middlesbrough, England, resulted in seven fatalities, including two police officers. The collision occurred when a vehicle traveling the wrong way on the A66 highway struck a marked police car. ([aa.com.tr](https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai))\n\n**Asia-Pacific**\n\n- **Indonesia's Firefighting Efforts**: Indonesia has deployed 1,500 additional military personnel and six helicopters to combat forest and land fires in West Kalimantan. Authorities are also investigating four corporations in the region for alleged violations related to the fires. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n- **Myanmar-China Cooperation**: At the 2026 APEC Customs Business Dialogue in Dalian, China, Myanmar and China discussed enhancing customs cooperation, trade facilitation, and food safety to strengthen supply chain connectivity. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n**United States**\n\n- **Federal Reserve Insights**: Minneapolis Federal Reserve President Neel Kashkari discussed the U.S. national debt reaching a record $40 trillion amid ongoing inflation and market uncertainties. ([cbsnews.com](https://www.cbsnews.com/video/open-this-is-face-the-nation-with-margaret-brennan-aug-23-2026/?utm_source=openai))\n\n- **Massachusetts Officer's Death**: An arrest warrant has been issued for the wife of a Massachusetts police officer found dead at their home. The officer's death remains under investigation, and the wife has been missing for over five days. ([theguardian.com](https://www.theguardian.com/us-news/2026/aug/23/all?utm_source=openai))\n\n**Sports**\n\n- **Athletics Achievements**: Indian athlete Neeraj Chopra secured second place at the Lausanne Diamond League with a season-best throw of 88.05 meters, narrowly missing first place. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\n- **Badminton World Championships**: Indian duo Treesa Jolly and Gayatri Gopichand won the women's doubles bronze medal at the BWF Badminton World Championships in New Delhi, marking a significant achievement for Indian badminton. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\nPlease note that news developments are ongoing. For the most current information, refer to reputable news sources. ",
+            "response": {
+                "id": "resp_07db034a84ef3011016a8b68f57d0c87d2be00673fa8e5dd51",
+                "created_at": 1787521269.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "ws_07db034a84ef3011016a8b68f6038487d2a2f227ef185139ab",
+                        "action": {
+                            "query": "news today",
+                            "type": "search",
+                            "queries": [
+                                "news today"
+                            ],
+                            "sources": [
+                                {
+                                    "type": "url",
+                                    "url": "https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.cbsnews.com/video/open-this-is-face-the-nation-with-margaret-brennan-aug-23-2026/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.antena3.ro/stiri/2026/08/23?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://eadaily.com/en/news/usa/2026/08/23/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://eadaily.com/en/news/2026/08/23/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.tagesschau.de/archiv/allemeldungen?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.spokesman.com/stories/2026/aug/23/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.theguardian.com/us-news/2026/aug/23/all?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.wincalendar.com/Calendar/Date/August-23-2026?utm_source=openai"
+                                }
+                            ]
+                        },
+                        "status": "completed",
+                        "type": "web_search_call"
+                    },
+                    {
+                        "id": "msg_07db034a84ef3011016a8b68f6c0f887d2bcaeb331e905367e",
+                        "content": [
+                            {
+                                "annotations": [
+                                    {
+                                        "end_index": 465,
+                                        "start_index": 359,
+                                        "title": "U.S.-Iran Live Updates: Iran declares it has won the war as U.S. turns to economic warfare",
+                                        "type": "url_citation",
+                                        "url": "https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 811,
+                                        "start_index": 711,
+                                        "title": "Morning Briefing: Aug. 23, 2026",
+                                        "type": "url_citation",
+                                        "url": "https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1201,
+                                        "start_index": 1114,
+                                        "title": "BERNAMA - Top News Headlines In Indonesia, Myanmar, Philippines, Singapore & Vietnam: Aug 23, 2026",
+                                        "type": "url_citation",
+                                        "url": "https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1520,
+                                        "start_index": 1433,
+                                        "title": "BERNAMA - Top News Headlines In Indonesia, Myanmar, Philippines, Singapore & Vietnam: Aug 23, 2026",
+                                        "type": "url_citation",
+                                        "url": "https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1866,
+                                        "start_index": 1738,
+                                        "title": "Open: This is \"Face the Nation with Margaret Brennan,\" Aug. 23, 2026 - CBS News",
+                                        "type": "url_citation",
+                                        "url": "https://www.cbsnews.com/video/open-this-is-face-the-nation-with-margaret-brennan-aug-23-2026/?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2201,
+                                        "start_index": 2111,
+                                        "title": "US news | US news | The Guardian",
+                                        "type": "url_citation",
+                                        "url": "https://www.theguardian.com/us-news/2026/aug/23/all?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2488,
+                                        "start_index": 2398,
+                                        "title": "Daily Current Affairs - 23 August 2026 (English & Hindi) \u00b7 Pragati365",
+                                        "type": "url_citation",
+                                        "url": "https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2811,
+                                        "start_index": 2721,
+                                        "title": "Daily Current Affairs - 23 August 2026 (English & Hindi) \u00b7 Pragati365",
+                                        "type": "url_citation",
+                                        "url": "https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai"
+                                    }
+                                ],
+                                "text": "Here are some of the top news stories for Sunday, August 23, 2026:\n\n**International Affairs**\n\n- **U.S.-Iran Conflict**: Iran's President Masoud Pezeshkian declared victory over the United States, stating that the world has \"approved\" Iran's success and calling for the end of the war. In response, the U.S. is shifting its strategy towards economic warfare. ([cbsnews.com](https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai))\n\n- **UK Traffic Incident**: A tragic accident near Middlesbrough, England, resulted in seven fatalities, including two police officers. The collision occurred when a vehicle traveling the wrong way on the A66 highway struck a marked police car. ([aa.com.tr](https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai))\n\n**Asia-Pacific**\n\n- **Indonesia's Firefighting Efforts**: Indonesia has deployed 1,500 additional military personnel and six helicopters to combat forest and land fires in West Kalimantan. Authorities are also investigating four corporations in the region for alleged violations related to the fires. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n- **Myanmar-China Cooperation**: At the 2026 APEC Customs Business Dialogue in Dalian, China, Myanmar and China discussed enhancing customs cooperation, trade facilitation, and food safety to strengthen supply chain connectivity. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n**United States**\n\n- **Federal Reserve Insights**: Minneapolis Federal Reserve President Neel Kashkari discussed the U.S. national debt reaching a record $40 trillion amid ongoing inflation and market uncertainties. ([cbsnews.com](https://www.cbsnews.com/video/open-this-is-face-the-nation-with-margaret-brennan-aug-23-2026/?utm_source=openai))\n\n- **Massachusetts Officer's Death**: An arrest warrant has been issued for the wife of a Massachusetts police officer found dead at their home. The officer's death remains under investigation, and the wife has been missing for over five days. ([theguardian.com](https://www.theguardian.com/us-news/2026/aug/23/all?utm_source=openai))\n\n**Sports**\n\n- **Athletics Achievements**: Indian athlete Neeraj Chopra secured second place at the Lausanne Diamond League with a season-best throw of 88.05 meters, narrowly missing first place. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\n- **Badminton World Championships**: Indian duo Treesa Jolly and Gayatri Gopichand won the women's doubles bronze medal at the BWF Badminton World Championships in New Delhi, marking a significant achievement for Indian badminton. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\nPlease note that news developments are ongoing. For the most current information, refer to reputable news sources. ",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "auto",
+                "tools": [
+                    {
+                        "type": "web_search",
+                        "filters": null,
+                        "search_context_size": "medium",
+                        "user_location": {
+                            "city": null,
+                            "country": "US",
+                            "region": null,
+                            "timezone": null,
+                            "type": "approximate"
+                        },
+                        "return_token_budget": "default",
+                        "search_content_types": [
+                            "text"
+                        ]
+                    }
+                ],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521273.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "default",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 8174,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 690,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 8864
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 1
+                    }
+                }
+            }
+        },
+        "none": {
+            "output_text": "I don't have real-time access to current news. For the latest news updates, you might want to check reliable news websites, apps, or channels such as BBC, CNN, Reuters, or your preferred local news sources. If you have a specific topic or area of interest, I can help provide background information or recent developments up to my knowledge cutoff in June 2024.",
+            "response": {
+                "id": "resp_0c20c15c2b477454016a8b68fa7bec87d29e46879ae1befcb3",
+                "created_at": 1787521274.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "msg_0c20c15c2b477454016a8b68faf3a487d2ba32ba9e15f435e1",
+                        "content": [
+                            {
+                                "annotations": [],
+                                "text": "I don't have real-time access to current news. For the latest news updates, you might want to check reliable news websites, apps, or channels such as BBC, CNN, Reuters, or your preferred local news sources. If you have a specific topic or area of interest, I can help provide background information or recent developments up to my knowledge cutoff in June 2024.",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "auto",
+                "tools": [],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521275.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "default",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 13,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 76,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 89
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 0
+                    }
+                }
+            }
+        },
+        "required": {
+            "output_text": "Here are some of the top news stories for Sunday, August 23, 2026:\n\n**International News**\n\n- **U.S.-Iran Conflict**: Iran's President Masoud Pezeshkian declared victory over the United States, stating that the world has \"approved\" Iran's success and calling for the end of the war. In response, the U.S. is shifting its strategy to economic warfare. ([cbsnews.com](https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai))\n\n- **UK Traffic Incident**: A tragic accident near Middlesbrough, England, resulted in seven fatalities, including two police officers. The collision occurred when a vehicle traveling the wrong way on the A66 highway struck a marked police car. ([aa.com.tr](https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai))\n\n**Asia-Pacific News**\n\n- **Indonesia's Firefighting Efforts**: Indonesia has deployed 1,500 additional military personnel and six helicopters to combat forest and land fires in West Kalimantan. Authorities are also investigating four corporations in the region for alleged violations related to the fires. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n- **Myanmar-China Cooperation**: At the 2026 APEC Customs Business Dialogue in Dalian, China, Myanmar and China discussed enhancing customs cooperation, trade facilitation, food safety, and supply chain connectivity. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n**Sports**\n\n- **Athletics**: Indian athlete Neeraj Chopra secured second place at the Lausanne Diamond League with a season-best throw of 88.05 meters, narrowly missing first place by 0.09 meters. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\n- **Wrestling**: At the U20 World Wrestling Championships in Slovakia, Indian wrestler Kajal Dhochak won gold in the women's 76kg category, while Mansi Lather, Tanu Sharma, and Savita earned silver medals in their respective weight classes. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\n**Technology**\n\n- **OpenAI's European Expansion**: OpenAI has launched its advertising business in Europe, exploring new revenue streams to support its artificial intelligence initiatives. ([tagesschau.de](https://www.tagesschau.de/archiv/allemeldungen?utm_source=openai))\n\n**Local News**\n\n- **Spokane, Washington**: The Browne and Main buildings in Spokane have been approved for a seven-story housing project, marking a significant development in the city's urban planning. ([spokesman.com](https://www.spokesman.com/stories/2026/aug/23/?utm_source=openai))\n\nPlease note that news developments are ongoing. For the most current information, refer to reputable news sources. ",
+            "response": {
+                "id": "resp_0c9755cbfa1855b3016a8b68fc02b887d299aa6644c815c9b3",
+                "created_at": 1787521276.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "ws_0c9755cbfa1855b3016a8b68fc231087d287a6fcc5e2bba0f7",
+                        "action": {
+                            "query": "What are the News today?",
+                            "type": "search",
+                            "queries": [
+                                "What are the News today?"
+                            ],
+                            "sources": [
+                                {
+                                    "type": "url",
+                                    "url": "https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.cbsnews.com/video/open-this-is-face-the-nation-with-margaret-brennan-aug-23-2026/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.antena3.ro/stiri/2026/08/23?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://eadaily.com/en/news/usa/2026/08/23/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://eadaily.com/en/news/2026/08/23/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.tagesschau.de/archiv/allemeldungen?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.spokesman.com/stories/2026/aug/23/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.theguardian.com/us-news/2026/aug/23/all?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.wincalendar.com/Calendar/Date/August-23-2026?utm_source=openai"
+                                }
+                            ]
+                        },
+                        "status": "completed",
+                        "type": "web_search_call"
+                    },
+                    {
+                        "id": "msg_0c9755cbfa1855b3016a8b68fcf27087d2843a5c1d15949395",
+                        "content": [
+                            {
+                                "annotations": [
+                                    {
+                                        "end_index": 457,
+                                        "start_index": 351,
+                                        "title": "U.S.-Iran Live Updates: Iran declares it has won the war as U.S. turns to economic warfare",
+                                        "type": "url_citation",
+                                        "url": "https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 803,
+                                        "start_index": 703,
+                                        "title": "Morning Briefing: Aug. 23, 2026",
+                                        "type": "url_citation",
+                                        "url": "https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1198,
+                                        "start_index": 1111,
+                                        "title": "BERNAMA - Top News Headlines In Indonesia, Myanmar, Philippines, Singapore & Vietnam: Aug 23, 2026",
+                                        "type": "url_citation",
+                                        "url": "https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1504,
+                                        "start_index": 1417,
+                                        "title": "BERNAMA - Top News Headlines In Indonesia, Myanmar, Philippines, Singapore & Vietnam: Aug 23, 2026",
+                                        "type": "url_citation",
+                                        "url": "https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1793,
+                                        "start_index": 1703,
+                                        "title": "Daily Current Affairs - 23 August 2026 (English & Hindi) \u00b7 Pragati365",
+                                        "type": "url_citation",
+                                        "url": "https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2126,
+                                        "start_index": 2036,
+                                        "title": "Daily Current Affairs - 23 August 2026 (English & Hindi) \u00b7 Pragati365",
+                                        "type": "url_citation",
+                                        "url": "https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2400,
+                                        "start_index": 2317,
+                                        "title": "7-Tage-\u00dcberblick - kompakte News vom 23.08.2026 | tagesschau.de",
+                                        "type": "url_citation",
+                                        "url": "https://www.tagesschau.de/archiv/allemeldungen?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2687,
+                                        "start_index": 2604,
+                                        "title": "Spokesman-Review stories from August 23, 2026",
+                                        "type": "url_citation",
+                                        "url": "https://www.spokesman.com/stories/2026/aug/23/?utm_source=openai"
+                                    }
+                                ],
+                                "text": "Here are some of the top news stories for Sunday, August 23, 2026:\n\n**International News**\n\n- **U.S.-Iran Conflict**: Iran's President Masoud Pezeshkian declared victory over the United States, stating that the world has \"approved\" Iran's success and calling for the end of the war. In response, the U.S. is shifting its strategy to economic warfare. ([cbsnews.com](https://www.cbsnews.com/live-updates/iran-war-trump-economic-crackdown/?utm_source=openai))\n\n- **UK Traffic Incident**: A tragic accident near Middlesbrough, England, resulted in seven fatalities, including two police officers. The collision occurred when a vehicle traveling the wrong way on the A66 highway struck a marked police car. ([aa.com.tr](https://www.aa.com.tr/en/world/morning-briefing-aug-23-2026/4034881?utm_source=openai))\n\n**Asia-Pacific News**\n\n- **Indonesia's Firefighting Efforts**: Indonesia has deployed 1,500 additional military personnel and six helicopters to combat forest and land fires in West Kalimantan. Authorities are also investigating four corporations in the region for alleged violations related to the fires. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n- **Myanmar-China Cooperation**: At the 2026 APEC Customs Business Dialogue in Dalian, China, Myanmar and China discussed enhancing customs cooperation, trade facilitation, food safety, and supply chain connectivity. ([bernama.com](https://www.bernama.com/en/world/news.php?id=2597974&utm_source=openai))\n\n**Sports**\n\n- **Athletics**: Indian athlete Neeraj Chopra secured second place at the Lausanne Diamond League with a season-best throw of 88.05 meters, narrowly missing first place by 0.09 meters. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\n- **Wrestling**: At the U20 World Wrestling Championships in Slovakia, Indian wrestler Kajal Dhochak won gold in the women's 76kg category, while Mansi Lather, Tanu Sharma, and Savita earned silver medals in their respective weight classes. ([pragati365.com](https://pragati365.com/en/current-affairs-2026-08-23?utm_source=openai))\n\n**Technology**\n\n- **OpenAI's European Expansion**: OpenAI has launched its advertising business in Europe, exploring new revenue streams to support its artificial intelligence initiatives. ([tagesschau.de](https://www.tagesschau.de/archiv/allemeldungen?utm_source=openai))\n\n**Local News**\n\n- **Spokane, Washington**: The Browne and Main buildings in Spokane have been approved for a seven-story housing project, marking a significant development in the city's urban planning. ([spokesman.com](https://www.spokesman.com/stories/2026/aug/23/?utm_source=openai))\n\nPlease note that news developments are ongoing. For the most current information, refer to reputable news sources. ",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "required",
+                "tools": [
+                    {
+                        "type": "web_search",
+                        "filters": null,
+                        "search_context_size": "medium",
+                        "user_location": {
+                            "city": null,
+                            "country": "US",
+                            "region": null,
+                            "timezone": null,
+                            "type": "approximate"
+                        },
+                        "return_token_budget": "default",
+                        "search_content_types": [
+                            "text"
+                        ]
+                    }
+                ],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521279.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "auto",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 8498,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 662,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 9160
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 1
+                    }
+                }
+            }
+        }
+    },
+    "non_web::6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5::a03e9314-c73a-47f0-b01f-270474714e93": {
+        "sample_idx": 1,
+        "result_key": "non_web::6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5::a03e9314-c73a-47f0-b01f-270474714e93",
+        "user_prompt": "What are the 10 best places that everyone should visit in the world?",
+        "prompt": [
+            {
+                "role": "user",
+                "content": "What are the 10 best places that everyone should visit in the world?"
+            }
+        ],
+        "developer_prompt": null,
+        "sample_source": "non_web",
+        "conv_id": "6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5",
+        "turn_id": "a03e9314-c73a-47f0-b01f-270474714e93",
+        "invivo_model": "gpt-5-6",
+        "replay_model": "gpt-4.1-mini-2025-04-14",
+        "replay_provider": "openai",
+        "invivo_response": "If you mean **10 destinations that give you an extraordinary mix of history, culture, nature, food, architecture, and sheer \u201cwow\u201d factor**, my list would be:\n\n1. **Kyoto, Japan \ud83c\uddef\ud83c\uddf5** \u2014 Ancient temples, gardens, traditional neighborhoods, cherry blossoms, and incredible food.  \n2. **Rome, Italy \ud83c\uddee\ud83c\uddf9** \u2014 Few places pack in as much history: the Colosseum, Roman Forum, Pantheon, Vatican, and Renaissance art.  \n3. **Patagonia, Argentina & Chile \ud83c\udde6\ud83c\uddf7\ud83c\udde8\ud83c\uddf1** \u2014 Some of the planet\u2019s most dramatic mountains, glaciers, lakes, and wilderness.  \n4. **New Zealand \ud83c\uddf3\ud83c\uddff** \u2014 Spectacularly varied landscapes: fjords, mountains, beaches, volcanoes, and rainforests.  \n5. **Paris, France \ud83c\uddeb\ud83c\uddf7** \u2014 Art, architecture, museums, caf\u00e9s, food, and neighborhoods that are worth exploring simply on foot.  \n6. **Istanbul, T\u00fcrkiye \ud83c\uddf9\ud83c\uddf7** \u2014 A fascinating crossroads of Europe and Asia, with the Hagia Sophia, Blue Mosque, Bosphorus, bazaars, and phenomenal cuisine.  \n7. **Serengeti & Ngorongoro, Tanzania \ud83c\uddf9\ud83c\uddff** \u2014 For wildlife, this is hard to beat: lions, elephants, cheetahs, vast landscapes, and the Great Migration.  \n8. **Petra & Wadi Rum, Jordan \ud83c\uddef\ud83c\uddf4** \u2014 An extraordinary combination of ancient civilization and otherworldly desert scenery.  \n9. **Bora Bora / French Polynesia \ud83c\uddf5\ud83c\uddeb** \u2014 Turquoise lagoons, volcanic mountains, coral reefs, and some of the world's most beautiful tropical scenery.  \n10. **New York City, USA \ud83c\uddfa\ud83c\uddf8** \u2014 The ultimate big-city experience: museums, architecture, food, Broadway, neighborhoods, and an unmatched energy.\n\n\ue200image_group\ue202{\"layout\":\"carousel\",\"aspect_ratio\":\"16:9\",\"query\":[\"Kyoto Japan temples autumn\",\"Rome Italy Colosseum sunset\",\"Patagonia Torres del Paine Chile\",\"New Zealand Milford Sound\",\"Paris France Eiffel Tower Seine\",\"Istanbul Turkey Bosphorus Hagia Sophia\",\"Serengeti Tanzania safari\",\"Petra Jordan Wadi Rum\",\"Bora Bora French Polynesia lagoon\",\"New York City Manhattan skyline\"]}\ue201\n\n### If I had to rank them purely by \u201ceveryone should experience this at least once\u201d\n\n**1. Kyoto** \u2014 cultural immersion  \n**2. Patagonia** \u2014 natural beauty  \n**3. Rome** \u2014 history  \n**4. Serengeti** \u2014 wildlife  \n**5. New Zealand** \u2014 landscapes & adventure  \n**6. Paris** \u2014 art, food & atmosphere  \n**7. Istanbul** \u2014 culture & uniqueness  \n**8. Petra/Wadi Rum** \u2014 ancient world & desert  \n**9. New York** \u2014 modern city experience  \n**10. Bora Bora** \u2014 tropical paradise\n\nThat said, there are some **major omissions**\u2014Machu Picchu, Iceland, the Gal\u00e1pagos, the Swiss Alps, the Amalfi Coast, the Maldives, the Great Barrier Reef, Cape Town, and Angkor Wat could all make a different top 10.\n\nIf you tell me your **age, approximate budget, and whether you prefer nature, cities, beaches, history, or adventure**, I can make a much more personal **\u201c10 places you should visit in your lifetime\u201d** ranking.",
+        "auto": {
+            "output_text": "The \"best\" places to visit in the world can be subjective, as it depends on interests such as natural beauty, culture, history, adventure, or relaxation. However, here are 10 iconic and widely acclaimed destinations that many consider must-visit places around the world:\n\n1. **Paris, France** \u2013 Famous for its art, fashion, landmarks like the Eiffel Tower, and rich history.\n2. **Machu Picchu, Peru** \u2013 An ancient Incan city set high in the Andes Mountains, renowned for its archaeological significance and breathtaking views.\n3. **Great Barrier Reef, Australia** \u2013 The world's largest coral reef system, ideal for diving and marine life exploration.\n4. **Rome, Italy** \u2013 Known for its ancient history, architecture, the Colosseum, and Vatican City.\n5. **Kyoto, Japan** \u2013 Renowned for its traditional temples, gardens, and cultural heritage.\n6. **New York City, USA** \u2013 Famous for its skyline, Broadway, museums, and vibrant urban life.\n7. **Safari in Serengeti National Park, Tanzania** \u2013 One of the best places to witness African wildlife in their natural habitat.\n8. **Santorini, Greece** \u2013 A stunning island known for white-washed buildings, blue-domed churches, and beautiful sunsets.\n9. **Dubai, UAE** \u2013 Known for its modern architecture, luxury shopping, and desert adventures.\n10. **Grand Canyon, USA** \u2013 A natural wonder offering stunning vistas and hiking opportunities.\n\nWould you like recommendations tailored to specific interests or regions?",
+            "response": {
+                "id": "resp_0d0b2a8ea9c3649a016a8b69004dec87d2896bbdf7895bd408",
+                "created_at": 1787521280.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "msg_0d0b2a8ea9c3649a016a8b6900f3e087d2a321a62d893d1422",
+                        "content": [
+                            {
+                                "annotations": [],
+                                "text": "The \"best\" places to visit in the world can be subjective, as it depends on interests such as natural beauty, culture, history, adventure, or relaxation. However, here are 10 iconic and widely acclaimed destinations that many consider must-visit places around the world:\n\n1. **Paris, France** \u2013 Famous for its art, fashion, landmarks like the Eiffel Tower, and rich history.\n2. **Machu Picchu, Peru** \u2013 An ancient Incan city set high in the Andes Mountains, renowned for its archaeological significance and breathtaking views.\n3. **Great Barrier Reef, Australia** \u2013 The world's largest coral reef system, ideal for diving and marine life exploration.\n4. **Rome, Italy** \u2013 Known for its ancient history, architecture, the Colosseum, and Vatican City.\n5. **Kyoto, Japan** \u2013 Renowned for its traditional temples, gardens, and cultural heritage.\n6. **New York City, USA** \u2013 Famous for its skyline, Broadway, museums, and vibrant urban life.\n7. **Safari in Serengeti National Park, Tanzania** \u2013 One of the best places to witness African wildlife in their natural habitat.\n8. **Santorini, Greece** \u2013 A stunning island known for white-washed buildings, blue-domed churches, and beautiful sunsets.\n9. **Dubai, UAE** \u2013 Known for its modern architecture, luxury shopping, and desert adventures.\n10. **Grand Canyon, USA** \u2013 A natural wonder offering stunning vistas and hiking opportunities.\n\nWould you like recommendations tailored to specific interests or regions?",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "auto",
+                "tools": [
+                    {
+                        "type": "web_search",
+                        "filters": null,
+                        "search_context_size": "medium",
+                        "user_location": {
+                            "city": null,
+                            "country": "US",
+                            "region": null,
+                            "timezone": null,
+                            "type": "approximate"
+                        },
+                        "return_token_budget": "default",
+                        "search_content_types": [
+                            "text"
+                        ]
+                    }
+                ],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521283.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "default",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 316,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 317,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 633
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 0
+                    }
+                }
+            }
+        },
+        "none": {
+            "output_text": "Choosing the \"10 best places everyone should visit in the world\" is subjective and depends on interests like nature, culture, history, or adventure. However, here\u2019s a list of 10 iconic and diverse destinations that offer unique and unforgettable experiences across different continents:\n\n1. **Machu Picchu, Peru**  \n   Ancient Incan city set high in the Andes Mountains with breathtaking ruins and hiking opportunities.\n\n2. **Paris, France**  \n   The City of Light, famous for the Eiffel Tower, Louvre Museum, charming streets, and world-class cuisine.\n\n3. **Great Barrier Reef, Australia**  \n   The world\u2019s largest coral reef system, perfect for snorkeling, diving, and marine life exploration.\n\n4. **Kyoto, Japan**  \n   Renowned for its beautiful temples, traditional tea houses, gardens, and cultural heritage.\n\n5. **Grand Canyon, USA**  \n   Iconic natural wonder offering spectacular views and hiking trails in Arizona.\n\n6. **Santorini, Greece**  \n   Stunning island known for its whitewashed buildings, blue domes, and amazing sunsets over the Aegean Sea.\n\n7. **Cape Town, South Africa**  \n   Beautiful coastal city with Table Mountain, vibrant culture, and nearby wildlife safaris.\n\n8. **Rome, Italy**  \n   City rich with ancient history, art, and architecture\u2014think the Colosseum, Vatican, and Roman Forum.\n\n9. **Banff National Park, Canada**  \n   Gorgeous wilderness featuring turquoise lakes, rugged mountains, and outdoor activities year-round.\n\n10. **Petra, Jordan**  \n    Ancient rock-cut city known as the \u201cRose City,\u201d with remarkable archaeological ruins.\n\nThese places represent a variety of natural wonders, cultural heritage, and historical significance, making them bucket-list destinations for many travelers. Would you like recommendations tailored to specific interests or regions?",
+            "response": {
+                "id": "resp_06430f1df902bac8016a8b6904655c87d2a494cb12e94f543c",
+                "created_at": 1787521284.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "msg_06430f1df902bac8016a8b6904a93887d29b2e1eddf3e4cfad",
+                        "content": [
+                            {
+                                "annotations": [],
+                                "text": "Choosing the \"10 best places everyone should visit in the world\" is subjective and depends on interests like nature, culture, history, or adventure. However, here\u2019s a list of 10 iconic and diverse destinations that offer unique and unforgettable experiences across different continents:\n\n1. **Machu Picchu, Peru**  \n   Ancient Incan city set high in the Andes Mountains with breathtaking ruins and hiking opportunities.\n\n2. **Paris, France**  \n   The City of Light, famous for the Eiffel Tower, Louvre Museum, charming streets, and world-class cuisine.\n\n3. **Great Barrier Reef, Australia**  \n   The world\u2019s largest coral reef system, perfect for snorkeling, diving, and marine life exploration.\n\n4. **Kyoto, Japan**  \n   Renowned for its beautiful temples, traditional tea houses, gardens, and cultural heritage.\n\n5. **Grand Canyon, USA**  \n   Iconic natural wonder offering spectacular views and hiking trails in Arizona.\n\n6. **Santorini, Greece**  \n   Stunning island known for its whitewashed buildings, blue domes, and amazing sunsets over the Aegean Sea.\n\n7. **Cape Town, South Africa**  \n   Beautiful coastal city with Table Mountain, vibrant culture, and nearby wildlife safaris.\n\n8. **Rome, Italy**  \n   City rich with ancient history, art, and architecture\u2014think the Colosseum, Vatican, and Roman Forum.\n\n9. **Banff National Park, Canada**  \n   Gorgeous wilderness featuring turquoise lakes, rugged mountains, and outdoor activities year-round.\n\n10. **Petra, Jordan**  \n    Ancient rock-cut city known as the \u201cRose City,\u201d with remarkable archaeological ruins.\n\nThese places represent a variety of natural wonders, cultural heritage, and historical significance, making them bucket-list destinations for many travelers. Would you like recommendations tailored to specific interests or regions?",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "auto",
+                "tools": [],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521288.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "default",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 22,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 374,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 396
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 0
+                    }
+                }
+            }
+        },
+        "required": {
+            "output_text": "Exploring the world's most captivating destinations offers a glimpse into diverse cultures, histories, and natural wonders. Here are ten must-visit places that should be on every traveler's bucket list:\n\n\n[HISTORY OF EIFFEL TOWER IN PARIS \u2013 Hospitality And Tourism](https://femiolanrelehospitality.travel.blog/2019/07/21/history-of-eiffel-tower-in-paris/?utm_source=openai)\n**Paris, France**  \nKnown as the 'City of Light,' Paris boasts iconic landmarks like the Eiffel Tower, Louvre Museum, and Notre-Dame Cathedral. Its charming streets, world-class cuisine, and rich history make it a timeless destination.\n\n\n\n[Vietjet Air | Bay l\u00e0 th\u00edch ngay! | Website ch\u00ednh th\u1ee9c](https://www.vietjetair.com/vi/news/cam-nang-du-lich-1640944806320/van-ly-truong-thanh-co-gi-dac-biet-de-du-lich-kham-pha-1715652619145?utm_source=openai)\n**Great Wall of China, China**  \nAn ancient marvel stretching over 13,000 miles, the Great Wall offers breathtaking views and a deep dive into China's rich history.\n\n\n\n[20 Summer Travel 2024: Best Places to Visit Around the World](https://blog.keytours.com/summer-travel-2024?utm_source=openai)\n**Machu Picchu, Peru**  \nThis 15th-century Incan citadel set high in the Andes Mountains is renowned for its dry-stone walls and panoramic vistas.\n\n\n\n[\u0936\u093e\u0939\u091c\u0939\u093e\u0902 \u0928\u0947 \u0924\u093e\u091c\u092e\u0939\u0932 \u0915\u093f\u0938\u0915\u0940 \u091c\u092e\u0940\u0928 \u092a\u0930 \u092c\u0928\u0935\u093e\u092f\u093e \u0925\u093e?](https://www.livehindustan.com/web-stories/whose-land-did-shah-jahan-build-the-taj-mahal-know-history-_NrQ66Ql_Y3__PqbkoaL?utm_source=openai)\n**Taj Mahal, India**  \nA symbol of love, this white marble mausoleum in Agra is an architectural masterpiece and a UNESCO World Heritage site.\n\n\n\n[En Eski Ulusal Park: B\u00fcy\u00fck Kanyon - D\u00fcnyan\u0131n Gezgini](https://dunyaningezgini.blogspot.com/2014/08/en-eski-ulusal-park-buyuk-kanyon.html?utm_source=openai)\n**Grand Canyon, USA**  \nA natural wonder in Arizona, the Grand Canyon features stunning rock formations and vibrant colors, offering unparalleled hiking and photography opportunities.\n\n\n\n[Beautiful Santorini Island, Greece](https://media.gettyimages.com/id/1742889423/photo/beautiful-santorini-island-greece.jpg?b=1&c=mfdL-AQRyfIEx--vJhm-uei6q3nMYHIc1dYZRqVG804%3D&k=20&s=612x612&w=0&utm_source=openai)\n**Santorini, Greece**  \nFamed for its white-washed buildings, blue-domed churches, and breathtaking sunsets, Santorini is a picturesque island in the Aegean Sea.\n\n\n\n[\u041a\u0442\u043e \u043e\u0442\u043a\u0440\u044b\u043b \u0431\u043e\u043b\u044c\u0448\u043e\u0439 \u0431\u0430\u0440\u044c\u0435\u0440\u043d\u044b\u0439 \u0440\u0438\u0444 \u0432 \u0430\u0432\u0441\u0442\u0440\u0430\u043b\u0438\u0438](https://mebstroy.com/sovety/kto-otkryl-bolshoj-barernyj-rif-v-avstralii.html?utm_source=openai)\n**Great Barrier Reef, Australia**  \nThe world's largest coral reef system, offering incredible snorkeling and scuba diving opportunities.\n\n\n\n[Best summer weekend getaways 2025: Top 3 must-visit destinations](https://www.travelnerinsurance.com/blog/best-summer-weekend-getaways-2025-top-3-must-visit-destinations?utm_source=openai)\n**Kyoto, Japan**  \nA city known for its traditional Japanese culture and stunning temples and gardens, Kyoto is a must-visit destination for anyone interested in Japanese history and aesthetics.\n\n\n\n[A 1st century AD crypt discovered under the Treasury of Petra may solve the mystery of its construction](https://www.labrujulaverde.com/en/2024/10/a-1st-century-ad-crypt-discovered-under-petras-treasury-building-may-solve-the-mystery-of-its-construction/?utm_source=openai)\n**Petra, Jordan**  \nAn ancient city carved into the rock, Petra is a unique and awe-inspiring destination that\u2019s sure to leave a lasting impression.\n\n\n\n[8 of Canada's Top Aurora Viewing Spots - Entire Travel Group](https://www.entiretravel.com.au/articles/best-spots-in-canada-to-see-the-northern-lights?utm_source=openai)\n**Northern Lights, Various Locations**  \nThe Northern Lights, or Aurora Borealis, create one of nature\u2019s most spectacular light shows across the Arctic skies.\n\n\nThese destinations offer unique experiences that blend natural beauty, historical significance, and cultural richness, making them essential stops for any avid traveler. ",
+            "response": {
+                "id": "resp_0fc98e9ae39109be016a8b6908ac8887d2a216526a1a8adb6e",
+                "created_at": 1787521288.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "ws_0fc98e9ae39109be016a8b6908da5087d2b8ea40cf1d68a7af",
+                        "action": {
+                            "query": "What are the 10 best places that everyone should visit in the world?",
+                            "type": "search",
+                            "queries": [
+                                "What are the 10 best places that everyone should visit in the world?"
+                            ],
+                            "sources": [
+                                {
+                                    "type": "url",
+                                    "url": "https://techreview.pro/ultimate-travel-guide-top-10-must-visit-destinations-in-the-world?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://amerikanki.com/travel/must-see-places-in-world/10/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://wanderlustwanderers.com/places-to-see/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://travelpicsa.com/10-places-in-the-world-you-must-visit/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://trulytraveled.com/articles/top-10-must-see-tourist-places-in-the-world?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.moneycontrol.com/travel/top-10-greatest-places-in-the-world-time-2024-list-visual-story-2537737.html?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://thriveinyou.com/must-visit-places-in-the-world/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://vocal.media/writers/top-10-places-to-visit-in-the-world?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.alojapan.com/1238231/top-10-breathtaking-places-to-visit-must-see-travel-destinations/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.themost10.com/top-10-places-to-visit-in-the-world/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.travelndiaries.com/top-10-tourist-destinations-in-the-world/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://stafaislive.com/top-10-places-to-visit-in-the-world?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://femiolanrelehospitality.travel.blog/2019/07/21/history-of-eiffel-tower-in-paris/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.vietjetair.com/vi/news/cam-nang-du-lich-1640944806320/van-ly-truong-thanh-co-gi-dac-biet-de-du-lich-kham-pha-1715652619145?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://blog.keytours.com/summer-travel-2024?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.livehindustan.com/web-stories/whose-land-did-shah-jahan-build-the-taj-mahal-know-history-_NrQ66Ql_Y3__PqbkoaL?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://dunyaningezgini.blogspot.com/2014/08/en-eski-ulusal-park-buyuk-kanyon.html?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://media.gettyimages.com/id/1742889423/photo/beautiful-santorini-island-greece.jpg?b=1&c=mfdL-AQRyfIEx--vJhm-uei6q3nMYHIc1dYZRqVG804%3D&k=20&s=612x612&w=0&utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://mebstroy.com/sovety/kto-otkryl-bolshoj-barernyj-rif-v-avstralii.html?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.travelnerinsurance.com/blog/best-summer-weekend-getaways-2025-top-3-must-visit-destinations?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.labrujulaverde.com/en/2024/10/a-1st-century-ad-crypt-discovered-under-petras-treasury-building-may-solve-the-mystery-of-its-construction/?utm_source=openai"
+                                },
+                                {
+                                    "type": "url",
+                                    "url": "https://www.entiretravel.com.au/articles/best-spots-in-canada-to-see-the-northern-lights?utm_source=openai"
+                                }
+                            ]
+                        },
+                        "status": "completed",
+                        "type": "web_search_call"
+                    },
+                    {
+                        "id": "msg_0fc98e9ae39109be016a8b690a2d3087d2b8380530d859ce3f",
+                        "content": [
+                            {
+                                "annotations": [
+                                    {
+                                        "end_index": 373,
+                                        "start_index": 205,
+                                        "title": "HISTORY OF EIFFEL TOWER IN PARIS \u2013 Hospitality And Tourism",
+                                        "type": "url_citation",
+                                        "url": "https://femiolanrelehospitality.travel.blog/2019/07/21/history-of-eiffel-tower-in-paris/?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 822,
+                                        "start_index": 613,
+                                        "title": "Vietjet Air | Bay l\u00e0 th\u00edch ngay! | Website ch\u00ednh th\u1ee9c",
+                                        "type": "url_citation",
+                                        "url": "https://www.vietjetair.com/vi/news/cam-nang-du-lich-1640944806320/van-ly-truong-thanh-co-gi-dac-biet-de-du-lich-kham-pha-1715652619145?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1117,
+                                        "start_index": 991,
+                                        "title": "20 Summer Travel 2024: Best Places to Visit Around the World",
+                                        "type": "url_citation",
+                                        "url": "https://blog.keytours.com/summer-travel-2024?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1453,
+                                        "start_index": 1268,
+                                        "title": "\u0936\u093e\u0939\u091c\u0939\u093e\u0902 \u0928\u0947 \u0924\u093e\u091c\u092e\u0939\u0932 \u0915\u093f\u0938\u0915\u0940 \u091c\u092e\u0940\u0928 \u092a\u0930 \u092c\u0928\u0935\u093e\u092f\u093e \u0925\u093e?",
+                                        "type": "url_citation",
+                                        "url": "https://www.livehindustan.com/web-stories/whose-land-did-shah-jahan-build-the-taj-mahal-know-history-_NrQ66Ql_Y3__PqbkoaL?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 1756,
+                                        "start_index": 1600,
+                                        "title": "En Eski Ulusal Park: B\u00fcy\u00fck Kanyon - D\u00fcnyan\u0131n Gezgini",
+                                        "type": "url_citation",
+                                        "url": "https://dunyaningezgini.blogspot.com/2014/08/en-eski-ulusal-park-buyuk-kanyon.html?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2159,
+                                        "start_index": 1944,
+                                        "title": "Beautiful Santorini Island, Greece",
+                                        "type": "url_citation",
+                                        "url": "https://media.gettyimages.com/id/1742889423/photo/beautiful-santorini-island-greece.jpg?b=1&c=mfdL-AQRyfIEx--vJhm-uei6q3nMYHIc1dYZRqVG804%3D&k=20&s=612x612&w=0&utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2467,
+                                        "start_index": 2325,
+                                        "title": "\u041a\u0442\u043e \u043e\u0442\u043a\u0440\u044b\u043b \u0431\u043e\u043b\u044c\u0448\u043e\u0439 \u0431\u0430\u0440\u044c\u0435\u0440\u043d\u044b\u0439 \u0440\u0438\u0444 \u0432 \u0430\u0432\u0441\u0442\u0440\u0430\u043b\u0438\u0438",
+                                        "type": "url_citation",
+                                        "url": "https://mebstroy.com/sovety/kto-otkryl-bolshoj-barernyj-rif-v-avstralii.html?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 2798,
+                                        "start_index": 2609,
+                                        "title": "Best summer weekend getaways 2025: Top 3 must-visit destinations",
+                                        "type": "url_citation",
+                                        "url": "https://www.travelnerinsurance.com/blog/best-summer-weekend-getaways-2025-top-3-must-visit-destinations?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 3271,
+                                        "start_index": 2997,
+                                        "title": "A 1st century AD crypt discovered under the Treasury of Petra may solve the mystery of its construction",
+                                        "type": "url_citation",
+                                        "url": "https://www.labrujulaverde.com/en/2024/10/a-1st-century-ad-crypt-discovered-under-petras-treasury-building-may-solve-the-mystery-of-its-construction/?utm_source=openai"
+                                    },
+                                    {
+                                        "end_index": 3594,
+                                        "start_index": 3424,
+                                        "title": "8 of Canada's Top Aurora Viewing Spots - Entire Travel Group",
+                                        "type": "url_citation",
+                                        "url": "https://www.entiretravel.com.au/articles/best-spots-in-canada-to-see-the-northern-lights?utm_source=openai"
+                                    }
+                                ],
+                                "text": "Exploring the world's most captivating destinations offers a glimpse into diverse cultures, histories, and natural wonders. Here are ten must-visit places that should be on every traveler's bucket list:\n\n\n[HISTORY OF EIFFEL TOWER IN PARIS \u2013 Hospitality And Tourism](https://femiolanrelehospitality.travel.blog/2019/07/21/history-of-eiffel-tower-in-paris/?utm_source=openai)\n**Paris, France**  \nKnown as the 'City of Light,' Paris boasts iconic landmarks like the Eiffel Tower, Louvre Museum, and Notre-Dame Cathedral. Its charming streets, world-class cuisine, and rich history make it a timeless destination.\n\n\n\n[Vietjet Air | Bay l\u00e0 th\u00edch ngay! | Website ch\u00ednh th\u1ee9c](https://www.vietjetair.com/vi/news/cam-nang-du-lich-1640944806320/van-ly-truong-thanh-co-gi-dac-biet-de-du-lich-kham-pha-1715652619145?utm_source=openai)\n**Great Wall of China, China**  \nAn ancient marvel stretching over 13,000 miles, the Great Wall offers breathtaking views and a deep dive into China's rich history.\n\n\n\n[20 Summer Travel 2024: Best Places to Visit Around the World](https://blog.keytours.com/summer-travel-2024?utm_source=openai)\n**Machu Picchu, Peru**  \nThis 15th-century Incan citadel set high in the Andes Mountains is renowned for its dry-stone walls and panoramic vistas.\n\n\n\n[\u0936\u093e\u0939\u091c\u0939\u093e\u0902 \u0928\u0947 \u0924\u093e\u091c\u092e\u0939\u0932 \u0915\u093f\u0938\u0915\u0940 \u091c\u092e\u0940\u0928 \u092a\u0930 \u092c\u0928\u0935\u093e\u092f\u093e \u0925\u093e?](https://www.livehindustan.com/web-stories/whose-land-did-shah-jahan-build-the-taj-mahal-know-history-_NrQ66Ql_Y3__PqbkoaL?utm_source=openai)\n**Taj Mahal, India**  \nA symbol of love, this white marble mausoleum in Agra is an architectural masterpiece and a UNESCO World Heritage site.\n\n\n\n[En Eski Ulusal Park: B\u00fcy\u00fck Kanyon - D\u00fcnyan\u0131n Gezgini](https://dunyaningezgini.blogspot.com/2014/08/en-eski-ulusal-park-buyuk-kanyon.html?utm_source=openai)\n**Grand Canyon, USA**  \nA natural wonder in Arizona, the Grand Canyon features stunning rock formations and vibrant colors, offering unparalleled hiking and photography opportunities.\n\n\n\n[Beautiful Santorini Island, Greece](https://media.gettyimages.com/id/1742889423/photo/beautiful-santorini-island-greece.jpg?b=1&c=mfdL-AQRyfIEx--vJhm-uei6q3nMYHIc1dYZRqVG804%3D&k=20&s=612x612&w=0&utm_source=openai)\n**Santorini, Greece**  \nFamed for its white-washed buildings, blue-domed churches, and breathtaking sunsets, Santorini is a picturesque island in the Aegean Sea.\n\n\n\n[\u041a\u0442\u043e \u043e\u0442\u043a\u0440\u044b\u043b \u0431\u043e\u043b\u044c\u0448\u043e\u0439 \u0431\u0430\u0440\u044c\u0435\u0440\u043d\u044b\u0439 \u0440\u0438\u0444 \u0432 \u0430\u0432\u0441\u0442\u0440\u0430\u043b\u0438\u0438](https://mebstroy.com/sovety/kto-otkryl-bolshoj-barernyj-rif-v-avstralii.html?utm_source=openai)\n**Great Barrier Reef, Australia**  \nThe world's largest coral reef system, offering incredible snorkeling and scuba diving opportunities.\n\n\n\n[Best summer weekend getaways 2025: Top 3 must-visit destinations](https://www.travelnerinsurance.com/blog/best-summer-weekend-getaways-2025-top-3-must-visit-destinations?utm_source=openai)\n**Kyoto, Japan**  \nA city known for its traditional Japanese culture and stunning temples and gardens, Kyoto is a must-visit destination for anyone interested in Japanese history and aesthetics.\n\n\n\n[A 1st century AD crypt discovered under the Treasury of Petra may solve the mystery of its construction](https://www.labrujulaverde.com/en/2024/10/a-1st-century-ad-crypt-discovered-under-petras-treasury-building-may-solve-the-mystery-of-its-construction/?utm_source=openai)\n**Petra, Jordan**  \nAn ancient city carved into the rock, Petra is a unique and awe-inspiring destination that\u2019s sure to leave a lasting impression.\n\n\n\n[8 of Canada's Top Aurora Viewing Spots - Entire Travel Group](https://www.entiretravel.com.au/articles/best-spots-in-canada-to-see-the-northern-lights?utm_source=openai)\n**Northern Lights, Various Locations**  \nThe Northern Lights, or Aurora Borealis, create one of nature\u2019s most spectacular light shows across the Arctic skies.\n\n\nThese destinations offer unique experiences that blend natural beauty, historical significance, and cultural richness, making them essential stops for any avid traveler. ",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "required",
+                "tools": [
+                    {
+                        "type": "web_search",
+                        "filters": null,
+                        "search_context_size": "medium",
+                        "user_location": {
+                            "city": null,
+                            "country": "US",
+                            "region": null,
+                            "timezone": null,
+                            "type": "approximate"
+                        },
+                        "return_token_budget": "default",
+                        "search_content_types": [
+                            "text"
+                        ]
+                    }
+                ],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521293.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "auto",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 8516,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 990,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 9506
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 1
+                    }
+                }
+            }
+        }
+    },
+    "non_web::6a8714b9-5438-83eb-8ea5-5238ce7a60cb::e21de86c-d803-4875-aca1-2cc4aef30a04": {
+        "sample_idx": 2,
+        "result_key": "non_web::6a8714b9-5438-83eb-8ea5-5238ce7a60cb::e21de86c-d803-4875-aca1-2cc4aef30a04",
+        "user_prompt": "How can I swap keys and values in a python dictionary?",
+        "prompt": [
+            {
+                "role": "user",
+                "content": "How can I swap keys and values in a python dictionary?"
+            }
+        ],
+        "developer_prompt": null,
+        "sample_source": "non_web",
+        "conv_id": "6a8714b9-5438-83eb-8ea5-5238ce7a60cb",
+        "turn_id": "e21de86c-d803-4875-aca1-2cc4aef30a04",
+        "invivo_model": "gpt-5-6",
+        "replay_model": "gpt-4.1-mini-2025-04-14",
+        "replay_provider": "openai",
+        "invivo_response": "You can swap keys and values with a dictionary comprehension:\n\n```python\nd = {\"a\": 1, \"b\": 2, \"c\": 3}\n\nswapped = {value: key for key, value in d.items()}\n\nprint(swapped)\n# {1: \"a\", 2: \"b\", 3: \"c\"}\n```\n\n### Important caveat\nThis only works cleanly if the **values are unique and hashable**, because dictionary keys must be hashable.\n\nFor example:\n\n```python\nd = {\"a\": 1, \"b\": 1}\n\nswapped = {value: key for key, value in d.items()}\n\nprint(swapped)\n# {1: \"b\"}\n```\n\nThe `\"a\"` entry is lost because both values are `1`.\n\nIf you need to preserve duplicates, you can group the keys:\n\n```python\nfrom collections import defaultdict\n\nd = {\"a\": 1, \"b\": 1, \"c\": 2}\n\nswapped = defaultdict(list)\n\nfor key, value in d.items():\n    swapped[value].append(key)\n\nprint(dict(swapped))\n# {1: [\"a\", \"b\"], 2: [\"c\"]}\n```",
+        "auto": {
+            "output_text": "You can swap keys and values in a Python dictionary by creating a new dictionary where the keys are the original dictionary's values and the values are the original dictionary's keys.\n\nHere's a simple example:\n\n```python\noriginal_dict = {'a': 1, 'b': 2, 'c': 3}\nswapped_dict = {value: key for key, value in original_dict.items()}\nprint(swapped_dict)\n```\n\nOutput:\n```\n{1: 'a', 2: 'b', 3: 'c'}\n```\n\nThis uses a dictionary comprehension to iterate through each key-value pair in the original dictionary and reverses them in the new dictionary.\n\nKeep in mind:\n- The values in the original dictionary must be unique and hashable, as dictionary keys need to be unique and immutable.\n- If there are duplicate values in the original dictionary, only one of the corresponding keys will be preserved in the swapped dictionary.",
+            "response": {
+                "id": "resp_06f1ce7253e8378e016a8b690df10087d28f84db9071485853",
+                "created_at": 1787521293.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "msg_06f1ce7253e8378e016a8b690ef2f887d29b9a5983ba1b15a0",
+                        "content": [
+                            {
+                                "annotations": [],
+                                "text": "You can swap keys and values in a Python dictionary by creating a new dictionary where the keys are the original dictionary's values and the values are the original dictionary's keys.\n\nHere's a simple example:\n\n```python\noriginal_dict = {'a': 1, 'b': 2, 'c': 3}\nswapped_dict = {value: key for key, value in original_dict.items()}\nprint(swapped_dict)\n```\n\nOutput:\n```\n{1: 'a', 2: 'b', 3: 'c'}\n```\n\nThis uses a dictionary comprehension to iterate through each key-value pair in the original dictionary and reverses them in the new dictionary.\n\nKeep in mind:\n- The values in the original dictionary must be unique and hashable, as dictionary keys need to be unique and immutable.\n- If there are duplicate values in the original dictionary, only one of the corresponding keys will be preserved in the swapped dictionary.",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "auto",
+                "tools": [
+                    {
+                        "type": "web_search",
+                        "filters": null,
+                        "search_context_size": "medium",
+                        "user_location": {
+                            "city": null,
+                            "country": "US",
+                            "region": null,
+                            "timezone": null,
+                            "type": "approximate"
+                        },
+                        "return_token_budget": "default",
+                        "search_content_types": [
+                            "text"
+                        ]
+                    }
+                ],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521296.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "default",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 313,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 191,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 504
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 0
+                    }
+                }
+            }
+        },
+        "none": {
+            "output_text": "To swap keys and values in a Python dictionary, you can create a new dictionary comprehension where the keys become values and the values become keys.\n\nHere is a simple example:\n\n```python\noriginal_dict = {'a': 1, 'b': 2, 'c': 3}\n\n# Swap keys and values\nswapped_dict = {value: key for key, value in original_dict.items()}\n\nprint(swapped_dict)  # Output: {1: 'a', 2: 'b', 3: 'c'}\n```\n\n### Important notes:\n- The values in the original dictionary **must be unique and hashable** (like numbers, strings, tuples) because dictionary keys must be unique.\n- If the values aren't unique, this method will overwrite keys, and you may lose data. For example:\n\n```python\noriginal_dict = {'a': 1, 'b': 1, 'c': 2}\nswapped_dict = {value: key for key, value in original_dict.items()}\nprint(swapped_dict)  # Output: {1: 'b', 2: 'c'}\n```\nNotice that the key 'a' is lost because 1 maps both 'a' and 'b', but the last one ('b') is kept.\n\nIf you need to handle non-unique values, you can store the keys in a list:\n\n```python\nfrom collections import defaultdict\n\noriginal_dict = {'a': 1, 'b': 1, 'c': 2}\nswapped_dict = defaultdict(list)\n\nfor key, value in original_dict.items():\n    swapped_dict[value].append(key)\n\nprint(dict(swapped_dict))  # Output: {1: ['a', 'b'], 2: ['c']}\n```\n\nLet me know if you need a specific example or help with a different case!",
+            "response": {
+                "id": "resp_00656505c3411026016a8b6910c2d087d2af04c912d1c55eb2",
+                "created_at": 1787521296.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "msg_00656505c3411026016a8b6910fdb487d2bb43a086bcc8dec0",
+                        "content": [
+                            {
+                                "annotations": [],
+                                "text": "To swap keys and values in a Python dictionary, you can create a new dictionary comprehension where the keys become values and the values become keys.\n\nHere is a simple example:\n\n```python\noriginal_dict = {'a': 1, 'b': 2, 'c': 3}\n\n# Swap keys and values\nswapped_dict = {value: key for key, value in original_dict.items()}\n\nprint(swapped_dict)  # Output: {1: 'a', 2: 'b', 3: 'c'}\n```\n\n### Important notes:\n- The values in the original dictionary **must be unique and hashable** (like numbers, strings, tuples) because dictionary keys must be unique.\n- If the values aren't unique, this method will overwrite keys, and you may lose data. For example:\n\n```python\noriginal_dict = {'a': 1, 'b': 1, 'c': 2}\nswapped_dict = {value: key for key, value in original_dict.items()}\nprint(swapped_dict)  # Output: {1: 'b', 2: 'c'}\n```\nNotice that the key 'a' is lost because 1 maps both 'a' and 'b', but the last one ('b') is kept.\n\nIf you need to handle non-unique values, you can store the keys in a list:\n\n```python\nfrom collections import defaultdict\n\noriginal_dict = {'a': 1, 'b': 1, 'c': 2}\nswapped_dict = defaultdict(list)\n\nfor key, value in original_dict.items():\n    swapped_dict[value].append(key)\n\nprint(dict(swapped_dict))  # Output: {1: ['a', 'b'], 2: ['c']}\n```\n\nLet me know if you need a specific example or help with a different case!",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "auto",
+                "tools": [],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521300.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "default",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 19,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 378,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 397
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 0
+                    }
+                }
+            }
+        },
+        "required": {
+            "output_text": "To swap keys and values in a Python dictionary, you can use a dictionary comprehension. Here's how you can do it:\n\n```python\noriginal_dict = {'a': 1, 'b': 2, 'c': 3}\nswapped_dict = {v: k for k, v in original_dict.items()}\nprint(swapped_dict)\n```\n\nOutput:\n```\n{1: 'a', 2: 'b', 3: 'c'}\n```\n\nIn this example, `original_dict` is the dictionary you want to swap. The dictionary comprehension iterates over each key-value pair in `original_dict` and creates a new dictionary `swapped_dict` where the keys and values are reversed.\n\n**Important Considerations:**\n\n- **Unique Values:** Ensure that all values in the original dictionary are unique. If there are duplicate values, the last key-value pair encountered will overwrite the previous ones in the swapped dictionary, leading to data loss.\n\n- **Immutable Values:** The values in the original dictionary should be immutable (e.g., strings, numbers, tuples) because dictionary keys must be immutable.\n\nIf your dictionary contains non-unique values or mutable values, you might need to handle these cases separately to avoid data loss or errors. ",
+            "response": {
+                "id": "resp_0abce7985cf22297016a8b69146d4887d2bcf390e25462e2b2",
+                "created_at": 1787521300.0,
+                "error": null,
+                "incomplete_details": null,
+                "instructions": null,
+                "metadata": {},
+                "model": "gpt-4.1-mini-2025-04-14",
+                "object": "response",
+                "output": [
+                    {
+                        "id": "ws_0abce7985cf22297016a8b6914929887d2b822205c7ff6dc52",
+                        "action": {
+                            "query": "How can I swap keys and values in a python dictionary?",
+                            "type": "search",
+                            "queries": [
+                                "How can I swap keys and values in a python dictionary?"
+                            ],
+                            "sources": null
+                        },
+                        "status": "completed",
+                        "type": "web_search_call"
+                    },
+                    {
+                        "id": "msg_0abce7985cf22297016a8b6914e5dc87d291ba013b97f30a9b",
+                        "content": [
+                            {
+                                "annotations": [],
+                                "text": "To swap keys and values in a Python dictionary, you can use a dictionary comprehension. Here's how you can do it:\n\n```python\noriginal_dict = {'a': 1, 'b': 2, 'c': 3}\nswapped_dict = {v: k for k, v in original_dict.items()}\nprint(swapped_dict)\n```\n\nOutput:\n```\n{1: 'a', 2: 'b', 3: 'c'}\n```\n\nIn this example, `original_dict` is the dictionary you want to swap. The dictionary comprehension iterates over each key-value pair in `original_dict` and creates a new dictionary `swapped_dict` where the keys and values are reversed.\n\n**Important Considerations:**\n\n- **Unique Values:** Ensure that all values in the original dictionary are unique. If there are duplicate values, the last key-value pair encountered will overwrite the previous ones in the swapped dictionary, leading to data loss.\n\n- **Immutable Values:** The values in the original dictionary should be immutable (e.g., strings, numbers, tuples) because dictionary keys must be immutable.\n\nIf your dictionary contains non-unique values or mutable values, you might need to handle these cases separately to avoid data loss or errors. ",
+                                "type": "output_text",
+                                "logprobs": []
+                            }
+                        ],
+                        "role": "assistant",
+                        "status": "completed",
+                        "type": "message",
+                        "phase": null
+                    }
+                ],
+                "parallel_tool_calls": true,
+                "temperature": 1.0,
+                "tool_choice": "required",
+                "tools": [
+                    {
+                        "type": "web_search",
+                        "filters": null,
+                        "search_context_size": "medium",
+                        "user_location": {
+                            "city": null,
+                            "country": "US",
+                            "region": null,
+                            "timezone": null,
+                            "type": "approximate"
+                        },
+                        "return_token_budget": "default",
+                        "search_content_types": [
+                            "text"
+                        ]
+                    }
+                ],
+                "top_p": 1.0,
+                "background": false,
+                "completed_at": 1787521302.0,
+                "conversation": null,
+                "max_output_tokens": null,
+                "max_tool_calls": null,
+                "previous_response_id": null,
+                "prompt": null,
+                "prompt_cache_key": null,
+                "prompt_cache_retention": "in_memory",
+                "reasoning": {
+                    "effort": null,
+                    "generate_summary": null,
+                    "summary": null,
+                    "context": null
+                },
+                "safety_identifier": null,
+                "service_tier": "auto",
+                "status": "completed",
+                "text": {
+                    "format": {
+                        "type": "text"
+                    },
+                    "verbosity": "medium"
+                },
+                "top_logprobs": 0,
+                "truncation": "disabled",
+                "usage": {
+                    "input_tokens": 8510,
+                    "input_tokens_details": {
+                        "cached_tokens": 0,
+                        "cache_write_tokens": 0
+                    },
+                    "output_tokens": 253,
+                    "output_tokens_details": {
+                        "reasoning_tokens": 0
+                    },
+                    "total_tokens": 8763
+                },
+                "user": null,
+                "billing": {
+                    "payer": "developer"
+                },
+                "frequency_penalty": 0.0,
+                "moderation": null,
+                "presence_penalty": 0.0,
+                "store": false,
+                "tool_usage": {
+                    "image_gen": {
+                        "input_tokens": 0,
+                        "input_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "image_tokens": 0,
+                            "text_tokens": 0
+                        },
+                        "total_tokens": 0
+                    },
+                    "web_search": {
+                        "num_requests": 1
+                    }
+                }
+            }
+        }
+    }
+}
