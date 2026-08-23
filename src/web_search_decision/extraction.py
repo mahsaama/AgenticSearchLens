@@ -68,10 +68,10 @@ OUTPUT_PATH = Path("./outputs")
 
 # ---------- Column definitions ----------
 
-# "openai_models" holds the per-message model identifiers regardless of
+# "models" holds the per-message model identifiers regardless of
 # platform (kept under this name -- not renamed to something neutral like
 # "models" -- because every downstream analysis module already reads
-# df["openai_models"] unconditionally; this is the one column name none of
+# df["models"] unconditionally; this is the one column name none of
 # them may diverge on).
 COLUMNS = [
     "user_id",
@@ -85,7 +85,7 @@ COLUMNS = [
     "reasoning",
     "thinking",
     "thoughts",
-    "openai_models",
+    "models",
     "user_msg_history",
     "assistant_msg_history",
     "turn_msgs",

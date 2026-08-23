@@ -556,14 +556,14 @@ def _create_response_payload(
     raise ValueError(f"unsupported replay provider: {provider}")
 
 
-def _most_frequent_model(openai_models):
+def _most_frequent_model(models):
     """The most common non-empty model name in a turn's per-message model
     list (a turn can span several assistant messages/models), or None if
     there isn't one. Used to pick the "invivo_model" recorded alongside
     each replay result."""
     valid_models = [
         m
-        for m in openai_models
+        for m in models
         if isinstance(m, str) and m.strip() and m.lower() != "none"
     ]
     if not valid_models:
@@ -704,7 +704,7 @@ def replayer(
             if _clean_messages(row["assistant_msg_history"])
             else ""
         )
-        model_column = "openai_models" if "openai_models" in row.index else "models"
+        model_column = "models" if "models" in row.index else "models"
         row_model = _most_frequent_model(row[model_column])
         row_model = model_replacements.get(row_model, row_model)
         row_model = row_model or DEFAULT_MODEL_BY_PROVIDER["openai"]
