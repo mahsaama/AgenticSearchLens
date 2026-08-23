@@ -495,9 +495,9 @@ async def get_article_text_planB(url, browser=None):
 
     return extract_clean_text_from_html(content)
 
-def _load_response_source_similarity_input():
-    pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.pkl"
-    csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.csv"
+def _load_response_source_similarity_input(platform="chatgpt"):
+    pkl_path = f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl"
+    csv_path = f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.csv"
 
     try:
         df = pd.read_pickle(pkl_path)
@@ -644,10 +644,17 @@ def _load_urls_content(urls_content_path=RESPONSE_URLS_CONTENT_PATH, required=Tr
 
 
 async def extract_urls_content(
-    urls_content_path=RESPONSE_URLS_CONTENT_PATH,
+    urls_content_path=None,
     force_refresh=False,
+    platform="chatgpt",
 ):
-    df = _load_response_source_similarity_input()
+    if urls_content_path is None:
+        urls_content_path = (
+            RESPONSE_URLS_CONTENT_PATH
+            if platform == "chatgpt"
+            else f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_url_content.json"
+        )
+    df = _load_response_source_similarity_input(platform=platform)
 
     num_urls = 0
     unique_urls = set()

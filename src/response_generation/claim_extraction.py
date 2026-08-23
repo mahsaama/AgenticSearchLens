@@ -261,8 +261,8 @@ def _claim_cache_chunk_texts_from_response(response_text):
     return chunk_texts
 
 
-def _build_claim_cache_user_query_lookup():
-    response_df = _load_response_source_similarity_input().copy()
+def _build_claim_cache_user_query_lookup(platform="chatgpt"):
+    response_df = _load_response_source_similarity_input(platform=platform).copy()
     query_counts_by_cache_key = {}
     for _, row in response_df.iterrows():
         user_query = _row_user_query(row)

@@ -142,8 +142,8 @@ def _record_join_key(record):
     )
 
 
-def _build_response_source_user_query_lookup():
-    response_df = _load_response_source_similarity_input().copy()
+def _build_response_source_user_query_lookup(platform="chatgpt"):
+    response_df = _load_response_source_similarity_input(platform=platform).copy()
     user_query_lookup = {}
 
     for _, row in response_df.iterrows():
@@ -486,17 +486,14 @@ def _response_source_nli_output_base(
     chunking_method,
     claim_selection_mode="all",
     source_text_mode="full_url_content",
+    platform="chatgpt",
 ):
     if nli_method not in {"bert", "judge"}:
         raise ValueError("nli_method must be one of {'bert', 'judge'}")
     chunking_method = _normalize_chunking_method(chunking_method)
     claim_selection_mode = _normalize_claim_selection_mode(claim_selection_mode)
     source_text_mode = _normalize_source_text_mode(source_text_mode)
-    method_base = (
-        RESPONSE_SOURCE_NLI_SENTENCE_BASED_BERT_BASE
-        if nli_method == "bert"
-        else RESPONSE_SOURCE_NLI_SENTENCE_BASED_JUDGE_BASE
-    )
+    method_base = f"{OUTPUT_PATH}/{platform}/metadata/response_source_nli_sentence_based_{nli_method}"
     if chunking_method == "citation_marker":
         output_base = method_base
     elif claim_selection_mode == "all":
@@ -514,7 +511,8 @@ def response_source_nli_sentence_based(
     chunking_method="citation_marker",
     claim_selection_mode="latest_preceding",
     source_text_mode="full_url_content",
-    claim_cache_path=CLAIM_EXTRACTION_CACHE_PATH,
+    claim_cache_path=None,
+    platform="chatgpt",
 ):
     """Attribute response chunks using either judge NLI or BERT NLI."""
     if nli_method not in {"bert", "judge"}:
@@ -527,16 +525,28 @@ def response_source_nli_sentence_based(
         chunking_method,
         claim_selection_mode=claim_selection_mode,
         source_text_mode=source_text_mode,
+        platform=platform,
     )
+    if claim_cache_path is None:
+        claim_cache_path = (
+            CLAIM_EXTRACTION_CACHE_PATH
+            if platform == "chatgpt"
+            else f"{OUTPUT_PATH}/{platform}/metadata/response_source_claim_chunks_cache.json"
+        )
     persisted_claims_cache = _load_claims_cache(cache_path=claim_cache_path)
     claims_cache_dirty = False
     new_claim_cache_entries = 0
 
-    df = _load_response_source_similarity_input()
+    df = _load_response_source_similarity_input(platform=platform)
     urls_content_by_clean_url = {}
 
+    urls_content_path = (
+        RESPONSE_URLS_CONTENT_PATH
+        if platform == "chatgpt"
+        else f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_url_content.json"
+    )
     urls_content = _load_urls_content(
-        urls_content_path=RESPONSE_URLS_CONTENT_PATH,
+        urls_content_path=urls_content_path,
         required=False,
     )
     print(len(urls_content.keys()))
@@ -1213,6 +1223,7 @@ def response_source_nli_sentence_based_factuality(
     model_name=FACTUALITY_JUDGE_MODEL,
     output_suffix="_factuality",
     checkpoint_every=10,
+    platform="chatgpt",
 ):
     """
     Load sentence/claim-level NLI output, judge each extracted claim's factuality,
@@ -1232,7 +1243,7 @@ def response_source_nli_sentence_based_factuality(
     factuality_output_dir = os.path.dirname(factuality_output_base)
     if factuality_output_dir:
         os.makedirs(factuality_output_dir, exist_ok=True)
-    user_query_lookup = _build_response_source_user_query_lookup()
+    user_query_lookup = _build_response_source_user_query_lookup(platform=platform)
     claim_cache = {}
     enriched_records = []
     checkpoint_every = max(1, int(checkpoint_every or 1))
@@ -1285,21 +1296,28 @@ def response_source_nli_sentence_based_factuality(
 
 
 def response_source_claim_cache_factuality(
-    cache_path=CLAIM_EXTRACTION_CACHE_PATH,
+    cache_path=None,
     model_name=FACTUALITY_JUDGE_MODEL,
     output_suffix="_factuality",
+    platform="chatgpt",
 ):
     """
     Load the cached extracted claims JSON, evaluate each claim's factuality,
     and save an enriched cache-shaped JSON file alongside the original cache.
     """
+    if cache_path is None:
+        cache_path = (
+            CLAIM_EXTRACTION_CACHE_PATH
+            if platform == "chatgpt"
+            else f"{OUTPUT_PATH}/{platform}/metadata/response_source_claim_chunks_cache.json"
+        )
     claims_cache = _load_claims_cache(cache_path=cache_path)
     if not claims_cache:
         raise FileNotFoundError(
             f"Claim cache not found or empty at {cache_path}."
         )
 
-    cache_key_to_user_query = _build_claim_cache_user_query_lookup()
+    cache_key_to_user_query = _build_claim_cache_user_query_lookup(platform=platform)
     claim_cache = {}
     enriched_cache = {}
 
@@ -1727,9 +1745,10 @@ def summarize_response_source_nli_sentence_based_factuality(
 
 
 def plot_claim_bucket_tranco_rank_comparison(
-    input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json",
+    input_path=None,
     tranco_input_path=None,
     file_name="claim_bucket_tranco_rank_comparison",
+    platform="chatgpt",
 ):
     """
     Compare Tranco ranks for claim chunks attributed to Retrieved Sources versus
@@ -1741,12 +1760,14 @@ def plot_claim_bucket_tranco_rank_comparison(
         _normalize_url_for_source_matching,
     )
 
+    if input_path is None:
+        input_path = f"{OUTPUT_PATH}/{platform}/metadata/response_source_nli_sentence_based_judge_claim.json"
     claim_records = load_json(input_path)
     if not isinstance(claim_records, list):
         raise ValueError(f"Expected a JSON list at {input_path}")
 
     tranco_input_path = tranco_input_path or (
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_tranco_ranks.pkl"
     )
     if not os.path.exists(tranco_input_path):
         raise FileNotFoundError(
@@ -1867,7 +1888,7 @@ def plot_claim_bucket_tranco_rank_comparison(
     if len(rank_df) == 0:
         raise ValueError("No claim-level Tranco ranks found for the selected buckets.")
 
-    output_dir = f"{OUTPUT_PATH}/{CONF}"
+    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
     os.makedirs(output_dir, exist_ok=True)
     rank_df.to_csv(f"{output_dir}/{file_name}.csv", index=False)
 
@@ -1955,17 +1976,20 @@ def plot_claim_bucket_tranco_rank_comparison(
 
 
 def diagnose_snippet_unexplained_rows(
-    input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim_snippet.json",
+    input_path=None,
+    platform="chatgpt",
 ):
     """
     Diagnose why snippet-mode judge outputs produce many Unexplained rows.
     Prints bucket counts plus snippet-coverage stats for checked sources.
     """
+    if input_path is None:
+        input_path = f"{OUTPUT_PATH}/{platform}/metadata/response_source_nli_sentence_based_judge_claim_snippet.json"
     source_records = load_json(input_path)
     if not isinstance(source_records, list):
         raise ValueError(f"Expected a JSON list at {input_path}")
 
-    response_df = _load_response_source_similarity_input().copy()
+    response_df = _load_response_source_similarity_input(platform=platform).copy()
     snippet_lookup = {}
     for _, row in response_df.iterrows():
         record = row.to_dict() if hasattr(row, "to_dict") else dict(row)
@@ -2066,17 +2090,22 @@ def diagnose_snippet_unexplained_rows(
 
 
 def sample_response_source_nli_method_comparison(
-    full_input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json",
-    snippet_input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim_snippet.json",
+    full_input_path=None,
+    snippet_input_path=None,
     sample_size=10,
     random_state=42,
     output_path=None,
+    platform="chatgpt",
 ):
     """
     Randomly sample aligned response chunks from full-text and snippet runs and
     save a side-by-side comparison with each method's selected URL, full
     content, snippet metadata, entailment-judge output, and final bucket.
     """
+    if full_input_path is None:
+        full_input_path = f"{OUTPUT_PATH}/{platform}/metadata/response_source_nli_sentence_based_judge_claim.json"
+    if snippet_input_path is None:
+        snippet_input_path = f"{OUTPUT_PATH}/{platform}/metadata/response_source_nli_sentence_based_judge_claim_snippet.json"
     full_records = load_json(full_input_path)
     snippet_records = load_json(snippet_input_path)
     if not isinstance(full_records, list):
@@ -2086,16 +2115,21 @@ def sample_response_source_nli_method_comparison(
 
     if output_path is None:
         output_path = (
-            f"{OUTPUT_PATH}/chatgpt/metadata/"
+            f"{OUTPUT_PATH}/{platform}/metadata/"
             "response_source_nli_method_comparison_samples.json"
         )
 
-    response_df = _load_response_source_similarity_input().copy()
+    response_df = _load_response_source_similarity_input(platform=platform).copy()
+    urls_content_path = (
+        RESPONSE_URLS_CONTENT_PATH
+        if platform == "chatgpt"
+        else f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_url_content.json"
+    )
     urls_content = _load_urls_content(
-        urls_content_path=RESPONSE_URLS_CONTENT_PATH,
+        urls_content_path=urls_content_path,
         required=False,
     )
-    user_query_lookup = _build_response_source_user_query_lookup()
+    user_query_lookup = _build_response_source_user_query_lookup(platform=platform)
 
     def _clean_url(url):
         return str(url or "").strip().removesuffix("?utm_source=chatgpt.com").removesuffix(
@@ -3004,6 +3038,7 @@ def plot_response_source_nli_entailment_score_boxplot(
     chunking_method="citation_marker",
     output_base=None,
     file_name=None,
+    platform="chatgpt",
 ):
     if nli_method not in {"bert", "judge"}:
         raise ValueError("nli_method must be one of {'bert', 'judge'}")
@@ -3012,6 +3047,7 @@ def plot_response_source_nli_entailment_score_boxplot(
     output_base = output_base or _response_source_nli_output_base(
         nli_method,
         chunking_method,
+        platform=platform,
     )
     chunking_label = "chunk" if chunking_method == "citation_marker" else "claim"
     if file_name is None:
@@ -3080,7 +3116,7 @@ def plot_response_source_nli_entailment_score_boxplot(
         .reset_index()
     )
 
-    output_dir = f"{OUTPUT_PATH}/{CONF}"
+    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
     os.makedirs(output_dir, exist_ok=True)
     summary_df.to_csv(f"{output_dir}/{file_name}.csv", index=False)
 
@@ -3127,7 +3163,7 @@ def plot_response_source_nli_entailment_score_boxplot(
     return summary_df
 
 
-def plot_response_source_nli_entailment_score_boxplots_all():
+def plot_response_source_nli_entailment_score_boxplots_all(platform="chatgpt"):
     combinations = [
         ("bert", "citation_marker"),
         ("bert", "claim"),
@@ -3147,6 +3183,7 @@ def plot_response_source_nli_entailment_score_boxplots_all():
                 nli_method=nli_method,
                 chunking_method=chunking_method,
                 file_name=file_name,
+                platform=platform,
             )
         except FileNotFoundError as e:
             logger.warning("Skipping %s/%s plot: %s", nli_method, chunking_method, e)
@@ -3163,7 +3200,7 @@ def plot_response_source_nli_entailment_score_boxplots_all():
         return pd.DataFrame()
 
     combined_summary_df = pd.concat(summary_frames, ignore_index=True)
-    output_dir = f"{OUTPUT_PATH}/{CONF}"
+    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
     os.makedirs(output_dir, exist_ok=True)
     combined_summary_df.to_csv(
         f"{output_dir}/response_source_nli_entailment_score_boxplot_all_summary.csv",

@@ -581,9 +581,9 @@ def _extract_response_and_sources_deepseek(web_df):
 
 
 
-def _load_response_and_sources_df():
-    pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.pkl"
-    csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.csv"
+def _load_response_and_sources_df(platform="chatgpt"):
+    pkl_path = f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl"
+    csv_path = f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.csv"
 
     try:
         df = pd.read_pickle(pkl_path)
@@ -617,9 +617,16 @@ def _load_response_and_sources_df():
 
 
 def response_source_similarity(
-    urls_content_path=RESPONSE_URLS_CONTENT_PATH,
+    urls_content_path=None,
+    platform="chatgpt",
 ):
-    df = _load_response_source_similarity_input()
+    if urls_content_path is None:
+        urls_content_path = (
+            RESPONSE_URLS_CONTENT_PATH
+            if platform == "chatgpt"
+            else f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_url_content.json"
+        )
+    df = _load_response_source_similarity_input(platform=platform)
 
     scorer = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL"], use_stemmer=True)
 
@@ -700,21 +707,21 @@ def response_source_similarity(
         inplace=True,
     )
     df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_similarity.csv",
         index=False,
     )
-    df.to_pickle(f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.pkl")
+    df.to_pickle(f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_similarity.pkl")
     json_df = df.copy()
     for col in json_df.select_dtypes(include=["datetime64[ns]", "datetimetz"]).columns:
         json_df[col] = json_df[col].astype(str)
     to_json(
         json_df.to_dict(orient="records"),
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.json",
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_similarity.json",
     )
 
-def _load_response_source_similarity_frames():
+def _load_response_source_similarity_frames(platform="chatgpt"):
     """Build long-form source-level scores plus cited-only response-level coverage metrics."""
-    df = pd.read_pickle(f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.pkl")
+    df = pd.read_pickle(f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_similarity.pkl")
 
     per_source_rows = []
     source_cols = [
@@ -777,16 +784,18 @@ def _load_response_source_similarity_frames():
 
     per_source_df = pd.DataFrame(per_source_rows)
     if len(per_source_df) == 0:
-        return per_source_df, pd.DataFrame()
+        return per_source_df
 
     per_source_df["month"] = per_source_df["time"].dt.to_period("M").dt.to_timestamp()
 
     return per_source_df
 
-def plot_response_source_quality_summary():
-    df = _load_response_source_similarity_frames()
+def plot_response_source_quality_summary(platform="chatgpt"):
+    df = _load_response_source_similarity_frames(platform=platform)
     if len(df) == 0:
         return
+    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
+    os.makedirs(output_dir, exist_ok=True)
 
     row_key_cols = [
         col
@@ -900,10 +909,10 @@ def plot_response_source_quality_summary():
                     align="center",
                 )
             fig.update_layout(margin=dict(t=120))
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+        fig.write_html(f"{output_dir}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 18))
         fig.update_xaxes(tickfont=dict(size=16))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+        fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
     rouge_metrics = [
         ("rouge1_precision", "Rouge-1 Precision"),
@@ -982,10 +991,10 @@ def plot_response_source_quality_summary():
         )
         fig.update_yaxes(tickformat=".0%", range=[0, 1])
         file_name = "response_source_quality_nli_summary"
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+        fig.write_html(f"{output_dir}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 18))
         fig.update_xaxes(tickfont=dict(size=16))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+        fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
     _plot_nli_label_distribution()
 
@@ -994,7 +1003,7 @@ def plot_response_source_quality_summary():
         contradiction_samples[col] = contradiction_samples[col].astype(str)
     to_json(
         contradiction_samples.to_dict(orient="records"),
-        f"{OUTPUT_PATH}/{CONF}/response_source_contradiction_samples.json",
+        f"{output_dir}/response_source_contradiction_samples.json",
     )
 
     valid_nli_labels = {"entailment", "neutral", "contradiction"}
@@ -1065,7 +1074,7 @@ def plot_response_source_quality_summary():
         }
         to_json(
             sample_with_all_labels,
-            f"{OUTPUT_PATH}/{CONF}/response_source_all_nli_labels_example.json",
+            f"{output_dir}/response_source_all_nli_labels_example.json",
         )
 
 
@@ -1074,6 +1083,7 @@ def plot_retrieved_and_cited_urls_over_time(
     file_name="retrieved_and_cited_urls_over_time",
     time_freq="M",
     grounding_level="conversation",
+    platform="chatgpt",
 ):
     """
     Plot the average number of retrieved and cited URLs per response over time,
@@ -1097,7 +1107,7 @@ def plot_retrieved_and_cited_urls_over_time(
         return count
 
     def _load_response_and_sources_df_for_model(model_name):
-        df = _load_response_and_sources_df()
+        df = _load_response_and_sources_df(platform=platform)
 
         def _primary_openai_model(value):
             models = value
@@ -1285,10 +1295,10 @@ def plot_retrieved_and_cited_urls_over_time(
         except Exception as e:
             logger.warning("Could not write retrieved/cited URL over-time PDF: %s", e)
 
-    output_dir = f"{OUTPUT_PATH}/{CONF}"
+    output_dir = f"{OUTPUT_PATH}/{CONF}/{platform}"
     os.makedirs(output_dir, exist_ok=True)
 
-    summary_df = _build_summary_df(_load_response_and_sources_df())
+    summary_df = _build_summary_df(_load_response_and_sources_df(platform=platform))
     if len(summary_df) == 0:
         return summary_df
 
@@ -1298,7 +1308,7 @@ def plot_retrieved_and_cited_urls_over_time(
 
     per_model_dir = os.path.join(output_dir, f"{file_name}_by_openai_model")
     all_model_frames = []
-    model_source_df = _load_response_and_sources_df()
+    model_source_df = _load_response_and_sources_df(platform=platform)
     if "openai_models" in model_source_df.columns:
         def _primary_openai_model(value):
             models = value
@@ -1350,12 +1360,23 @@ def plot_retrieved_and_cited_urls_over_time(
 
 
 if __name__ == "__main__":
-    web_df = load_web_data_from_file(fmt="pkl")
-    print(f"Loaded web data: {len(web_df)}")
-    extract_response_and_sources(web_df)
+    # Run the extraction stage for every platform we have extracted
+    # data_summary/web_data_summary for (see src.utils.common_io.PLATFORMS).
+    for platform in PLATFORMS:
+        try:
+            web_df = load_web_data_from_file(fmt="pkl", platform=platform)
+        except Exception as e:
+            print(f"[{platform}] Skipping -- failed to load web data: {e}")
+            continue
+        print(f"[{platform}] Loaded web data: {len(web_df)}")
 
-    asyncio.run(extract_urls_content(force_refresh=True))
-    # plot_response_source_quality_summary()
+        if platform == "chatgpt":
+            extract_response_and_sources(web_df)
+        else:
+            extract_response_and_sources_other_platforms(web_df, platform)
+
+        asyncio.run(extract_urls_content(force_refresh=True, platform=platform))
+        # plot_response_source_quality_summary(platform=platform)
 
     # ea.response_source_nli_sentence_based(nli_method="judge", chunking_method="claim", claim_selection_mode="all", source_text_mode="snippet")
     # ea.plot_response_source_nli_sentence_based_judge(
