@@ -13,9 +13,11 @@ else's data.
 Reuses the same provider/API-shape split src/replays/chat_replayer.py's
 invitro replay already established: OpenAI/Grok via the OpenAI-compatible
 Responses API, Claude/DeepSeek via the Anthropic-compatible Messages API.
-Unlike chat_replayer.py, there's no web-search tool wiring here --
-evaluator calls are always tool-free (a judge should only classify the
-text it's given, never browse).
+Most judge calls are tool-free (a judge should only classify the text
+it's given, never browse) -- pass require_web_search=True for the rare
+judge that specifically needs live web search to do its job (e.g. a
+factuality check), which reuses the exact same per-provider web_search
+tool wiring chat_replayer.py's invitro replay already uses.
 """
 
 import ast
@@ -100,7 +102,15 @@ def _client_for_platform(platform):
 
 def _parse_judge_json(text):
     """Best-effort JSON extraction from a judge's raw text response (which
-    may be bare JSON, JSON wrapped in prose, or markdown-fenced)."""
+    may be bare JSON, JSON wrapped in prose, or markdown-fenced).
+
+    Finds the first balanced {...} object via brace-depth counting, not a
+    naive first-`{`-to-last-`}` slice: that breaks when a provider's
+    response text concatenates more than one JSON blob together -- seen in
+    practice from xAI's Responses API under forced multi-round tool use,
+    where output_text can hold several {...} fragments plus stray
+    continuation tokens back to back.
+    """
     text = (text or "").strip()
     if not text:
         return {}
@@ -111,16 +121,24 @@ def _parse_judge_json(text):
         pass
 
     start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and start < end:
-        candidate = text[start : end + 1]
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
-            try:
-                return ast.literal_eval(candidate)
-            except (ValueError, SyntaxError):
-                return {}
+    while start != -1:
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start : i + 1]
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        try:
+                            return ast.literal_eval(candidate)
+                        except (ValueError, SyntaxError):
+                            pass
+                    break
+        start = text.find("{", start + 1)
     return {}
 
 
@@ -133,45 +151,87 @@ def _anthropic_content_text(content_blocks):
     return "\n".join(text for text in texts if text).strip()
 
 
-def run_judge(platform, system_prompt, user_prompt, temperature=0, max_tokens=1024):
+def run_judge(
+    platform,
+    system_prompt,
+    user_prompt,
+    temperature=0,
+    max_tokens=1024,
+    require_web_search=False,
+):
     """Run one judge call using `platform`'s own model (see
-    JUDGE_MODEL_BY_PLATFORM), tool-free.
+    JUDGE_MODEL_BY_PLATFORM).
 
-    Returns {"raw_judgment": str, "parsed_judgment": dict} -- the same
-    shape the single-fixed-judge helpers this replaces returned (e.g.
-    query_reformulations._run_judge), so callers only need to change how
-    they invoke the judge (pass `platform` instead of a pre-built
-    OpenAI client + model_name), not how they consume the result.
+    Tool-free by default (`require_web_search=False`): the judge only
+    classifies the given text. Set `require_web_search=True` for a judge
+    that needs live web search to do its job (e.g. checking a claim
+    against current web content) -- each provider's own web_search tool is
+    forced on, and `temperature` is omitted (matching how
+    entailment_analysis.py's factuality judge already called the OpenAI
+    Responses API: providers don't consistently accept a temperature
+    override alongside a forced tool call).
+
+    Returns {"raw_judgment": str, "parsed_judgment": dict, "model": str}
+    -- the first two keys match the shape the single-fixed-judge helpers
+    this replaces returned (e.g. query_reformulations._run_judge,
+    entailment_analysis.evaluate_claim_factuality), so callers only need
+    to change how they invoke the judge (pass `platform` instead of a
+    pre-built client + model_name), not how they consume the result.
     """
     model_name = judge_model_for_platform(platform)
     client = _client_for_platform(platform)
 
     if platform in _OPENAI_COMPATIBLE_PLATFORMS:
-        # Tool-free by omission (not `tools=[], tool_choice="none"`): xAI's
-        # OpenAI-compatible endpoint rejects tool_choice when no tools are
-        # given ("tool_choice was set but no tools were specified"), while
-        # simply omitting both achieves the same no-tools behavior on every
-        # OpenAI-compatible provider.
-        response = client.responses.create(
-            model=model_name,
-            input=[
+        kwargs = {
+            "model": model_name,
+            "input": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=temperature,
-        )
+        }
+        if require_web_search:
+            # Same web_search tool shape chat_replayer.py's invitro replay
+            # uses for OpenAI/Grok (_openai_web_kwargs).
+            kwargs["tools"] = [{"type": "web_search"}]
+            kwargs["tool_choice"] = "required"
+            kwargs["max_output_tokens"] = max_tokens
+        else:
+            # Tool-free by omission (not `tools=[], tool_choice="none"`):
+            # xAI's OpenAI-compatible endpoint rejects tool_choice when no
+            # tools are given ("tool_choice was set but no tools were
+            # specified"), while omitting both is tool-free on every
+            # OpenAI-compatible provider.
+            kwargs["temperature"] = temperature
+        response = client.responses.create(**kwargs)
         raw_text = response.output_text
     else:
-        response = client.messages.create(
-            model=model_name,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        kwargs = {
+            "model": model_name,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": user_prompt}],
+            "max_tokens": max_tokens,
+        }
+        if require_web_search:
+            # Same web_search tool shape chat_replayer.py's invitro replay
+            # uses for Claude/DeepSeek. tool_choice is "auto", not a forced
+            # {"type": "tool", "name": "web_search"}: forcing it holds for
+            # every turn of a multi-round server-side tool-use exchange, not
+            # just the first, so a forced choice can never let the model
+            # stop searching and answer -- confirmed via DeepSeek looping
+            # through 7 rounds of web_search and never producing a final
+            # answer under a forced choice, vs. converging in one search
+            # under "auto". Since web_search is the only tool offered and
+            # the system prompt already instructs using it, "auto" still
+            # searches in practice while allowing the model to conclude.
+            kwargs["tools"] = [{"type": "web_search_20250305", "name": "web_search"}]
+            kwargs["tool_choice"] = {"type": "auto"}
+        else:
+            kwargs["temperature"] = temperature
+        response = client.messages.create(**kwargs)
         raw_text = _anthropic_content_text(response.content)
 
     return {
         "raw_judgment": raw_text,
         "parsed_judgment": _parse_judge_json(raw_text),
+        "model": model_name,
     }

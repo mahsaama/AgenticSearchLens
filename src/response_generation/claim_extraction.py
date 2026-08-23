@@ -57,6 +57,13 @@ CLAIM_EXTRACTION_MAX_OUTPUT_TOKENS = int(
 CLAIM_EXTRACTION_CACHE_PATH = os.getenv("CLAIM_EXTRACTION_CACHE_PATH")
 
 def extract_first_json_object(text):
+    """Parse `text` as JSON outright, or -- despite the name -- find the
+    first balanced {...} object in it via brace-depth counting (not a
+    naive first-`{`-to-last-`}` slice, which breaks when a provider's
+    response text concatenates more than one JSON blob together: seen in
+    practice from xAI's Responses API under forced multi-round tool use,
+    where output_text can hold several {...} fragments plus stray
+    continuation tokens back to back)."""
     text = (text or "").strip()
     if not text:
         return {}
@@ -67,16 +74,24 @@ def extract_first_json_object(text):
         pass
 
     start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and start < end:
-        candidate = text[start : end + 1]
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
-            try:
-                return ast.literal_eval(candidate)
-            except (ValueError, SyntaxError):
-                return {}
+    while start != -1:
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start : i + 1]
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        try:
+                            return ast.literal_eval(candidate)
+                        except (ValueError, SyntaxError):
+                            pass
+                    break
+        start = text.find("{", start + 1)
     return {}
 
 

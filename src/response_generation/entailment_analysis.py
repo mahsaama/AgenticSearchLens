@@ -50,6 +50,7 @@ from src.prompts.evaluator_prompts import (
 )
 from src.utils.common_io import OUTPUT_PATH, load_json, to_json
 from src.utils.figure_style import with_paper_style, styler
+from src.utils.llm_judge import judge_model_for_platform, run_judge
 from src.response_generation.claim_extraction import (
     CLAIM_EXTRACTION_CACHE_PATH,
     _build_claim_cache_user_query_lookup,
@@ -375,10 +376,16 @@ def _json_safe(value):
 def evaluate_claim_factuality(
     claim,
     user_query="",
-    model_name=FACTUALITY_JUDGE_MODEL,
+    platform="chatgpt",
 ):
+    """Judge one claim's factuality via live web search, using `platform`'s
+    own judge model (see llm_judge.JUDGE_MODEL_BY_PLATFORM) -- was always
+    gpt-4o-mini/FACTUALITY_JUDGE_MODEL regardless of which platform's
+    response the claim came from; now each platform's claims are checked
+    by that platform's own model."""
     claim = str(claim or "").strip()
     user_query = str(user_query or "").strip()
+    model_name = judge_model_for_platform(platform)
     if not claim:
         return {
             "label": "",
@@ -388,28 +395,22 @@ def evaluate_claim_factuality(
             "model": model_name,
         }
 
-    msg = [
-        {"role": "system", "content": SYSTEM_PROMPT_CLAIM_FACTUALITY_EVAL},
-        {
-            "role": "user",
-            "content": _format_prompt(
-                USER_PROMPT_CLAIM_FACTUALITY_EVAL,
-                user_query=user_query,
-                claim=claim,
-            ),
-        },
-    ]
+    user_prompt = _format_prompt(
+        USER_PROMPT_CLAIM_FACTUALITY_EVAL,
+        user_query=user_query,
+        claim=claim,
+    )
 
     response_text = ""
     try:
-        response = client.responses.create(
-            model=model_name,
-            tools=[{"type": "web_search"}],
-            tool_choice="required",
-            input=msg,
-            max_output_tokens=FACTUALITY_JUDGE_MAX_OUTPUT_TOKENS,
+        judge_result = run_judge(
+            platform,
+            system_prompt=SYSTEM_PROMPT_CLAIM_FACTUALITY_EVAL,
+            user_prompt=user_prompt,
+            require_web_search=True,
+            max_tokens=FACTUALITY_JUDGE_MAX_OUTPUT_TOKENS,
         )
-        response_text = response.output_text or ""
+        response_text = judge_result["raw_judgment"] or ""
     except Exception as e:
         logger.warning("Claim factuality evaluation failed: %s", e)
         return {
@@ -1278,7 +1279,7 @@ def response_source_nli_sentence_based_factuality(
             factuality = evaluate_claim_factuality(
                 claim,
                 user_query=user_query,
-                model_name=model_name,
+                platform=platform,
             )
             claim_cache[cache_key] = factuality
 
@@ -1348,7 +1349,7 @@ def response_source_claim_cache_factuality(
                 factuality = evaluate_claim_factuality(
                     claim_text,
                     user_query=user_query,
-                    model_name=model_name,
+                    platform=platform,
                 )
                 claim_cache[factuality_cache_key] = factuality
 
