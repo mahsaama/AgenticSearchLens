@@ -699,7 +699,7 @@ def response_source_similarity(
             "srcs_safe_urls",
             "srcs_cited",
             "thoughts",
-            "openai_models",
+            "models",
             "user_msg_history",
             "interactions",
             "thinking",
@@ -910,7 +910,6 @@ def plot_response_source_quality_summary(platform="chatgpt"):
                     align="center",
                 )
             fig.update_layout(margin=dict(t=120))
-        fig.write_html(f"{output_dir}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 18))
         fig.update_xaxes(tickfont=dict(size=16))
         fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
@@ -992,7 +991,6 @@ def plot_response_source_quality_summary(platform="chatgpt"):
         )
         fig.update_yaxes(tickformat=".0%", range=[0, 1])
         file_name = "response_source_quality_nli_summary"
-        fig.write_html(f"{output_dir}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 18))
         fig.update_xaxes(tickfont=dict(size=16))
         fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
@@ -1124,7 +1122,7 @@ def plot_retrieved_and_cited_urls_over_time(
                 return "Unknown"
             return cleaned[-1].strip()
 
-        df["primary_openai_model"] = df.get("openai_models", []).apply(_primary_openai_model)
+        df["primary_openai_model"] = df.get("models", []).apply(_primary_openai_model)
         return df[df["primary_openai_model"] == model_name].copy()
 
     def _build_summary_df(df):
@@ -1288,7 +1286,6 @@ def plot_retrieved_and_cited_urls_over_time(
         else:
             fig.update_xaxes(tickangle=-45, tickfont=dict(size=18))
 
-        fig.write_html(f"{destination_dir}/{output_stem}.html")
         try:
             paper_fig = with_paper_style(fig, config=styler(22, 22), legend_pos=(0.9, 1.3))
             paper_fig.update_xaxes(tickfont=dict(size=18))
@@ -1310,7 +1307,7 @@ def plot_retrieved_and_cited_urls_over_time(
     per_model_dir = os.path.join(output_dir, f"{file_name}_by_openai_model")
     all_model_frames = []
     model_source_df = _load_response_and_sources_df(platform=platform)
-    if "openai_models" in model_source_df.columns:
+    if "models" in model_source_df.columns:
         def _primary_openai_model(value):
             models = value
             if isinstance(value, str) and value.strip():
@@ -1324,7 +1321,7 @@ def plot_retrieved_and_cited_urls_over_time(
             if not cleaned:
                 return "Unknown"
             return cleaned[-1].strip()
-        model_source_df["primary_openai_model"] = model_source_df["openai_models"].apply(
+        model_source_df["primary_openai_model"] = model_source_df["models"].apply(
             _primary_openai_model
         )
         model_names = [

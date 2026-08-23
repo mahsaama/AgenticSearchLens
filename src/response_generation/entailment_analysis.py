@@ -1964,7 +1964,6 @@ def plot_claim_bucket_tranco_rank_comparison(
         margin=dict(t=20, b=110, r=5),
     )
 
-    fig.write_html(f"{output_dir}/{file_name}.html")
     try:
         paper_fig = with_paper_style(fig, config=styler(24, 16), legend_pos=None)
         paper_fig.update_xaxes(tickangle=0, tickfont=dict(size=24))
@@ -2982,7 +2981,6 @@ def plot_response_source_nli_sentence_based(
         fig.update_xaxes(categoryorder="array", categoryarray=platform_order)
         fig.update_yaxes(range=[0, 1], tickformat=".0%")
 
-        fig.write_html(f"{output_dir}/{mode_file_name}.html")
         try:
             paper_fig = with_paper_style(
                 fig,
@@ -3152,7 +3150,6 @@ def plot_response_source_nli_entailment_score_boxplot(
     else:
         fig.update_yaxes(range=[0, 5])
 
-    fig.write_html(f"{output_dir}/{file_name}.html")
     try:
         paper_fig = with_paper_style(fig, config=styler(18, 18))
         paper_fig.update_xaxes(tickfont=dict(size=14))

@@ -669,7 +669,6 @@ def plot_semantic_and_syntactic_similarity(platform="chatgpt"):
     )
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     name = "query_similarity_violin_plot"
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{name}.html")
     fig = with_paper_style(fig, config=styler(18, 14))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=18))
@@ -804,7 +803,6 @@ def _plot_web_query_tokens_source_detection_from_df(
         fig.update_yaxes(tickformat=".0%")
 
         os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(22, 14))
         fig.update_xaxes(tickfont=dict(size=22))
         fig.update_yaxes(tickfont=dict(size=22))
@@ -853,7 +851,6 @@ def _plot_web_query_tokens_source_detection_from_df(
         fig.update_yaxes(tickformat=".0%", range=[0, max(shares) * 1.15])
 
         os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 14))
         fig.update_xaxes(tickfont=dict(size=14))
         fig.update_yaxes(tickfont=dict(size=18))
@@ -994,7 +991,6 @@ def plot_web_query_tokens_source_detection_over_time(
         )
         fig.update_yaxes(tickformat=".0%")
         os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{subset_file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.35))
         fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{subset_file_name}.pdf", format="pdf")
 
@@ -1216,7 +1212,6 @@ def _plot_number_of_loops_histogram_from_df(
     fig.update_yaxes(ticksuffix="%")
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     file_name = number_file_name
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.update_xaxes(tickfont=dict(size=18))
     fig.update_yaxes(tickfont=dict(size=18))
@@ -1279,7 +1274,6 @@ def _plot_number_of_loops_histogram_from_df(
     )
     fig.update_yaxes(ticksuffix="%")
     file_name = parallel_file_name
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.update_xaxes(tickfont=dict(size=18))
     fig.update_yaxes(tickfont=dict(size=18))
@@ -1348,7 +1342,6 @@ def _plot_number_of_loops_histogram_from_df(
                 margin=dict(b=90),
             )
             file_name = trend_file_name
-            fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
             fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.2))
             fig.write_image(
                 f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf"
@@ -1562,9 +1555,6 @@ def plot_number_of_loops_histogram(platform="chatgpt"):
         # Combined all-platform comparison -- stays flat, not nested under
         # the single `platform` this function's histogram half uses.
         os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-        combined_fig.write_html(
-            f"{OUTPUT_PATH}/{CONF}/parallel_queries_by_query_reformulations_all_models.html"
-        )
         combined_fig = with_paper_style(
             combined_fig,
             config=styler(20, 20),
@@ -1650,7 +1640,6 @@ def plot_number_of_query_reformulations_over_time(
         margin=dict(b=90),
     )
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -1744,7 +1733,6 @@ def plot_number_of_parallel_queries_over_time(
         margin=dict(b=90),
     )
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -1880,7 +1868,6 @@ def plot_number_of_fanout_queries_and_iterations_over_time(
         margin=dict(b=90),
     )
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(20, 18), legend_pos=(0.8, 1.3))
     fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -2236,7 +2223,6 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
             layout_kwargs["xaxis"] = xaxis_settings
         fig.update_layout(**layout_kwargs)
 
-        fig.write_html(f"{query_complexity_output_dir}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(26, 26), legend_pos=(0.8, 1.3))
         fig.write_image(f"{query_complexity_output_dir}/{file_name}.pdf", format="pdf")
         return points_by_platform
@@ -2414,9 +2400,6 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
             margin=dict(b=90),
         )
         platform_timeline_file_name = f"{timeline_file_name}_{platform}"
-        timeline_fig.write_html(
-            f"{query_complexity_output_dir}/{platform_timeline_file_name}.html"
-        )
         timeline_fig = with_paper_style(timeline_fig, config=styler(18, 16))
         timeline_fig.write_image(
             f"{query_complexity_output_dir}/{platform_timeline_file_name}.pdf", format="pdf"
@@ -2660,7 +2643,6 @@ def distribution_of_web_query_and_thoughts_over_time(platform="chatgpt"):
 
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     file_name = "distribution_of_web_query_and_thoughts_over_time"
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -2670,8 +2652,8 @@ def count_models_with_web_queries(platform="chatgpt"):
         f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     ).copy()
 
-    if "openai_models" not in df.columns:
-        print("Column `openai_models` not found.")
+    if "models" not in df.columns:
+        print("Column `models` not found.")
         return pd.DataFrame(), pd.DataFrame()
 
     def _as_model_list(value):
@@ -2710,9 +2692,9 @@ def count_models_with_web_queries(platform="chatgpt"):
             return "Unknown"
         return cleaned[-1]
 
-    df["openai_models"] = df["openai_models"].apply(_as_model_list)
+    df["models"] = df["models"].apply(_as_model_list)
     df["has_web_queries"] = df["web_queries"].apply(_has_web_queries)
-    df["primary_model"] = df["openai_models"].apply(_primary_model)
+    df["primary_model"] = df["models"].apply(_primary_model)
 
     model_coverage = (
         df.groupby("primary_model")
@@ -3351,7 +3333,6 @@ def plot_reasons_for_another_web_query_distribution(platform="chatgpt"):
         )
         fig.update_yaxes(tickformat=".0%", range=[-0.05, y_upper+0.05])
 
-        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(20, 20), legend_pos=(0.9, 1.2))
         fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -3824,7 +3805,6 @@ def plot_reasons_for_another_web_query_distribution_all_models(
         font=dict(size=24),
     )
 
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{output_file_name}.html")
     fig = with_paper_style(fig, config=styler(22, 24), legend_pos=(0.8, 1.3))
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{output_file_name}.pdf", format="pdf")
 
@@ -4215,7 +4195,6 @@ def plot_user_and_web_query_language_patterns(
         height=560,
         margin=dict(t=90, b=80, l=80, r=40),
     )
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{output_file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
     fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{output_file_name}.pdf", format="pdf")
 
@@ -4849,7 +4828,6 @@ def _plot_user_and_web_query_type_distribution_from_df(
 
     file_name="user_query_type_distribution"
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -4899,7 +4877,6 @@ def _plot_user_and_web_query_type_distribution_from_df(
         fig.update_yaxes(tickformat=".0%", range=[0, 1.0])
 
         file_name = "user_and_web_query_type_distribution_by_iteration"
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(24, 24), legend_pos=(0.8, 1.25))
         fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -4924,7 +4901,6 @@ def _plot_user_and_web_query_type_distribution_from_df(
 
     file_name="web_query_type_distribution"
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 18))
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -5509,7 +5485,6 @@ def plot_user_and_web_query_type_distribution_all_models(
         font=dict(size=24),
     )
 
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{output_file_name}.html")
     fig = with_paper_style(fig, config=styler(24, 24), legend_pos=(0.85, 1.3))
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{output_file_name}.pdf", format="pdf")
 
@@ -5623,9 +5598,6 @@ def plot_user_and_web_query_type_distribution_all_models(
             text="Month",
             showarrow=False,
             font=dict(size=24),
-        )
-        temporal_fig.write_html(
-            f"{OUTPUT_PATH}/{CONF}/{temporal_output_file_name}.html"
         )
         temporal_fig = with_paper_style(
             temporal_fig,
@@ -5948,7 +5920,6 @@ def plot_query_specificity_distribution_by_iteration(
             font=dict(size=20),
         )
 
-        fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{plot_base_name}.html")
         fig = with_paper_style(fig, config=styler(20, 18), legend_pos=(1, 1.25))
         fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{plot_base_name}.pdf", format="pdf")
 
@@ -6215,9 +6186,6 @@ def plot_query_specificity_distribution_by_iteration(
             tickfont=dict(size=21),
         )
         line_fig.update_yaxes(ticksuffix="%")
-        line_fig.write_html(
-            f"{OUTPUT_PATH}/{platform}/{CONF}/{overall_output_file_name}.html"
-        )
         line_fig = with_paper_style(
             line_fig,
             config=styler(24, 24),
@@ -6351,9 +6319,6 @@ def plot_query_specificity_distribution_by_iteration(
             per_platform_line_fig.update_yaxes(ticksuffix="%")
             per_platform_file_name = (
                 f"{dimension_output_file_name}__{platform}"
-            )
-            per_platform_line_fig.write_html(
-                f"{OUTPUT_PATH}/{platform}/{CONF}/{per_platform_file_name}.html"
             )
             per_platform_line_fig = with_paper_style(
                 per_platform_line_fig,
@@ -6502,7 +6467,6 @@ def _plot_user_web_query_relation_distribution_from_df(
     )
 
     os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 12), legend_pos=None)
     fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -6570,7 +6534,6 @@ def _plot_user_web_query_relation_distribution_from_df(
         paper_bgcolor="white",
     )
 
-    venn_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{venn_file_name}.html")
     venn_fig = with_paper_style(venn_fig, config=styler(18, 16), legend_pos=None)
     venn_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{venn_file_name}.pdf", format="pdf")
 

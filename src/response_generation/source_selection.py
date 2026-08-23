@@ -251,8 +251,8 @@ def _prepare_source_count_df(model=""):
 
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
     df["month"] = df["time"].dt.to_period("M").dt.to_timestamp()
-    if "openai_models" in df.columns:
-        df["model"] = df["openai_models"].apply(_primary_model)
+    if "models" in df.columns:
+        df["model"] = df["models"].apply(_primary_model)
     df["num_retrieved_urls"] = df["srcs_retrieved"].apply(_unique_source_count)
     df["num_safe_urls"] = df["srcs_safe_urls"].apply(_unique_source_count)
     df["num_cited_urls"] = df["srcs_cited"].apply(_unique_source_count)
@@ -764,7 +764,7 @@ def compute_average_citations_and_retrievals_per_response_by_openai_model(
 ):
     grounding_level = _validated_grounding_level(grounding_level)
     df = _prepare_source_count_df("chatgpt").copy()
-    df["model"] = df["openai_models"].apply(_primary_model)
+    df["model"] = df["models"].apply(_primary_model)
     df = df[df["model"].str.lower() != "unknown"].copy()
 
     for model_name in sorted(df["model"].dropna().unique()):
@@ -863,7 +863,6 @@ def plot_retrieved_urls_per_web_query_histogram(unique=False, bins=40):
         html_path = f"{model_output_dir}/{file_name}.html"
         pdf_path = f"{model_output_dir}/{file_name}.pdf"
         print(f"Writing histogram HTML: {html_path}")
-        fig.write_html(html_path)
         fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
         try:
             print(f"Writing histogram PDF: {pdf_path}")
@@ -985,7 +984,6 @@ def plot_subset_condition_counts():
     output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "subset_relations_urls_and_domains"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 18))
     fig.update_xaxes(tickfont=dict(size=14))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
@@ -1219,7 +1217,6 @@ def _write_figure(
     y_tickfont_size=10,
 ):
     os.makedirs(output_dir, exist_ok=True)
-    # fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(
         fig,
         config=paper_config,
@@ -1619,7 +1616,7 @@ def plot_top_domains_by_selected_topics(separate_cited_external_internal=False, 
 
 def plot_top_domains_by_model(separate_cited_external_internal=False, platform="chatgpt"):
     df = _load_domain_plot_df(platform=platform)
-    df["model"] = df["openai_models"].apply(_primary_model)
+    df["model"] = df["models"].apply(_primary_model)
     df = df[df["model"].str.lower() != "unknown"].copy()
 
     for model in sorted(df["model"].dropna().unique()):
@@ -1709,7 +1706,6 @@ def plot_chatgpt_claude_retrieved_domain_rank_scatter(top_k=100):
     output_dir = f"{OUTPUT_PATH}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "chatgpt_claude_retrieved_domain_rank_scatter"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10), legend_pos=None)
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -1919,7 +1915,6 @@ def compare_domain_reliability_by_source_type(model_name="gpt-4o-mini", temperat
     output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "domain_reliability_by_source_type"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 14))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=10))
@@ -2083,7 +2078,6 @@ def plot_url_counts_over_time(separate_cited_external_internal=False, platform="
     file_name = "url_counts_over_time"
     if separate_cited_external_internal:
         file_name += "_split_cited"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 20))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -2196,7 +2190,6 @@ def plot_grounding_rate_violin_over_time(platform="chatgpt"):
     fig.update_yaxes(tickformat=".0%")
 
     file_name = "grounding_rate_violin_over_time"
-    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.update_xaxes(
         tickangle=-30,
@@ -2313,7 +2306,6 @@ def plot_grounding_rate_violin_over_time(platform="chatgpt"):
     mean_std_fig.update_yaxes(tickformat=".0%")
 
     mean_std_file_name = "grounding_rate_mean_std_over_time"
-    mean_std_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{mean_std_file_name}.html")
     mean_std_fig = with_paper_style(mean_std_fig, config=styler(18, 16))
     mean_std_fig.update_xaxes(
         tickangle=-30,
@@ -2407,7 +2399,6 @@ def plot_retrieved_url_counts_over_time_by_model(platform="chatgpt"):
     output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "retrieved_url_counts_over_time_by_model"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 18), legend_pos=(0.8, 1.8))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -2453,7 +2444,6 @@ def _plot_url_counts_grouped(df, group_col, file_name, xaxis_title, platform="ch
     )
     output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 20))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
@@ -2586,7 +2576,6 @@ def compare_safe_vs_retrieved_minus_safe_reachability():
     output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "safe_vs_retrieved_minus_safe_reachability"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -2762,7 +2751,6 @@ def plot_retrieved_safe_cited_positions(separate_cited_external_internal=False):
         file_name = "retrieved_safe_cited_positions"
         if separate_cited_external_internal:
             file_name += "_split_cited"
-        fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 16))
         fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -2858,7 +2846,6 @@ def plot_retrieved_safe_cited_positions(separate_cited_external_internal=False):
     file_name = "retrieved_safe_cited_positions_rank_violinplot"
     if separate_cited_external_internal:
         file_name += "_split_cited"
-    violin_fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
     violin_fig = with_paper_style(violin_fig, config=styler(18, 16), legend_pos=None)
     violin_fig.update_xaxes(tickangle=0, tickfont=dict(size=16))
     violin_fig.update_layout(
@@ -3000,7 +2987,6 @@ def _plot_retrieved_safe_cited_ranks(plot_rows, file_name, yaxis_title, platform
     fig.update_yaxes(autorange="reversed")
     output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -3150,7 +3136,6 @@ def plot_citations_round():
         yaxis_title="Number of Citations",
     )
     file_name = "citation_round_distribution"
-    fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -3306,7 +3291,6 @@ def plot_hallucination_rate_over_time(df, total_col, hallucinated_col, file_name
     )
     output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 17))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -3534,7 +3518,6 @@ def venn_diagram_of_sources():
     )
 
     file_name = "venn_diagram_of_sources"
-    fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
     fig = with_paper_style(
         fig,
         config=styler(18, 16),
@@ -3736,7 +3719,6 @@ def evaluate_source_tranco_ranks(
     violin_file_name = "source_rank_violinplot"
     if separate_cited_external_internal:
         violin_file_name += f"_split_cited_{grounding_level}_grounding"
-    box_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{violin_file_name}.html")
     box_fig = with_paper_style(box_fig, config=styler(26, 16), legend_pos=None)
     box_fig.update_xaxes(tickangle=0, tickfont=dict(size=26))
     box_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{violin_file_name}.pdf", format="pdf")
@@ -3817,7 +3799,6 @@ def evaluate_source_tranco_ranks(
     paired_file_name = "source_rank_paired_plot"
     if separate_cited_external_internal:
         paired_file_name += f"_split_cited_{grounding_level}_grounding"
-    paired_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{paired_file_name}.html")
     legend_pos = (0.98, 1.2) if separate_cited_external_internal else None
     paired_fig = with_paper_style(
         paired_fig,
@@ -3923,7 +3904,6 @@ def evaluate_source_topical_judge_ranks(platform="chatgpt"):
     )
     violin_fig.update_yaxes(range=[1, 5])
     file_name = "source_topic_judge_rank_violinplot"
-    violin_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     violin_fig = with_paper_style(violin_fig, config=styler(18, 16), legend_pos=None)
     # violin_fig.update_layout(height=600, width=800)
     violin_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
@@ -4035,7 +4015,6 @@ def evaluate_source_topical_judge_ranks(platform="chatgpt"):
         paired_fig.update_yaxes(title_text=y_col.replace("_", " ").title(), row=1, col=idx)
 
     file_name = "source_topic_judge_rank_paired_plot"
-    paired_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     paired_fig = with_paper_style(paired_fig, config=styler(18, 16), legend_pos=None)
     paired_fig.update_layout(width=500, height=400)
     paired_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
@@ -4305,7 +4284,6 @@ def calculate_invivo_tranco_rank_correlation(platform="chatgpt"):
     )
 
     file_name = "invivo_tranco_rank_scatter"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -4453,7 +4431,7 @@ def count_token_density():
     df = pd.read_pickle(
         f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     )
-    df["model"] = df["openai_models"].apply(_primary_model)
+    df["model"] = df["models"].apply(_primary_model)
 
     rows = []
     for _, row in df.iterrows():
@@ -4494,7 +4472,6 @@ def count_token_density():
     )
 
     file_name = "token_density_all_models"
-    fig_all.write_html(f"{output_dir}/{file_name}.html")
     fig_all = with_paper_style(fig_all, config=styler(18, 16), legend_pos=None)
     fig_all.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -4526,7 +4503,6 @@ def count_token_density():
     )
 
     file_name = "token_density_by_model"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.2))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 

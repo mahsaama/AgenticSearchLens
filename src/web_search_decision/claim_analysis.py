@@ -713,8 +713,6 @@ def plot_multi_model_claim_comparison_summaries(
     response_level_html = output_dir / "claim_comparison_categories_by_model.html"
     claim_level_pdf = output_dir / "claim_comparison_relations_by_model.pdf"
     response_level_pdf = output_dir / "claim_comparison_categories_by_model.pdf"
-    claim_level_fig.write_html(claim_level_html)
-    response_level_fig.write_html(response_level_html)
     try:
         claim_level_fig.write_image(claim_level_pdf, format="pdf")
     except Exception as exc:

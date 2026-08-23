@@ -522,7 +522,6 @@ def web_call_trend_over_time(df, platform="chatgpt"):
     output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "tooly_turns_rate_over_time"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 17))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
@@ -612,7 +611,6 @@ def web_call_trend_over_time_all_convai(df):
     )
     fig.update_yaxes(tickformat=".0%")
     file_name = "tooly_turns_rate_over_time_across_convais"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(20, 24), legend_pos=(0.5, 1))
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
@@ -651,7 +649,6 @@ def topic_distribution_of_web_data(web_df, platform="chatgpt"):
     output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "topic_distribution_of_web_data"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=10))
@@ -748,7 +745,6 @@ def topic_distriction_of_whole_data(df, platform="chatgpt"):
     output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     file_name = "topic_distribution_of_whole_data"
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=10))
@@ -937,7 +933,6 @@ def topic_prompt_volume_and_web_rate_over_time(df, top_k=5, platform="chatgpt"):
                 ticksuffix="%",
                 rangemode="tozero",
             )
-            fig.write_html(f"{output_dir}/{file_name}.html")
 
             paper_fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.5, 1.12))
             paper_fig.update_layout(
@@ -1112,7 +1107,6 @@ def topic_distriction_of_whole_data_all_platforms(platform_configs=None):
         margin=dict(l=70, r=30, t=50, b=180),
     )
     fig.update_yaxes(tickformat=".0%")
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 14), legend_pos=(0.8, 1.25))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=14))
@@ -1533,7 +1527,6 @@ def plot_web_call_tool_intent_distribution(
         file_name = f"web_call_tool_intent_distribution_{safe_model_name}"
     output_dir = f"{OUTPUT_PATH}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
-    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(22, 16))
     try:
         fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
@@ -1551,8 +1544,8 @@ def count_model_used(web_df, platform="chatgpt"):
     # so we report both total mentions and the final/primary model per turn.
     df = web_df.copy()
 
-    if "openai_models" not in df.columns:
-        print("Column `openai_models` not found.")
+    if "models" not in df.columns:
+        print("Column `models` not found.")
         return pd.DataFrame(), pd.DataFrame()
 
     def _ensure_model_list(value):
@@ -1573,11 +1566,11 @@ def count_model_used(web_df, platform="chatgpt"):
             return [text]
         return []
 
-    df["openai_models"] = df["openai_models"].apply(_ensure_model_list)
-    df["primary_model"] = df["openai_models"].apply(_primary_model)
+    df["models"] = df["models"].apply(_ensure_model_list)
+    df["primary_model"] = df["models"].apply(_primary_model)
 
     all_model_counts = (
-        df["openai_models"]
+        df["models"]
         .explode()
         .dropna()
         .astype(str)
@@ -1598,7 +1591,7 @@ def count_model_used(web_df, platform="chatgpt"):
         .reset_index(name="count")
     )
 
-    print(f"\n[{platform}] Model mentions across `openai_models`:")
+    print(f"\n[{platform}] Model mentions across `models`:")
     print(all_model_counts.to_string(index=False))
 
     print(f"\n[{platform}] Primary model per turn:")

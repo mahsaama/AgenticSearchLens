@@ -1388,7 +1388,7 @@ def plot_openai_replay_model_agreement_counts():
         input_path=output_path,
         base_model_name="gpt-5.3-chat-latest",
         model_names=OPENAI_REPLAY_MODELS,
-        output_stem="replay_gpt-5.3-chat-latest_openai_models_auto_web_call_venn_agreement_counts",
+        output_stem="replay_gpt-5.3-chat-latest_models_auto_web_call_venn_agreement_counts",
     )
 
 
@@ -1915,7 +1915,6 @@ def plot_replay_query_term_count_trends_over_time(
             layout_kwargs["xaxis"] = xaxis_settings
 
         fig.update_layout(**layout_kwargs)
-        # fig.write_html(output_dir / f"{file_name}.html")
         fig = with_paper_style(fig, config=styler(26, 23))
         fig.update_layout(
             margin=dict(t=95),
@@ -2096,7 +2095,6 @@ def plot_replay_query_term_count_trends_over_time(
             margin=dict(b=90),
         )
         timeline_file_name = f"replay_web_prompts_by_iteration_over_time_{model_name}"
-        timeline_fig.write_html(output_dir / f"{timeline_file_name}.html")
         timeline_fig = with_paper_style(timeline_fig, config=styler(18, 16))
         timeline_fig.write_image(output_dir / f"{timeline_file_name}.pdf", format="pdf")
 
@@ -3381,7 +3379,6 @@ def plot_query_specificity_distribution_by_iteration(
         fig.add_annotation(x=-0.18, y=0.5, xref="paper", yref="paper", text="Share", showarrow=False, textangle=-90, font=dict(size=20))
         fig.add_annotation(x=0.5, y=-0.25, xref="paper", yref="paper", text="Query Formulation Iteration", showarrow=False, font=dict(size=20))
         file_name = f"replay_query_specificity_distribution_by_iteration__{model_name}"
-        fig.write_html(output_dir / f"{file_name}.html")
         fig = with_paper_style(fig, config=styler(20, 17), legend_pos=(1, 1.25))
         fig.write_image(output_dir / f"{file_name}.pdf", format="pdf")
         summary[model_name] = {
@@ -3549,7 +3546,6 @@ def plot_query_specificity_distribution_by_iteration(
         )
         line_fig.update_yaxes(ticksuffix="%")
         line_file_name = "replay_query_specificity_overall_by_iteration"
-        line_fig.write_html(output_dir / f"{line_file_name}.html")
         line_fig = with_paper_style(line_fig, config=styler(24, 24), legend_pos=(0.9, 1.2))
         line_fig.write_image(output_dir / f"{line_file_name}.pdf", format="pdf")
 
@@ -3661,7 +3657,6 @@ def plot_query_specificity_distribution_by_iteration(
             per_model_file_name = (
                 f"replay_query_specificity_dimension_direction_by_iteration__{model_name}"
             )
-            per_model_line_fig.write_html(output_dir / f"{per_model_file_name}.html")
             per_model_line_fig = with_paper_style(
                 per_model_line_fig,
                 config=styler(24, 24),
@@ -4273,7 +4268,6 @@ def plot_reasons_for_another_web_query_distribution_all_models(
     fig.update_yaxes(title_text="Rate", tickformat=".0%", range=[-0.05, y_upper + 0.05])
     fig.update_layout(width=max(1000, 400 * len(plotted_models)), height=520, margin=dict(t=90, b=150, l=85, r=45), legend_title="")
     fig.add_annotation(x=0.5, y=-0.47, xref="paper", yref="paper", text="Web Query Iteration", showarrow=False, font=dict(size=24))
-    fig.write_html(output_dir / f"{output_file_name}.html")
     fig = with_paper_style(fig, config=styler(22, 24), legend_pos=(0.8, 1.3))
     fig.write_image(output_dir / f"{output_file_name}.pdf", format="pdf")
 
@@ -5978,7 +5972,6 @@ def plot_response_source_nli_sentence_based_for_replays(
         fig.update_xaxes(categoryorder="array", categoryarray=model_labels)
         fig.update_yaxes(range=[0, 1], tickformat=".0%")
 
-        fig.write_html(output_dir / f"{mode_file_name}.html")
         paper_fig = with_paper_style(
             fig,
             config=styler(24, 22),
@@ -6868,9 +6861,6 @@ def evaluate_claude_associated_citation_bucket_alignment_for_replays(
         title="Claude-Marked Claims by Predicted Source Bucket",
     )
     fig.update_yaxes(range=[0, 1], tickformat=".0%")
-    fig.write_html(
-        output_dir / "replay_claude_associated_citation_bucket_alignment.html"
-    )
     fig = with_paper_style(fig, config=styler(20, 16), legend_pos=None)
     fig.write_image(
         output_dir / "replay_claude_associated_citation_bucket_alignment.pdf",
@@ -7232,7 +7222,7 @@ def print_replay_web_search_sample_counts(
 ):
     if model_groups is None:
         model_groups = {
-            "openai_models": OPENAI_REPLAY_MODELS,
+            "models": OPENAI_REPLAY_MODELS,
             "cross_platform_models": DEFAULT_MODELS,
         }
 
