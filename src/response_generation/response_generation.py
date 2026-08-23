@@ -83,11 +83,21 @@ CONF = "./response_generation"
 
 
 def _platform_metadata_dir(platform):
-    """outputs/metadata for chatgpt, outputs/<platform>/metadata otherwise
-    (same convention as src.web_search_decision.extraction._metadata_dir).
-    Used by extract_response_and_sources[_other_platforms] so Claude/Grok/
-    DeepSeek runs don't overwrite ChatGPT's response_and_sources.pkl (and
-    each other's) by all writing to the same flat path."""
+    """outputs/metadata for chatgpt, outputs/<platform>/metadata otherwise.
+
+    NOTE: no longer the same convention as extraction.py's _metadata_dir(),
+    which is now symmetric across all four platforms (outputs/<platform>/
+    metadata, chatgpt included) -- see its docstring. This one still
+    special-cases chatgpt because dozens of *other* hardcoded
+    f"{OUTPUT_PATH}/metadata/..." reads across this file, source_selection.py,
+    and query_reformulations.py (NLI/claim/judge caches and outputs, not
+    data_summary/web_data_summary) assume ChatGPT's artifacts live at the
+    flat path; only extraction's own outputs were symmetric enough to fix
+    without touching all of those too. Used by
+    extract_response_and_sources[_other_platforms] so Claude/Grok/DeepSeek
+    runs don't overwrite ChatGPT's response_and_sources.pkl (and each
+    other's) by all writing to the same flat path.
+    """
     if platform == "chatgpt":
         return f"{OUTPUT_PATH}/metadata"
     return f"{OUTPUT_PATH}/{platform}/metadata"

@@ -14,10 +14,8 @@ Run directly as:
     python -m src.web_search_decision.extraction --platform claude
 (--platform one of: chatgpt, claude, grok, deepseek.)
 
-Output path convention (kept from the pre-merge layout, since every
-downstream analysis module already reads it this way):
-    chatgpt  -> outputs/metadata/data_summary.* + web_data_summary.*
-    others   -> outputs/<platform>/metadata/data_summary.* + web_data_summary.*
+Output: outputs/<platform>/metadata/data_summary.* + web_data_summary.*,
+same layout for all four platforms.
 
 Typical output, run against the paper's own (ERB-restricted, unshared)
 donated dataset:
@@ -769,62 +767,21 @@ def load_deepseek_data():
 
 
 def _metadata_dir(platform):
-    """outputs/metadata for chatgpt, outputs/<platform>/metadata otherwise.
+    """outputs/<platform>/metadata for every platform, ChatGPT included.
 
-    Asymmetric on purpose: every analysis module downstream of extraction
-    (source_selection.py, response_generation.py, query_reformulations.py,
-    chat_replayer.py, extract_replay_artifacts.py, web_tool_invocation.py)
-    already reads ChatGPT's data from the flat outputs/metadata/ -- that
-    predates this module's Claude/Grok/DeepSeek support, which used its own
-    per-platform subfolder from the start. Keeping ChatGPT's path as-is
-    here avoids having to touch every one of those call sites.
+    load_whole_data_from_file()/load_web_data_from_file() below are the
+    single choke point every downstream module (source_selection.py,
+    response_generation.py, query_reformulations.py, chat_replayer.py,
+    extract_replay_artifacts.py, web_tool_invocation.py) uses to read
+    extracted data, so keeping this one function symmetric is enough to
+    make the whole raw-extraction layer consistent across platforms --
+    nothing downstream needs its own per-platform path logic for this
+    step. (A handful of *other*, unrelated artifacts further down the
+    pipeline -- response_and_sources.pkl and beyond -- have their own,
+    separately-tracked platform handling; see README's "Pipeline Order &
+    Known Gaps".)
     """
-    if platform == "chatgpt":
-        return f"{OUTPUT_PATH}/metadata"
     return f"{OUTPUT_PATH}/{platform}/metadata"
-
-
-def _ensure_chatgpt_metadata_symlink(output_path):
-    """Make outputs/chatgpt/metadata browsable like the other platforms'
-    outputs/<platform>/metadata, without moving ChatGPT's real data out of
-    the flat outputs/metadata/ every other module still hardcodes (see
-    _metadata_dir's docstring).
-
-    outputs/chatgpt/metadata is created as a symlink pointing at
-    ../metadata rather than a second copy of the data -- so
-    `ls outputs/chatgpt/metadata` shows the same data_summary.*/
-    web_data_summary.* files `ls outputs/metadata` does, with nothing
-    duplicated on disk. Best-effort: on platforms/filesystems where
-    symlinks aren't available (e.g. Windows without Developer Mode or
-    admin rights), this just logs a warning and extraction still succeeds.
-    """
-    chatgpt_dir = Path(output_path) / "chatgpt"
-    link_path = chatgpt_dir / "metadata"
-    target = Path("../metadata")
-
-    if link_path.is_symlink():
-        if link_path.readlink() == target:
-            return
-        link_path.unlink()
-    elif link_path.exists():
-        logger.warning(
-            "%s already exists and isn't the expected symlink -- leaving it alone.",
-            link_path,
-        )
-        return
-
-    try:
-        chatgpt_dir.mkdir(parents=True, exist_ok=True)
-        link_path.symlink_to(target)
-    except OSError as e:
-        logger.warning(
-            "Could not create %s -> %s symlink (%s); "
-            "outputs/chatgpt/metadata won't be browsable, but ChatGPT's "
-            "data at outputs/metadata is unaffected.",
-            link_path,
-            target,
-            e,
-        )
 
 
 def load_whole_data_from_file(fmt, platform="chatgpt"):
@@ -899,9 +856,6 @@ def main():
     web_df.to_pickle(f"{base_dir}/web_data_summary.pkl")
     web_df.to_csv(f"{base_dir}/web_data_summary.csv", index=False)
     print("Web Data Saved Successfully!")
-
-    if args.platform == "chatgpt":
-        _ensure_chatgpt_metadata_symlink(OUTPUT_PATH)
 
 
 if __name__ == "__main__":
