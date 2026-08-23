@@ -27,7 +27,7 @@ Pipeline dependency: extract_response_and_sources(web_df) (and
 extract_response_and_sources_other_platforms() for non-ChatGPT platforms)
 writes outputs/<platform>/metadata/response_and_sources.pkl -- most of
 the grounding/NLI functions here read it, and it's also the prerequisite
-source_selection.py's count_unique_retrieved_safe_cited() and related
+source_selection.py's count_unique_retrieved_cited() and related
 functions need but don't produce themselves. Run it before those.
 """
 
@@ -110,9 +110,6 @@ def find_similarity(page_content, response):
     )[0]
 
     return float(scores.mean())
-
-
-
 
 
 def extract_response_and_sources(web_df):
@@ -584,7 +581,6 @@ def _extract_response_and_sources_deepseek(web_df):
     os.makedirs(platform_dir, exist_ok=True)
     web_df.to_csv(f"{platform_dir}/response_and_sources.csv", index=False)
     web_df.to_pickle(f"{platform_dir}/response_and_sources.pkl")
-
 
 
 def _load_response_and_sources_df(platform="chatgpt"):
@@ -1081,7 +1077,6 @@ def plot_response_source_quality_summary(platform="chatgpt"):
             sample_with_all_labels,
             f"{output_dir}/response_source_all_nli_labels_example.json",
         )
-
 
 def plot_retrieved_and_cited_urls_over_time(
     output_csv_path=None,
