@@ -42,29 +42,22 @@ ANNOTATION_REQUIRED_COLUMNS = {
 }
 
 
-model_replacements = {
-    "gpt-5-1": "gpt-5.1-2025-11-13",
-}
-
 PROVIDER_ALIASES = {
-    "openai": "openai",
     "chatgpt": "openai",
     "claude": "claude",
-    "anthropic": "claude",
     "grok": "grok",
-    "xai": "grok",
     "deepseek": "deepseek",
 }
 
 OPENAI_COMPATIBLE_PROVIDERS = {"openai", "grok"}
 ANTHROPIC_COMPATIBLE_PROVIDERS = {"claude", "deepseek"}
 DEFAULT_MODEL_BY_PROVIDER = {
-    "openai": "gpt-5.3-chat-latest",
+    "openai": "gpt-4.1-mini-2025-04-14",
     "claude": "claude-sonnet-4-6",
     "grok": "grok-4.3",
     "deepseek": "deepseek-v4-flash",
 }
-tool_choices = ["auto"]
+tool_choices = ["auto", "none", "required"]
 SYSTEM_PROMPT_DIR = Path(f"{OUTPUT_PATH}/replays/system_prompts")
 
 
@@ -229,6 +222,139 @@ def _has_exact_history_depth(row, prior_turns):
     )
 
 
+def _annotations_turns_path(platform):
+    """outputs/<platform>/metadata/Annotations_Turns_all.csv -- the
+    PII-safety annotation file filter_df_for_history() needs before
+    sampling `platform`'s own invivo turns for replay."""
+    return f"{OUTPUT_PATH}/{platform}/metadata/Annotations_Turns_all.csv"
+
+
+def _pii_turn_rows(conv_id, user_messages, judgment):
+    """Flatten one PII-detection judgment (SYSTEM_PROMPT_PII_detection's
+    {"data_per_turn": [{"turn_index", "personal_data": {"present": "Yes"|
+    "No"}, "special_category_data": {"present": ...}}, ...]} schema) into
+    one {conv_id, turn_index, personal_presence, special_category_presence}
+    row per message in `user_messages`.
+
+    Any message index missing from the judgment (parse failure, judge
+    dropped a turn, etc.) defaults to "Yes"/"Yes" -- fail closed, so a
+    detection gap excludes that conversation from replay instead of
+    silently treating an unscored message as PII-free.
+    """
+    verdicts_by_index = {}
+    for entry in judgment.get("data_per_turn", []) if isinstance(judgment, dict) else []:
+        if not isinstance(entry, dict):
+            continue
+        try:
+            turn_index = int(entry.get("turn_index"))
+        except (TypeError, ValueError):
+            continue
+        personal_present = str(
+            (entry.get("personal_data") or {}).get("present", "")
+        ).strip().casefold()
+        special_present = str(
+            (entry.get("special_category_data") or {}).get("present", "")
+        ).strip().casefold()
+        verdicts_by_index[turn_index] = (personal_present, special_present)
+
+    rows = []
+    for turn_index in range(len(user_messages)):
+        personal_present, special_present = verdicts_by_index.get(
+            turn_index, ("yes", "yes")
+        )
+        rows.append(
+            {
+                "conv_id": conv_id,
+                "turn_index": turn_index,
+                "personal_presence": "No" if personal_present == "no" else "Yes",
+                "special_category_presence": (
+                    "No" if special_present == "no" else "Yes"
+                ),
+            }
+        )
+    return rows
+
+
+def generate_pii_safety_annotations(
+    platform="chatgpt",
+    judge_platform="chatgpt",
+    output_path=None,
+    save_every=20,
+):
+    """Run SYSTEM_PROMPT_PII_detection over every conversation in
+    `platform`'s own extracted data (one judge call per conv_id, covering
+    that conversation's full ordered list of user messages) and save the
+    result as a PII-safety annotation CSV at
+    outputs/<platform>/metadata/Annotations_Turns_all.csv (or
+    `output_path`) -- the file _safe_annotation_conv_ids()/
+    filter_df_for_history() need before any replay of `platform`'s turns
+    can run. Normally a hand-annotated research artifact (README's
+    "Appendix C.1"); this generates an equivalent automatically.
+
+    `judge_platform` is which model runs the detector, independent of
+    `platform` (whose data is being screened). PII detection is a safety
+    gate deciding what personal data is allowed to reach ANY external
+    provider API during replay -- not a per-platform quality judgment --
+    so it deliberately stays on one fixed, consistent judge (gpt-4o-mini
+    by default) rather than varying by `platform` the way llm_judge's
+    quality judges (specificity, factuality, ...) do: a false negative
+    here means real personal data gets sent to an external API, so this
+    is not the place to trade judge consistency for per-platform framing.
+    """
+    from src.prompts.evaluator_prompts import SYSTEM_PROMPT_PII_detection
+    from src.utils.llm_judge import run_judge
+
+    df = load_whole_data_from_file(fmt="pkl", platform=platform).copy()
+    df["user_msg_history"] = df["user_msg_history"].apply(_as_list)
+    df["_num_user_msgs"] = df["user_msg_history"].apply(len)
+
+    # One row per conv_id: the turn with the longest user_msg_history, i.e.
+    # the fullest snapshot of that conversation's user messages seen so far.
+    fullest_rows = df.sort_values("_num_user_msgs").drop_duplicates(
+        subset=["conv_id"], keep="last"
+    )
+
+    if output_path is None:
+        output_path = _annotations_turns_path(platform)
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    all_rows = []
+    for i, (_, row) in enumerate(
+        tqdm(fullest_rows.iterrows(), total=len(fullest_rows)), start=1
+    ):
+        conv_id = row["conv_id"]
+        user_messages = _clean_messages(row["user_msg_history"])
+        if not user_messages:
+            continue
+
+        try:
+            result = run_judge(
+                judge_platform,
+                system_prompt=SYSTEM_PROMPT_PII_detection,
+                user_prompt=json.dumps(user_messages, ensure_ascii=False),
+                max_tokens=2048,
+            )
+            judgment = result["parsed_judgment"]
+        except Exception as e:
+            print(f"PII detection failed for conv_id={conv_id}: {e}")
+            judgment = {}  # fail closed -- see _pii_turn_rows' docstring
+
+        all_rows.extend(_pii_turn_rows(conv_id, user_messages, judgment))
+
+        if save_every and i % save_every == 0:
+            pd.DataFrame(all_rows).to_csv(output_path, index=False)
+
+    annotations_df = pd.DataFrame(all_rows)
+    annotations_df.to_csv(output_path, index=False)
+    print(
+        f"Saved PII-safety annotations for {len(fullest_rows)} conversations "
+        f"to {output_path}"
+    )
+    return annotations_df
+
+
 def _safe_annotation_conv_ids(annotation_path=ANNOTATIONS_TURNS_PATH):
     """Return the set of conv_ids whose turns were all annotated as free of
     personal/special-category information (the PII-sanitization pass
@@ -257,8 +383,10 @@ def _safe_annotation_conv_ids(annotation_path=ANNOTATIONS_TURNS_PATH):
             "personal/special-category conversations out of what gets sent "
             "to external provider APIs. Annotate your own data with the "
             "'conv_id', 'personal_presence', 'special_category_presence' "
-            "columns (see Appendix C.1 of the paper) at this path, or pass "
-            "annotation_path= to point elsewhere."
+            "columns (see Appendix C.1 of the paper) at this path, run "
+            "generate_pii_safety_annotations(platform=...) to generate an "
+            "equivalent automatically, or pass annotation_path= to point "
+            "elsewhere."
         ) from exc
     missing_columns = ANNOTATION_REQUIRED_COLUMNS.difference(annotations.columns)
     if missing_columns:
@@ -311,7 +439,9 @@ def filter_df_for_history(
     whole_df = load_whole_data_from_file(fmt="pkl", platform=source_platform)
     web_df = load_web_data_from_file(fmt="pkl", platform=source_platform)
 
-    safe_conv_ids = _safe_annotation_conv_ids()
+    safe_conv_ids = _safe_annotation_conv_ids(
+        annotation_path=_annotations_turns_path(source_platform)
+    )
     whole_df = _filter_to_safe_conversations(whole_df, safe_conv_ids)
     web_df = _filter_to_safe_conversations(web_df, safe_conv_ids)
 
@@ -706,7 +836,6 @@ def replayer(
         )
         model_column = "models" if "models" in row.index else "models"
         row_model = _most_frequent_model(row[model_column])
-        row_model = model_replacements.get(row_model, row_model)
         row_model = row_model or DEFAULT_MODEL_BY_PROVIDER["openai"]
 
         base_result = {
@@ -783,18 +912,16 @@ def replayer(
 
 if __name__ == "__main__":
     models = [
-        # "gpt-5-mini-2025-08-07",
-        # "o4-mini-2025-04-16",
-        # "gpt-4.1-mini-2025-04-14",
-        "gpt-5.3-chat-latest",
-        # "grok-4.3",
-        # "claude-sonnet-4-6",
-        # "deepseek-v4-flash",
+        "o4-mini-2025-04-16",
+        "gpt-4.1-mini-2025-04-14",
+        "grok-4.3",
+        "claude-sonnet-4-6",
+        "deepseek-v4-flash",
     ]
     dev_prompts = [
-        "o4-mini",
-        "gpt-4.1-mini",
-        # "gpt-5.3-chat-latest"
+        # "o4-mini",
+        # "gpt-4.1-mini",
+        ""
     ]
     for model in models:
         for dp in dev_prompts:
@@ -809,6 +936,6 @@ if __name__ == "__main__":
                 save_every=5,
                 output_file=output_file,
                 samples_per_source=500,
-                developer_prompt=f"{dp}.md"
+                # developer_prompt=f"{dp}.md"
             )
             print(len(model_results))
