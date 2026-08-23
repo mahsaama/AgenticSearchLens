@@ -1,0 +1,5 @@
+platform,platform_display,dimension,dimension_display,stage_idx,stage_label,mean_specificity_direction,percentage_specificity_direction,count
+claude,Claude,temporal,Temporal,1,Iter. 1,1.0,100.0,1
+claude,Claude,geographic,Geographic,1,Iter. 1,0.0,0.0,1
+claude,Claude,entity,Entity,1,Iter. 1,0.0,0.0,1
+claude,Claude,numeric,Numeric,1,Iter. 1,0.0,0.0,1

@@ -1,0 +1,10 @@
+{
+    "platforms_plotted": [
+        "claude"
+    ],
+    "platform_data_sources": {
+        "claude": "./outputs/claude/metadata/query_reformulations_query_specificity.pkl",
+        "grok": "./outputs/grok/metadata/query_reformulations_query_specificity.pkl",
+        "deepseek": "./outputs/deepseek/metadata/query_reformulations_query_specificity.pkl"
+    }
+}

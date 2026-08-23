@@ -1,1 +1,18 @@
-[]
+[
+    {
+        "result_key": null,
+        "sample_source": null,
+        "user_id": 0,
+        "conv_id": "6a8712d5-bc24-83ed-a880-52106c9c8a40",
+        "turn_id": "aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+        "topic": "Other",
+        "language": "en",
+        "invivo_model": null,
+        "replay_model": null,
+        "response_mode": null,
+        "user_query": "What are the News today?",
+        "user_query_specificity": "{\"temporal\": {\"score\": 3, \"reason\": \"The query specifies 'today', indicating a relative time reference.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query does not specify any location.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query is a generic category asking for news without specifying any particular source or type.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric constraints.\"}}",
+        "web_queries": "[]",
+        "web_query_specificity_info": "[]"
+    }
+]

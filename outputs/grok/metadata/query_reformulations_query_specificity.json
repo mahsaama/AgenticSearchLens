@@ -1,1 +1,34 @@
-[]
+[
+    {
+        "result_key": null,
+        "sample_source": null,
+        "user_id": 0,
+        "conv_id": "eed122aa-4259-4a43-bf27-853f4247f19e",
+        "turn_id": "8639fa33-1ce7-4764-b726-9f7e8fe9ff6c",
+        "topic": "Other",
+        "language": "en",
+        "invivo_model": null,
+        "replay_model": null,
+        "response_mode": null,
+        "user_query": "What are the News today?",
+        "user_query_specificity": "{\"temporal\": {\"score\": 3, \"reason\": \"The query contains the relative time reference 'today'.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query contains no geographic reference or location specifier of any kind.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query refers only to the generic category 'News' with no brand, model, or specific identifiers.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric constraints, quantities, or technical specifications.\"}}",
+        "web_queries": "[[\"top news today\", \"breaking news August 20 2026\", \"world news headlines today\"]]",
+        "web_query_specificity_info": "[{\"query\": \"top news today\", \"iteration\": 1, \"specificity\": {\"temporal\": {\"score\": 3, \"reason\": \"The query contains the relative time reference 'today'.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query contains no geographic reference of any kind.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query identifies only the generic category 'news' with no named entity, brand, model, or specific qualifiers.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric constraints, quantities, or technical specifications of any kind.\"}}}, {\"query\": \"breaking news August 20 2026\", \"iteration\": 1, \"specificity\": {\"temporal\": {\"score\": 4, \"reason\": \"The query specifies a particular calendar date (August 20 2026), matching the level-4 criteria for a specific date or month/year.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query contains no geographic information or location references of any kind.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query names only the generic category 'breaking news' with no brand, model, person, or other specific entity.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric constraints after ignoring the temporal date information.\"}}}, {\"query\": \"world news headlines today\", \"iteration\": 1, \"specificity\": {\"temporal\": {\"score\": 3, \"reason\": \"The query contains the relative time reference 'today'.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query contains no geographic location or region of any kind.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query names only a generic category of content with no brands, models, or unique identifiers.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numbers, quantities, measurements, or technical specifications.\"}}}]"
+    },
+    {
+        "result_key": null,
+        "sample_source": null,
+        "user_id": 0,
+        "conv_id": "3570a171-fa69-4bad-bfa6-b25b1a86a1b0",
+        "turn_id": "85586acd-7628-44c6-a0b5-ed317c03d0e7",
+        "topic": "Travel",
+        "language": "en",
+        "invivo_model": null,
+        "replay_model": null,
+        "response_mode": null,
+        "user_query": "What are the 10 best places that everyone should visit in the world?",
+        "user_query_specificity": "{\"temporal\": {\"score\": 1, \"reason\": \"The query contains no reference to any time period, date, or timeframe.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query mentions 'in the world' but specifies no particular location, region, or place.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query refers only to the generic category 'places' with no named entities, brands, models, or unique identifiers.\"}, \"numeric\": {\"score\": 3, \"reason\": \"The query includes one specific numeric constraint by requesting exactly 10 places.\"}}",
+        "web_queries": "[[\"10 best places to visit in the world\", \"most beautiful places in the world rankings\", \"bucket list destinations everyone should visit\"]]",
+        "web_query_specificity_info": "[{\"query\": \"10 best places to visit in the world\", \"iteration\": 1, \"specificity\": {\"temporal\": {\"score\": 1, \"reason\": \"The query contains no time reference whatsoever.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query specifies no location at all, only the entire world.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query names only a generic category of items with no brands, models, or unique identifiers.\"}, \"numeric\": {\"score\": 3, \"reason\": \"The query contains exactly one specific numeric constraint (the number 10).\"}}}, {\"query\": \"most beautiful places in the world rankings\", \"iteration\": 1, \"specificity\": {\"temporal\": {\"score\": 1, \"reason\": \"The query contains no time reference of any kind.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query mentions no specific location, only a global scope with no geographic restriction.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query refers only to a generic category of places with broad descriptive qualifiers and no named or specific entity.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric values, quantities, or measurements.\"}}}, {\"query\": \"bucket list destinations everyone should visit\", \"iteration\": 1, \"specificity\": {\"temporal\": {\"score\": 1, \"reason\": \"The query contains no time reference whatsoever.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query contains no geographic references or location terms of any kind.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query refers only to a generic category of destinations with no named entities, brands, models, or specific identifiers.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric constraints, quantities, or technical specifications of any kind.\"}}}]"
+    }
+]

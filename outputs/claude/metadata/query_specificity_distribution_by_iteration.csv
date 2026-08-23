@@ -1,0 +1,41 @@
+stage_idx,stage_label,dimension,dimension_display,score,score_display,count,total,rate
+0,User,temporal,Temporal,1,Score 1,0,1,0.0
+0,User,temporal,Temporal,2,Score 2,0,1,0.0
+0,User,temporal,Temporal,3,Score 3,1,1,1.0
+0,User,temporal,Temporal,4,Score 4,0,1,0.0
+0,User,temporal,Temporal,5,Score 5,0,1,0.0
+0,User,geographic,Geographic,1,Score 1,1,1,1.0
+0,User,geographic,Geographic,2,Score 2,0,1,0.0
+0,User,geographic,Geographic,3,Score 3,0,1,0.0
+0,User,geographic,Geographic,4,Score 4,0,1,0.0
+0,User,geographic,Geographic,5,Score 5,0,1,0.0
+0,User,entity,Entity,1,Score 1,1,1,1.0
+0,User,entity,Entity,2,Score 2,0,1,0.0
+0,User,entity,Entity,3,Score 3,0,1,0.0
+0,User,entity,Entity,4,Score 4,0,1,0.0
+0,User,entity,Entity,5,Score 5,0,1,0.0
+0,User,numeric,Numeric,1,Score 1,1,1,1.0
+0,User,numeric,Numeric,2,Score 2,0,1,0.0
+0,User,numeric,Numeric,3,Score 3,0,1,0.0
+0,User,numeric,Numeric,4,Score 4,0,1,0.0
+0,User,numeric,Numeric,5,Score 5,0,1,0.0
+1,Iter. 1,temporal,Temporal,1,Score 1,0,1,0.0
+1,Iter. 1,temporal,Temporal,2,Score 2,0,1,0.0
+1,Iter. 1,temporal,Temporal,3,Score 3,0,1,0.0
+1,Iter. 1,temporal,Temporal,4,Score 4,1,1,1.0
+1,Iter. 1,temporal,Temporal,5,Score 5,0,1,0.0
+1,Iter. 1,geographic,Geographic,1,Score 1,1,1,1.0
+1,Iter. 1,geographic,Geographic,2,Score 2,0,1,0.0
+1,Iter. 1,geographic,Geographic,3,Score 3,0,1,0.0
+1,Iter. 1,geographic,Geographic,4,Score 4,0,1,0.0
+1,Iter. 1,geographic,Geographic,5,Score 5,0,1,0.0
+1,Iter. 1,entity,Entity,1,Score 1,1,1,1.0
+1,Iter. 1,entity,Entity,2,Score 2,0,1,0.0
+1,Iter. 1,entity,Entity,3,Score 3,0,1,0.0
+1,Iter. 1,entity,Entity,4,Score 4,0,1,0.0
+1,Iter. 1,entity,Entity,5,Score 5,0,1,0.0
+1,Iter. 1,numeric,Numeric,1,Score 1,1,1,1.0
+1,Iter. 1,numeric,Numeric,2,Score 2,0,1,0.0
+1,Iter. 1,numeric,Numeric,3,Score 3,0,1,0.0
+1,Iter. 1,numeric,Numeric,4,Score 4,0,1,0.0
+1,Iter. 1,numeric,Numeric,5,Score 5,0,1,0.0

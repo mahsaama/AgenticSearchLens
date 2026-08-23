@@ -1,1 +1,34 @@
-[]
+[
+    {
+        "result_key": null,
+        "sample_source": null,
+        "user_id": 0,
+        "conv_id": "d125fb93-a11d-43c9-8f51-0d0806806a44",
+        "turn_id": "1",
+        "topic": "Other",
+        "language": "en",
+        "invivo_model": null,
+        "replay_model": null,
+        "response_mode": null,
+        "user_query": "What are the News today?",
+        "user_query_specificity": "{\"temporal\": {\"score\": 3, \"reason\": \"The query specifies 'today', which is a relative time reference.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query does not specify any geographic location.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query refers to a generic category ('News') without any specific entity or qualifier.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric constraints or quantitative requirements.\"}}",
+        "web_queries": "[]",
+        "web_query_specificity_info": "[]"
+    },
+    {
+        "result_key": null,
+        "sample_source": null,
+        "user_id": 0,
+        "conv_id": "d40366a9-ffc3-4b81-8fc1-10909075ae60",
+        "turn_id": "1",
+        "topic": "Travel",
+        "language": "en",
+        "invivo_model": null,
+        "replay_model": null,
+        "response_mode": null,
+        "user_query": "What are the 10 best places that everyone should visit in the world?",
+        "user_query_specificity": "{\"temporal\": {\"score\": 1, \"reason\": \"The query contains no time reference, making it temporally non-specific.\"}, \"geographic\": {\"score\": 1, \"reason\": \"The query specifies no particular location, asking about the entire world.\"}, \"entity\": {\"score\": 1, \"reason\": \"The query asks for generic 'places' without naming any specific entity, only a broad category.\"}, \"numeric\": {\"score\": 1, \"reason\": \"The query contains no numeric constraints; the number 10 refers to the count of results, not a specification of the places.\"}}",
+        "web_queries": "[]",
+        "web_query_specificity_info": "[]"
+    }
+]

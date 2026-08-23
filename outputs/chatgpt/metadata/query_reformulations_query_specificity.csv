@@ -1,1 +1,2 @@
-
+result_key,sample_source,user_id,conv_id,turn_id,topic,language,invivo_model,replay_model,response_mode,user_query,user_query_specificity,web_queries,web_query_specificity_info
+,,0,6a8712d5-bc24-83ed-a880-52106c9c8a40,aa46c3d4-d77f-41cd-922a-bda37bb6d346,Other,en,,,,What are the News today?,"{""temporal"": {""score"": 3, ""reason"": ""The query specifies 'today', indicating a relative time reference.""}, ""geographic"": {""score"": 1, ""reason"": ""The query does not specify any location.""}, ""entity"": {""score"": 1, ""reason"": ""The query is a generic category asking for news without specifying any particular source or type.""}, ""numeric"": {""score"": 1, ""reason"": ""The query contains no numeric constraints.""}}",[],[]

@@ -1,0 +1,14 @@
+{
+    "platforms_plotted": [
+        "openai",
+        "claude",
+        "grok",
+        "deepseek"
+    ],
+    "platform_data_sources": {
+        "openai": "./outputs/deepseek/metadata/query_reformulations_query_specificity.pkl",
+        "claude": "./outputs/claude/metadata/query_reformulations_query_specificity.pkl",
+        "grok": "./outputs/grok/metadata/query_reformulations_query_specificity.pkl",
+        "deepseek": "./outputs/deepseek/metadata/query_reformulations_query_specificity.pkl"
+    }
+}
