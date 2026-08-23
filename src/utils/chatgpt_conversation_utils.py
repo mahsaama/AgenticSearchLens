@@ -74,7 +74,7 @@ def load_topics():
     every conversation when the lookup has no entry for it.
     """
     topic_mapping_path = (
-        f"{OUTPUT_PATH}/metadata/All_Conversations_annotation.csv"
+        f"{OUTPUT_PATH}/chatgpt/metadata/All_Conversations_annotation.csv"
     )
     try:
         topic_mapping_df = pd.read_csv(topic_mapping_path)[["conv_id", "topic_new"]]

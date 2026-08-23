@@ -36,7 +36,7 @@ def openai_inference(model_name, data, filename, temperature=0.0, save_every=5):
     search forced off) replay modes.
 
     Writes/resumes from
-    outputs/metadata/preference_evaluation/<model_name>/<temperature>/<filename>.{json,csv,pkl},
+    outputs/chatgpt/metadata/preference_evaluation/<model_name>/<temperature>/<filename>.{json,csv,pkl},
     saving incrementally every `save_every` scored rows so an interrupted
     run can pick back up without re-scoring what's already done. Returns the
     final results as a DataFrame.
@@ -116,7 +116,7 @@ def openai_inference(model_name, data, filename, temperature=0.0, save_every=5):
         )
 
     output_dir = Path(
-        f"{OUTPUT_PATH}/metadata/preference_evaluation/{model_name}/{temperature}"
+        f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{model_name}/{temperature}"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     output_json_path = output_dir / f"{filename}.json"

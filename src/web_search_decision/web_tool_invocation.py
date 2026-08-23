@@ -458,7 +458,7 @@ def _tool_to_category_lookup(path):
 
 def web_call_trend_over_time(df):
     df = df.copy()
-    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
+    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/chatgpt/metadata/all_tools_categorized.json")
     df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
 
     df["month"] = pd.to_datetime(df["month"])
@@ -555,7 +555,7 @@ def web_call_trend_over_time_all_convai(df):
         )
         return monthly_rate, total_web_turns, len(platform_df)
 
-    openai_tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
+    openai_tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/chatgpt/metadata/all_tools_categorized.json")
     openai_monthly, openai_total_web_turns, openai_total_turns = _monthly_web_rate(
         df, openai_tool_to_category
     )
@@ -620,7 +620,7 @@ def web_call_trend_over_time_all_convai(df):
 def web_call_trend_over_time_by_model(df):
     df = df.copy()
     selected_models = ['gpt-4-1', 'gpt-4-1-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-5', 'gpt-5-instant', 'gpt-5-mini', 'gpt-5-thinking', 'gpt-5-2', 'gpt-5-2-thinking', 'o3', 'o3-mini', 'text-davinci-002-render-sha']
-    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/metadata/all_tools_categorized.json")
+    tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/chatgpt/metadata/all_tools_categorized.json")
     df["categories"] = df["tools"].apply(lambda x: [tool_to_category.get(t, "Plugins") for t in x])
     df["month"] = pd.to_datetime(df["month"])
     df["model"] = df["openai_models"].apply(_primary_model)
@@ -1354,8 +1354,8 @@ def topic_distriction_of_whole_data_all_platforms(platform_configs=None):
 
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     file_name = "topic_distribution_of_whole_data_all_platforms"
-    table_pct.to_csv(f"{OUTPUT_PATH}/metadata/{file_name}_percentages.csv")
-    rates_df.to_csv(f"{OUTPUT_PATH}/metadata/{file_name}_long.csv", index=False)
+    table_pct.to_csv(f"{OUTPUT_PATH}/chatgpt/metadata/{file_name}_percentages.csv")
+    rates_df.to_csv(f"{OUTPUT_PATH}/chatgpt/metadata/{file_name}_long.csv", index=False)
 
     fig = go.Figure()
     for platform, display_name in platform_configs:
@@ -1410,7 +1410,7 @@ def topic_distriction_of_whole_data_all_platforms(platform_configs=None):
 def _prometheus_eval_base_dir(eval_model_name, temperature, web_tool_type):
     safe_eval_model_name = str(eval_model_name).replace("/", "__")
     return (
-        f"{OUTPUT_PATH}/metadata/prometheus_evaluation/"
+        f"{OUTPUT_PATH}/chatgpt/metadata/prometheus_evaluation/"
         f"{safe_eval_model_name}/{temperature}/{web_tool_type}"
     )
 
@@ -1830,9 +1830,9 @@ def replay_evaluations(
     web_tool_type="openai"
 ):
     if web_tool_type == "openai":
-        base_dir = f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}"
+        base_dir = f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}"
     else:
-        base_dir = f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}"
+        base_dir = f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}"
 
     file_path = f"{base_dir}/{llm_model_name}.csv"
     if not os.path.exists(file_path):
@@ -1928,9 +1928,9 @@ def replay_call_outcome_summary(
     web_tool_type="openai"
 ):
     if web_tool_type == "openai":
-        base_dir = f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}"
+        base_dir = f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}"
     else:
-        base_dir = f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}"
+        base_dir = f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}"
 
     file_path = f"{base_dir}/{llm_model_name}.csv"
     if not os.path.exists(file_path):
@@ -2151,31 +2151,31 @@ def replay_call_outcome_venn_diagram(
         {
             "tool": "openai",
             "label": "ChatGPT",
-            "base_dir": f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}",
+            "base_dir": f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}",
             "file_name": llm_model_name,
         },
         {
             "tool": "tavily",
             "label": "Tavily",
-            "base_dir": f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}",
+            "base_dir": f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}",
             "file_name": f"{llm_model_name}_responses_url_mcp-tavily",
         },
         {
             "tool": "serp",
             "label": "SerpAPI",
-            "base_dir": f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}",
+            "base_dir": f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}",
             "file_name": f"{llm_model_name}_responses_url_mcp-serp",
         },
         {
             "tool": "perplexity",
             "label": "Perplexity",
-            "base_dir": f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}",
+            "base_dir": f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}",
             "file_name": f"{llm_model_name}_responses_url_mcp-perplexity",
         },
         {
             "tool": "brave",
             "label": "Brave",
-            "base_dir": f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}",
+            "base_dir": f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}",
             "file_name": f"{llm_model_name}_responses_url_mcp-brave",
         },
     ]
@@ -3002,7 +3002,7 @@ def replay_all_tools_web_call_metric_comparison(
             "tool": "openai",
             "label": "ChatGPT",
             "base_dir": (
-                f"{OUTPUT_PATH}/metadata/preference_evaluation/"
+                f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/"
                 f"{eval_model_name}/{temperature}"
             ),
             "file_name": llm_model_name,
@@ -3011,7 +3011,7 @@ def replay_all_tools_web_call_metric_comparison(
             "tool": "serp",
             "label": "SerpAPI",
             "base_dir": (
-                f"{OUTPUT_PATH}/metadata/preference_evaluation/"
+                f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/"
                 f"{eval_model_name}/{temperature}"
             ),
             "file_name": f"{llm_model_name}_responses_url_mcp-serp",
@@ -3020,7 +3020,7 @@ def replay_all_tools_web_call_metric_comparison(
             "tool": "perplexity",
             "label": "Perplexity",
             "base_dir": (
-                f"{OUTPUT_PATH}/metadata/preference_evaluation/"
+                f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/"
                 f"{eval_model_name}/{temperature}"
             ),
             "file_name": f"{llm_model_name}_responses_url_mcp-perplexity",
@@ -3028,13 +3028,13 @@ def replay_all_tools_web_call_metric_comparison(
         {
             "tool": "brave",
             "label": "Brave",
-            "base_dir": f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}",
+            "base_dir": f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}",
             "file_name": f"{llm_model_name}_responses_url_mcp-brave",
         },
         {
             "tool": "tavily",
             "label": "Tavily",
-            "base_dir": f"{OUTPUT_PATH}/metadata/preference_evaluation/{eval_model_name}/{temperature}",
+            "base_dir": f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{eval_model_name}/{temperature}",
             "file_name": f"{llm_model_name}_responses_url_mcp-tavily",
         },
     ]
@@ -3249,7 +3249,7 @@ def _normalise_output_base(output_base, model_name):
     if output_base is None:
         safe_model_name = str(model_name).replace("/", "_")
         output_base = (
-            f"{OUTPUT_PATH}/metadata/web_call_tool_intent_from_thoughts_"
+            f"{OUTPUT_PATH}/chatgpt/metadata/web_call_tool_intent_from_thoughts_"
             f"{safe_model_name}"
         )
 
@@ -3646,9 +3646,9 @@ def plot_web_call_tool_intent_distribution(
 
 
 def subset_selection_for_policy_evaluation_by_human():
-    df = pd.read_csv(f"{OUTPUT_PATH}/metadata/web_calls_characterization.csv").reset_index()
+    df = pd.read_csv(f"{OUTPUT_PATH}/chatgpt/metadata/web_calls_characterization.csv").reset_index()
     subset = df.sample(100)
-    subset.to_csv(f"{OUTPUT_PATH}/metadata/web_calls_characterization_subset_for_human_eval.csv", index=False)
+    subset.to_csv(f"{OUTPUT_PATH}/chatgpt/metadata/web_calls_characterization_subset_for_human_eval.csv", index=False)
 
 
 def count_model_used(web_df):

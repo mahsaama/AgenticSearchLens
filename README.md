@@ -193,19 +193,23 @@ a function fails in a way that isn't obviously about missing data:
   "Other", extraction now falls back to `topic_classifier.classify_topic()`,
   a small dependency-free keyword classifier applied to each conversation's
   opening message.
-- **`extraction.py`'s own output (`data_summary.*`/`web_data_summary.*`) is
-  symmetric across all four platforms** (`outputs/<platform>/metadata/`,
-  ChatGPT included) since every reader goes through
-  `load_whole_data_from_file()`/`load_web_data_from_file()`, which both
-  route through the one shared `_metadata_dir()` helper. **Everything
-  *downstream* of extraction is a different story**: `response_and_sources.pkl`
-  (see the next bullet) and the deeper §5.2 NLI/claim/judge caches and
-  outputs still default ChatGPT specifically to the flat `outputs/metadata/`
-  -- dozens of other hardcoded paths across `response_generation.py`/
-  `source_selection.py`/`query_reformulations.py`/`chat_replayer.py`/
-  `extract_replay_artifacts.py` assume that, predating this module's
-  Claude/Grok/DeepSeek support, and weren't all migrated (see "How far
-  cross-platform support actually reaches" below).
+- **Every artifact this pipeline writes lives under `outputs/<platform>/metadata/`,
+  ChatGPT included** — `data_summary.*`/`web_data_summary.*` from extraction,
+  `response_and_sources.pkl` and everything downstream of it (URL-content
+  cache, claim cache, NLI/factuality caches and outputs, query-reformulation
+  caches, tool categorization, replay preference-evaluation results, ...).
+  There's no flat `outputs/metadata/` anymore. This was a real migration,
+  not just a new default: earlier, ChatGPT's copy of dozens of these files
+  lived at the flat path (predating this module's Claude/Grok/DeepSeek
+  support) while the other three platforms already had their own
+  subfolder — every one of those hardcoded paths across
+  `response_generation.py`/`claim_extraction.py`/`entailment_analysis.py`/
+  `web_content_fetch.py`/`source_selection.py`/`query_reformulations.py`/
+  `web_tool_invocation.py`/`chat_replayer.py`/`chat_replayer_evaluation.py`
+  now points at `outputs/chatgpt/metadata/` instead (as does
+  `.env`'s `CLAIM_EXTRACTION_CACHE_PATH`). This is a *path* fix, not a
+  *platform-support* fix, though — see "How far cross-platform support
+  actually reaches" below for the difference.
 - **ChatGPT web-search detection is a two-step process across export
   formats.** Older/plugin-era exports route a tool call through a message
   explicitly routed to a named tool (`recipient` set to something like
@@ -249,21 +253,26 @@ a function fails in a way that isn't obviously about missing data:
   a `source_platform` argument (default `"chatgpt"`) to sample invivo turns
   from Claude/Grok/DeepSeek instead, independent of which model(s) they get
   replayed against.
-- **How far cross-platform support actually reaches.** `extraction.py` and
-  `response_generation.extract_response_and_sources[_other_platforms]` are
-  fully unified across all four platforms (one function, `platform=`
+- **How far cross-platform support actually reaches** — this is about
+  *logic*, not paths (see above for the path migration). `extraction.py`
+  and `response_generation.extract_response_and_sources[_other_platforms]`
+  are fully unified across all four platforms (one function, `platform=`
   parameter, verified end-to-end against all four sample exports). Most of
   `source_selection.py`'s and `query_reformulations.py`'s analysis functions
-  already read per-platform data too (`_prepare_source_count_df(model=...)`
-  and friends). What's *not* generalized: the deeper §5.2 grounding/NLI/
-  LLM-judge machinery (now split across `web_content_fetch.py`,
-  `claim_extraction.py`, and `entailment_analysis.py` — see below — but the
-  split didn't change this) still has its own ~30 hardcoded
-  `outputs/metadata/...` paths and is ChatGPT-only by default — it was
-  written and tuned against the paper's own ChatGPT-sourced replay data, and
-  generalizing every one of those functions to an arbitrary platform wasn't
-  attempted here (large surface, and untestable against real data without a
-  richer non-ChatGPT sample than the synthetic fixtures in this repo).
+  already accept a platform too (`_prepare_source_count_df(model=...)` and
+  friends) — for these, moving ChatGPT's default off the flat path means
+  they now behave identically for all four platforms, path-wise. What's
+  *not* generalized: the deeper §5.2 grounding/NLI/LLM-judge machinery
+  (`web_content_fetch.py`/`claim_extraction.py`/`entailment_analysis.py`,
+  plus most of `query_reformulations.py`'s and `web_tool_invocation.py`'s
+  own analysis functions) has no `platform` parameter at all — it was
+  written and tuned against the paper's own ChatGPT-sourced replay data,
+  hardcoded to ChatGPT's artifacts specifically (now at
+  `outputs/chatgpt/metadata/` rather than the flat path, but still only
+  ChatGPT). Generalizing *the logic* of every one of those functions to run
+  against an arbitrary platform wasn't attempted here (large surface, and
+  untestable against real data without a richer non-ChatGPT sample than the
+  synthetic fixtures in this repo).
 - **Two known, currently-unfixed issues**, left as-is rather than
   papered over or guessed at:
   - `web_tool_invocation.py`'s `_run_tool_intent_judge()` references

@@ -33,7 +33,7 @@ np.random.seed(RANDOM_SEED)
 SKIPPED_REPLAY_SAMPLE_INDICES = {}
 
 ANNOTATIONS_TURNS_PATH = (
-    f"{OUTPUT_PATH}/metadata/Annotations_Turns_all.csv"
+    f"{OUTPUT_PATH}/chatgpt/metadata/Annotations_Turns_all.csv"
 )
 ANNOTATION_REQUIRED_COLUMNS = {
     "conv_id",

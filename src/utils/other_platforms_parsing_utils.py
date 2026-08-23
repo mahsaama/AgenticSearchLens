@@ -278,7 +278,7 @@ def load_topics(platform):
     instead, from the conversation content itself).
     """
     if platform == "chatgpt":
-        path = f"{OUTPUT_PATH}/metadata/All_Conversations_annotation.csv"
+        path = f"{OUTPUT_PATH}/chatgpt/metadata/All_Conversations_annotation.csv"
         try:
             df = pd.read_csv(path)[["conv_id", "topic_new"]]
         except Exception:

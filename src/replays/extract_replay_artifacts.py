@@ -4288,7 +4288,7 @@ def print_cross_platform_replay_model_call_outcome_eval_scores(
     base_model_name="gpt-5.3-chat-latest",
     model_names=DEFAULT_MODELS,
 ):
-    eval_dir = Path(f"{OUTPUT_PATH}/metadata/preference_evaluation/{evaluator_model}/{temperature}")
+    eval_dir = Path(f"{OUTPUT_PATH}/chatgpt/metadata/preference_evaluation/{evaluator_model}/{temperature}")
     sample_calls = {}
     for model_name in model_names:
         replay_path = INPUT_DIR / f"{model_name}.json"

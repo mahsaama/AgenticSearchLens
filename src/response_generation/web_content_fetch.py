@@ -76,7 +76,7 @@ PLAYWRIGHT_FALLBACK_TIMEOUT = float(
 URL_FETCH_TIMEOUT = float(os.getenv("ARTICLE_URL_FETCH_TIMEOUT"))
 URL_FETCH_CHECKPOINT_EVERY = int(os.getenv("ARTICLE_URL_CHECKPOINT_EVERY"))
 RESPONSE_URLS_CONTENT_PATH = (
-    f"{OUTPUT_PATH}/metadata/response_and_sources_url_content.json"
+    f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_url_content.json"
 )
 
 def clean_html_for_readability(text):
@@ -496,8 +496,8 @@ async def get_article_text_planB(url, browser=None):
     return extract_clean_text_from_html(content)
 
 def _load_response_source_similarity_input():
-    pkl_path = f"{OUTPUT_PATH}/metadata/response_and_sources.pkl"
-    csv_path = f"{OUTPUT_PATH}/metadata/response_and_sources.csv"
+    pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.pkl"
+    csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.csv"
 
     try:
         df = pd.read_pickle(pkl_path)

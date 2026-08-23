@@ -4,7 +4,6 @@
 # anyway via `git add -f` as pipeline fixtures — this rule still protects
 # any *real* export you drop in the same data/<platform>/user_0/ paths.
 data/
-outputs/
 
 # Secrets
 .env

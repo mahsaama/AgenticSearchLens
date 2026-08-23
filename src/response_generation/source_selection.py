@@ -199,11 +199,11 @@ def extract_retrieved_safe_cited_source(web_df):
     web_df.reset_index(drop=True, inplace=True)
     
     web_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.csv",
         index=False,
     )
     web_df.to_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     )
 
 def _unique_source_count(items, key="url"):
@@ -227,8 +227,8 @@ def _primary_model(models):
 
 
 def _prepare_source_count_df(model=""):
-    """Load outputs/[<model>/]metadata/response_and_sources.pkl and add
-    per-row retrieved/safe/cited URL counts.
+    """Load outputs/<model>/metadata/response_and_sources.pkl (model=""
+    defaults to "chatgpt") and add per-row retrieved/safe/cited URL counts.
 
     Pipeline dependency: this file is NOT produced by anything in this
     module. Run response_generation.extract_response_and_sources(web_df)
@@ -242,7 +242,7 @@ def _prepare_source_count_df(model=""):
     """
     if model == "chatgpt" or model == "":
         df = pd.read_pickle(
-            f"{OUTPUT_PATH}/metadata/response_and_sources.pkl"
+            f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.pkl"
         ).copy()
     else:
         df = pd.read_pickle(
@@ -448,8 +448,8 @@ def _web_query_groups_to_count(value):
 def _load_query_count_lookup(model=""):
     if model == "chatgpt" or model == "":
         candidate_paths = [
-            f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl",
-            f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl",
+            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.csv",
         ]
     else:
         candidate_paths = [
@@ -489,8 +489,8 @@ def _load_query_count_lookup(model=""):
 def _load_query_groups_lookup(model=""):
     if model == "chatgpt" or model == "":
         candidate_paths = [
-            f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl",
-            f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl",
+            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.csv",
         ]
     else:
         candidate_paths = [
@@ -902,7 +902,7 @@ def compute_subset_counts(df, retrieved_col, safe_col, cited_col, key="url"):
 
 def plot_subset_condition_counts():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
 
     def _compute_cited_subset_counts(df, retrieved_col, cited_col, key="url"):
@@ -985,7 +985,7 @@ def plot_subset_condition_counts():
 
 def save_topic_to_domains_json():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
 
     topic_to_domains = {}
@@ -1022,7 +1022,7 @@ def save_topic_to_domains_json():
 
     to_json(
         topic_to_domains,
-        f"{OUTPUT_PATH}/metadata/topic_to_domains.json",
+        f"{OUTPUT_PATH}/chatgpt/metadata/topic_to_domains.json",
     )
 
 
@@ -1191,7 +1191,7 @@ def _load_domain_plot_df(platform=""):
         ).copy()
     else:
         df = pd.read_pickle(
-            f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+            f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
         ).copy()
     df = df[
         df["srcs_retrieved"].apply(lambda x: isinstance(x, list) and len(x) > 0)
@@ -1828,7 +1828,7 @@ def evaluate_unique_retrieved_domains_by_platform():
 
 def compare_domain_reliability_by_source_type(model_name="gpt-4o-mini", temperature=0.0):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
     results_path = (
         f"{OUTPUT_PATH}/{CONF}/domain_reliability_evaluation/"
@@ -2462,12 +2462,12 @@ def plot_url_counts_by_topic():
 
 
 def compare_safe_vs_retrieved_minus_safe_reachability():
-    cache_path = f"{OUTPUT_PATH}/metadata/safe_vs_retrieved_minus_safe_reachability.csv"
+    cache_path = f"{OUTPUT_PATH}/chatgpt/metadata/safe_vs_retrieved_minus_safe_reachability.csv"
     if os.path.exists(cache_path):
         comparison_df = pd.read_csv(cache_path)
     else:
         df = pd.read_pickle(
-            f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+            f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
         ).copy()
         df["time"] = pd.to_datetime(df["time"], errors="coerce")
         df["month"] = df["time"].dt.to_period("M").dt.to_timestamp()
@@ -2571,7 +2571,7 @@ def compare_safe_vs_retrieved_minus_safe_reachability():
 
 def plot_retrieved_safe_cited_positions(separate_cited_external_internal=False):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
 
     def _valid_ref_index(value):
@@ -2980,7 +2980,7 @@ def _plot_retrieved_safe_cited_ranks(plot_rows, file_name, yaxis_title):
 
 def plot_retrieved_safe_cited_tranco_ranks():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
     ).copy()
     plot_rows = _build_retrieved_safe_cited_rank_plot_rows(
         df,
@@ -2998,8 +2998,8 @@ def plot_retrieved_safe_cited_tranco_ranks():
 def plot_retrieved_safe_cited_judge_ranks():
     df = _load_first_existing_pickle(
         [
-            f"{OUTPUT_PATH}/metadata/response_and_sources_with_topical_judge_ranks.pkl",
-            f"{OUTPUT_PATH}/metadata/response_and_sources_with_topical_judge_ranks_v2.pkl",
+            f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.pkl",
+            f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks_v2.pkl",
         ]
     )
     plot_rows = _build_retrieved_safe_cited_rank_plot_rows(
@@ -3016,12 +3016,12 @@ def plot_retrieved_safe_cited_judge_ranks():
 
 
 def cited_sources_reachability():
-    cache_path = f"{OUTPUT_PATH}/metadata/cited_sources_reachability.csv"
+    cache_path = f"{OUTPUT_PATH}/chatgpt/metadata/cited_sources_reachability.csv"
     if os.path.exists(cache_path):
         reachability_df = pd.read_csv(cache_path)
     else:
         df = pd.read_pickle(
-            f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+            f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
         ).copy()
         df["time"] = pd.to_datetime(df["time"], errors="coerce")
         df["month"] = df["time"].dt.to_period("M").dt.to_timestamp()
@@ -3077,7 +3077,7 @@ def cited_sources_reachability():
 
 def plot_citations_round():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
 
     round_counts = {}
@@ -3279,7 +3279,7 @@ def plot_hallucination_rate_over_time(df, total_col, hallucinated_col, file_name
 
 def venn_diagram_of_sources():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     )
 
     retrieved_urls = [
@@ -3525,7 +3525,7 @@ def evaluate_source_tranco_ranks(
 ):
     grounding_level = _validated_grounding_level(grounding_level) 
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
     ).copy()
 
     def _as_list(value):
@@ -3788,7 +3788,7 @@ def evaluate_source_tranco_ranks(
 
 def evaluate_source_topical_judge_ranks():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/response_and_sources_with_topical_judge_ranks.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.pkl"
     ).copy()
 
     def _as_list(value):
@@ -3998,7 +3998,7 @@ def evaluate_source_topical_judge_ranks():
 
 def calculate_invivo_tranco_rank_correlation():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
     ).copy()
 
     tranco_col = "ranks_srcs_retrieved"
@@ -4275,7 +4275,7 @@ def calculate_invivo_tranco_rank_correlation():
 def add_retrieved_safe_reliability_scores_to_topical_judge_ranks():
     df = _load_response_source_similarity_input()
     df_scores = pd.read_csv(
-        f"{OUTPUT_PATH}/metadata/source_reliability_scores.csv"
+        f"{OUTPUT_PATH}/chatgpt/metadata/source_reliability_scores.csv"
     )
 
     required_score_cols = {"topic", "url", "score"}
@@ -4367,10 +4367,10 @@ def add_retrieved_safe_reliability_scores_to_topical_judge_ranks():
         df[score_col] = scores
 
     df.to_pickle(
-        f"{OUTPUT_PATH}/metadata/response_and_sources_with_topical_judge_ranks.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.pkl"
     )
     df.to_csv(
-        f"{OUTPUT_PATH}/metadata/response_and_sources_with_topical_judge_ranks.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.csv",
         index=False,
     )
     print(f"Final length: {len(df)}")
@@ -4396,7 +4396,7 @@ def count_token_density():
         # 'o3',
     ]
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     )
     df["model"] = df["openai_models"].apply(_primary_model)
 
@@ -4476,10 +4476,10 @@ def count_token_density():
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
     token_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/token_density_by_model.csv", index=False
+        f"{OUTPUT_PATH}/chatgpt/metadata/token_density_by_model.csv", index=False
     )
     all_token_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/token_density_all_models.csv", index=False
+        f"{OUTPUT_PATH}/chatgpt/metadata/token_density_all_models.csv", index=False
     )
 
 

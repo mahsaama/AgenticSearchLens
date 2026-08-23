@@ -25,7 +25,7 @@ own figure/table under outputs/response_generation/.
 
 Pipeline dependency: extract_response_and_sources(web_df) (and
 extract_response_and_sources_other_platforms() for non-ChatGPT platforms)
-writes outputs/[<platform>/]metadata/response_and_sources.pkl -- most of
+writes outputs/<platform>/metadata/response_and_sources.pkl -- most of
 the grounding/NLI functions here read it, and it's also the prerequisite
 source_selection.py's count_unique_retrieved_safe_cited() and related
 functions need but don't produce themselves. Run it before those.
@@ -83,23 +83,11 @@ CONF = "./response_generation"
 
 
 def _platform_metadata_dir(platform):
-    """outputs/metadata for chatgpt, outputs/<platform>/metadata otherwise.
-
-    NOTE: no longer the same convention as extraction.py's _metadata_dir(),
-    which is now symmetric across all four platforms (outputs/<platform>/
-    metadata, chatgpt included) -- see its docstring. This one still
-    special-cases chatgpt because dozens of *other* hardcoded
-    f"{OUTPUT_PATH}/metadata/..." reads across this file, source_selection.py,
-    and query_reformulations.py (NLI/claim/judge caches and outputs, not
-    data_summary/web_data_summary) assume ChatGPT's artifacts live at the
-    flat path; only extraction's own outputs were symmetric enough to fix
-    without touching all of those too. Used by
+    """outputs/<platform>/metadata for every platform, ChatGPT included --
+    same convention as extraction.py's _metadata_dir(). Used by
     extract_response_and_sources[_other_platforms] so Claude/Grok/DeepSeek
     runs don't overwrite ChatGPT's response_and_sources.pkl (and each
-    other's) by all writing to the same flat path.
-    """
-    if platform == "chatgpt":
-        return f"{OUTPUT_PATH}/metadata"
+    other's) by all writing to the same path."""
     return f"{OUTPUT_PATH}/{platform}/metadata"
 
 model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
@@ -594,8 +582,8 @@ def _extract_response_and_sources_deepseek(web_df):
 
 
 def _load_response_and_sources_df():
-    pkl_path = f"{OUTPUT_PATH}/metadata/response_and_sources.pkl"
-    csv_path = f"{OUTPUT_PATH}/metadata/response_and_sources.csv"
+    pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.pkl"
+    csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.csv"
 
     try:
         df = pd.read_pickle(pkl_path)
@@ -712,21 +700,21 @@ def response_source_similarity(
         inplace=True,
     )
     df.to_csv(
-        f"{OUTPUT_PATH}/metadata/response_and_sources_similarity.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.csv",
         index=False,
     )
-    df.to_pickle(f"{OUTPUT_PATH}/metadata/response_and_sources_similarity.pkl")
+    df.to_pickle(f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.pkl")
     json_df = df.copy()
     for col in json_df.select_dtypes(include=["datetime64[ns]", "datetimetz"]).columns:
         json_df[col] = json_df[col].astype(str)
     to_json(
         json_df.to_dict(orient="records"),
-        f"{OUTPUT_PATH}/metadata/response_and_sources_similarity.json",
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.json",
     )
 
 def _load_response_source_similarity_frames():
     """Build long-form source-level scores plus cited-only response-level coverage metrics."""
-    df = pd.read_pickle(f"{OUTPUT_PATH}/metadata/response_and_sources_similarity.pkl")
+    df = pd.read_pickle(f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_similarity.pkl")
 
     per_source_rows = []
     source_cols = [
@@ -1384,11 +1372,11 @@ if __name__ == "__main__":
     # ea.plot_response_source_nli_entailment_score_boxplot(nli_method="judge", chunking_method="claim")
 
     # ea.response_source_nli_sentence_based_factuality(
-    #     input_path="outputs/metadata/response_source_nli_sentence_based_judge_claim.json"
+    #     input_path="outputs/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json"
     # )
 
     # ea.summarize_response_source_nli_sentence_based_factuality(
-    #     # input_path=f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_judge_claim.json"
+    #     # input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json"
     # )
 
     # ea.sample_response_source_nli_method_comparison()

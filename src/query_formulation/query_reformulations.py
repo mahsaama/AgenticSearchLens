@@ -306,20 +306,21 @@ def gather_query_reform_effective_factors(df):
 
     df.drop(columns=["turn_msgs"], inplace=True)
     df.to_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.csv",
         index=False,
     )
     df.reset_index().to_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
 
 # ============================================================
 # _other_platforms: Ported from our internal repo (claude/grok/deepseek).
 # Public entry is `gather_query_reform_effective_factors_other_platforms(df, platform)`.
-# Per-platform helpers are prefixed with `_` to mark as internal.
-# Path uses `{OUTPUT_PATH}/metadata/...` (ARR-AUG3 convention — OUTPUT_PATH
-# should be set to the per-platform output dir before calling).
+# Per-platform helpers are prefixed with `_` to mark as internal; each
+# writes to its own outputs/<platform>/metadata/ (previously all three, plus
+# the chatgpt-only gather_query_reform_effective_factors() above, wrote to
+# the same path and silently overwrote each other/ChatGPT's output).
 # ============================================================
 
 
@@ -392,11 +393,11 @@ def _gather_query_reform_effective_factors_claude(df):
 
     df.drop(columns=["turn_msgs"], inplace=True)
     df.to_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
+        f"{OUTPUT_PATH}/claude/metadata/query_reformulation_with_thought_src_mem.csv",
         index=False,
     )
     df.reset_index().to_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/claude/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
 
@@ -463,11 +464,11 @@ def _gather_query_reform_effective_factors_grok(df):
 
     df.drop(columns=["turn_msgs"], inplace=True)
     df.to_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
+        f"{OUTPUT_PATH}/grok/metadata/query_reformulation_with_thought_src_mem.csv",
         index=False,
     )
     df.reset_index().to_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/grok/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
 
@@ -525,17 +526,17 @@ def _gather_query_reform_effective_factors_deepseek(df):
 
     df.drop(columns=["turn_msgs"], inplace=True)
     df.to_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
+        f"{OUTPUT_PATH}/deepseek/metadata/query_reformulation_with_thought_src_mem.csv",
         index=False,
     )
     df.reset_index().to_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/deepseek/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
 
 def compute_semantic_and_syntactic_similarity():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
     metric_cols = [
@@ -621,17 +622,17 @@ def compute_semantic_and_syntactic_similarity():
     df.reset_index(drop=True, inplace=True)
     print(len(df))
     df.to_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.csv",
         index=False,
     )
     df.to_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
 
 
 def plot_semantic_and_syntactic_similarity():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
 
     cols = [
@@ -676,7 +677,7 @@ def plot_semantic_and_syntactic_similarity():
 
 def web_query_tokens_source_detection():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _add_web_query_token_source_columns(df)
 
@@ -883,7 +884,7 @@ def _plot_web_query_tokens_source_detection_from_df(
 
 def plot_web_query_tokens_source_detection():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
     )
     _plot_web_query_tokens_source_detection_from_df(df)
 
@@ -895,7 +896,7 @@ def plot_web_query_tokens_source_detection_over_time(
 ):
     factor_cols = factor_cols or DEFAULT_WEB_QUERY_TOKEN_SOURCE_FACTOR_COLS
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
     ).copy()
 
     for col in ["web_queries"] + list(factor_cols.keys()):
@@ -1018,7 +1019,7 @@ def plot_web_query_tokens_source_detection_over_time(
 
 def check_retrieved_source_effect_for_one_loop():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v3.pkl"
     )
 
     for col in [
@@ -1075,7 +1076,7 @@ def check_retrieved_source_effect_for_one_loop():
     ]
     violating_df = violating_df[inspect_cols].reset_index(drop=True)
     violating_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/one_loop_retrieved_source_effect_counterexamples.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/one_loop_retrieved_source_effect_counterexamples.csv",
         index=False,
     )
 
@@ -1381,7 +1382,7 @@ def plot_number_of_loops_histogram():
     def _platform_candidate_paths(platform):
         if platform == "openai":
             return [
-                f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
+                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
             ]
         return [
             f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl",
@@ -1448,7 +1449,7 @@ def plot_number_of_loops_histogram():
         }
 
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
     results = _plot_number_of_loops_histogram_from_df(df)
 
@@ -1573,7 +1574,7 @@ def plot_number_of_loops_histogram():
                 "platforms_plotted": [item["platform"] for item in subplot_payloads],
                 "platform_data_sources": platform_data_sources,
             },
-            f"{OUTPUT_PATH}/metadata/parallel_queries_by_query_reformulations_all_models_sources.json",
+            f"{OUTPUT_PATH}/chatgpt/metadata/parallel_queries_by_query_reformulations_all_models_sources.json",
         )
 
     return results
@@ -1585,7 +1586,7 @@ def plot_number_of_query_reformulations_over_time(
     tick_interval_months=2,
 ):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1658,7 +1659,7 @@ def plot_number_of_parallel_queries_over_time(
     tick_interval_months=2,
 ):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1754,7 +1755,7 @@ def plot_number_of_fanout_queries_and_iterations_over_time(
     xaxis_end = pd.Timestamp("2026-01-31")
     full_month_range = pd.date_range(start=xaxis_start, end=xaxis_end, freq="MS")
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1949,7 +1950,7 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
     def _platform_candidate_paths(platform):
         if platform == "openai":
             return [
-                f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
+                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
             ]
 
         candidates = [
@@ -1972,8 +1973,8 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
     def _platform_response_source_paths(platform):
         if platform == "openai":
             return [
-                f"{OUTPUT_PATH}/metadata/response_and_sources.pkl",
-                f"{OUTPUT_PATH}/metadata/response_and_sources.csv",
+                f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.pkl",
+                f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources.csv",
             ]
         return [
             f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl",
@@ -2558,10 +2559,10 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
 
 def distribution_of_web_query_and_thoughts_over_time():
     df_all_turns = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df_with_web_query = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
     )
 
     def has_non_empty_nested_list(value):
@@ -2652,7 +2653,7 @@ def distribution_of_web_query_and_thoughts_over_time():
 
 def count_models_with_web_queries():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     ).copy()
 
     if "openai_models" not in df.columns:
@@ -2805,7 +2806,7 @@ def _normalize_query_reason_label(value):
 
 def reasons_for_another_web_query():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
 
     df = _filter_query_reformulation_df_for_reason(df).copy()
@@ -3076,22 +3077,22 @@ def reasons_for_another_web_query():
 
     records_df = pd.DataFrame(records)
     records_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulations_web_query_transition_reasons.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.csv",
         index=False,
     )
     records_df.to_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulations_web_query_transition_reasons.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.pkl"
     )
     to_json(
         records,
-        f"{OUTPUT_PATH}/metadata/query_reformulations_web_query_transition_reasons.json",
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.json",
     )
     return records_df
 
 
 def plot_reasons_for_another_web_query_distribution():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulations_web_query_transition_reasons.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reasons.pkl"
     ).copy()
 
     if df.empty:
@@ -3530,17 +3531,17 @@ def plot_reasons_for_another_web_query_distribution():
 
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     plot_df_before.to_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration.csv",
         index=False,
     )
     if len(query_plot_df_before) > 0:
         query_plot_df_before.to_csv(
-            f"{OUTPUT_PATH}/metadata/query_reformulations_web_query_reason_rates_by_iteration_query_level_before_validation.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_reason_rates_by_iteration_query_level_before_validation.csv",
             index=False,
         )
     if len(plot_df_after) > 0:
         plot_df_after.to_csv(
-            f"{OUTPUT_PATH}/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration_after_validation.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_web_query_transition_reason_rates_by_iteration_after_validation.csv",
             index=False,
         )
 
@@ -3636,14 +3637,9 @@ def plot_reasons_for_another_web_query_distribution_all_models(
     }
 
     def _platform_rate_candidates(platform):
-        if platform in {"openai", "chatgpt"}:
-            return [
-                f"{OUTPUT_PATH}/metadata/{rate_file_name}",
-            ]
-        return [
-            f"{OUTPUT_PATH}/{platform}/metadata/{rate_file_name}",
-            f"{OUTPUT_PATH}/{platform}/metadata/{rate_file_name}",
-        ]
+        # This function's "openai" convention maps to extraction.py's "chatgpt".
+        dir_platform = "chatgpt" if platform in {"openai", "chatgpt"} else platform
+        return [f"{OUTPUT_PATH}/{dir_platform}/metadata/{rate_file_name}"]
 
     def _load_platform_rate_df(platform):
         for candidate_path in _platform_rate_candidates(platform):
@@ -3695,7 +3691,7 @@ def plot_reasons_for_another_web_query_distribution_all_models(
 
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     combined_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/{output_file_name}.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}.csv",
         index=False,
     )
     to_json(
@@ -3704,7 +3700,7 @@ def plot_reasons_for_another_web_query_distribution_all_models(
             "platforms_plotted": [platform for platform, _ in plotted_platforms],
             "platform_data_sources": source_paths,
         },
-        f"{OUTPUT_PATH}/metadata/{output_file_name}_sources.json",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_sources.json",
     )
 
     n_cols = len(plotted_platforms)
@@ -3908,7 +3904,7 @@ def detect_user_and_web_query_languages(
     output_stem="query_reformulations_user_and_web_query_languages",
 ):
     input_path = input_path or (
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     if input_path.endswith(".pkl"):
         df = pd.read_pickle(input_path).copy()
@@ -3988,7 +3984,7 @@ def detect_user_and_web_query_languages(
     _save_dataframe(records_df, output_stem)
     to_json(
         records_df.to_dict(orient="records"),
-        f"{OUTPUT_PATH}/metadata/{output_stem}.json",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.json",
     )
 
     if len(records_df) == 0:
@@ -4008,7 +4004,7 @@ def detect_user_and_web_query_languages(
     _save_dataframe(summary_df, summary_stem)
     to_json(
         summary_df.to_dict(orient="records"),
-        f"{OUTPUT_PATH}/metadata/{summary_stem}.json",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{summary_stem}.json",
     )
 
     print("\nDetected language summary:")
@@ -4021,8 +4017,8 @@ def plot_user_and_web_query_language_patterns(
     output_file_name="query_reformulations_user_and_web_query_language_patterns",
     top_n_pairs=10,
 ):
-    input_pkl_path = f"{OUTPUT_PATH}/metadata/{input_stem}.pkl"
-    input_csv_path = f"{OUTPUT_PATH}/metadata/{input_stem}.csv"
+    input_pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.pkl"
+    input_csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.csv"
     if os.path.exists(input_pkl_path):
         df = pd.read_pickle(input_pkl_path).copy()
     else:
@@ -4137,15 +4133,15 @@ def plot_user_and_web_query_language_patterns(
 
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     language_count_summary.to_csv(
-        f"{OUTPUT_PATH}/metadata/{output_file_name}_web_language_count_summary.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_web_language_count_summary.csv",
         index=False,
     )
     pair_summary.to_csv(
-        f"{OUTPUT_PATH}/metadata/{output_file_name}_top_language_pairs.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_top_language_pairs.csv",
         index=False,
     )
     language_pairs.to_csv(
-        f"{OUTPUT_PATH}/metadata/{output_file_name}_language_pairs.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_language_pairs.csv",
         index=False,
     )
 
@@ -4349,8 +4345,8 @@ def _add_web_query_token_source_columns(df):
 
 
 def _save_dataframe(df, output_stem):
-    csv_path = f"{OUTPUT_PATH}/metadata/{output_stem}.csv"
-    pkl_path = f"{OUTPUT_PATH}/metadata/{output_stem}.pkl"
+    csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.csv"
+    pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.pkl"
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     df.to_csv(csv_path, index=False)
     df.to_pickle(pkl_path)
@@ -4488,7 +4484,7 @@ def _base_query_record(row):
 def _save_query_eval_records(records, output_stem):
     results_df = pd.DataFrame(records)
     _save_dataframe(results_df, output_stem)
-    to_json(records, f"{OUTPUT_PATH}/metadata/{output_stem}.json")
+    to_json(records, f"{OUTPUT_PATH}/chatgpt/metadata/{output_stem}.json")
     return results_df
 
 
@@ -4564,7 +4560,7 @@ def _evaluate_type_of_user_and_web_query_df(
 
 def type_of_user_and_web_query():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _filter_query_reformulation_df(df)
     return _evaluate_type_of_user_and_web_query_df(
@@ -4642,7 +4638,7 @@ def _evaluate_relation_of_user_to_web_query_df(
 
 def relation_of_user_to_web_query():
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _filter_query_reformulation_df_for_relation(df)
     return _evaluate_relation_of_user_to_web_query_df(
@@ -5207,10 +5203,10 @@ def _build_user_and_web_query_type_temporal_df(df):
 
 def plot_user_and_web_query_type_distribution():
     user_type_pkl_path = (
-        f"{OUTPUT_PATH}/metadata/query_reformulations_user_query_types.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_query_types.pkl"
     )
     user_type_csv_path = (
-        f"{OUTPUT_PATH}/metadata/query_reformulations_user_query_types.csv"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_query_types.csv"
     )
     if os.path.exists(user_type_pkl_path):
         df = pd.read_pickle(user_type_pkl_path).copy()
@@ -5218,7 +5214,7 @@ def plot_user_and_web_query_type_distribution():
         df = pd.read_csv(user_type_csv_path).copy()
 
     source_df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     source_df = _filter_query_reformulation_df(source_df).copy()
 
@@ -5326,8 +5322,8 @@ def plot_user_and_web_query_type_distribution_all_models(
     def _query_type_candidates(platform):
         if platform in {"openai", "chatgpt"}:
             return [
-                f"{OUTPUT_PATH}/metadata/query_reformulations_user_query_types.pkl",
-                f"{OUTPUT_PATH}/metadata/query_reformulations_user_query_types.csv",
+                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_query_types.pkl",
+                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_query_types.csv",
             ]
         return [
             f"{OUTPUT_PATH}/{platform}/metadata/query_reformulations_user_query_types.pkl",
@@ -5337,8 +5333,8 @@ def plot_user_and_web_query_type_distribution_all_models(
     def _source_candidates(platform):
         if platform in {"openai", "chatgpt"}:
             return [
-                f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl",
-                f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.csv",
+                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl",
+                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.csv",
             ]
         return [
             f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl",
@@ -5399,7 +5395,7 @@ def plot_user_and_web_query_type_distribution_all_models(
 
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     combined_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/{output_file_name}.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}.csv",
         index=False,
     )
     to_json(
@@ -5407,7 +5403,7 @@ def plot_user_and_web_query_type_distribution_all_models(
             "platforms_plotted": [platform for platform, _ in plotted_platforms],
             "platform_data_sources": source_paths,
         },
-        f"{OUTPUT_PATH}/metadata/{output_file_name}_sources.json",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_sources.json",
     )
 
     n_cols = len(plotted_platforms)
@@ -5502,7 +5498,7 @@ def plot_user_and_web_query_type_distribution_all_models(
             ignore_index=True,
         )
         temporal_combined_df.to_csv(
-            f"{OUTPUT_PATH}/metadata/{temporal_output_file_name}.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/{temporal_output_file_name}.csv",
             index=False,
         )
 
@@ -5802,16 +5798,16 @@ def plot_query_specificity_distribution_by_iteration(
     def _platform_specificity_candidates(platform):
         if platform in {"openai", "chatgpt"}:
             return [
-                f"{OUTPUT_PATH}/metadata/{input_stem}.pkl",
-                f"{OUTPUT_PATH}/metadata/{input_stem}.csv",
+                f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.pkl",
+                f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.csv",
             ]
         return [
             f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl",
             f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.csv",
         ]
 
-    input_pkl_path = f"{OUTPUT_PATH}/metadata/{input_stem}.pkl"
-    input_csv_path = f"{OUTPUT_PATH}/metadata/{input_stem}.csv"
+    input_pkl_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.pkl"
+    input_csv_path = f"{OUTPUT_PATH}/chatgpt/metadata/{input_stem}.csv"
     if os.path.exists(input_pkl_path):
         df = pd.read_pickle(input_pkl_path).copy()
     else:
@@ -5824,7 +5820,7 @@ def plot_query_specificity_distribution_by_iteration(
 
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     plot_df.to_csv(
-        f"{OUTPUT_PATH}/metadata/{output_file_name}.csv",
+        f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}.csv",
         index=False,
     )
 
@@ -5962,7 +5958,7 @@ def plot_query_specificity_distribution_by_iteration(
     if len(specificity_stage_frames) > 1:
         combined_specificity_df = pd.concat(specificity_stage_frames, ignore_index=True)
         combined_specificity_df.to_csv(
-            f"{OUTPUT_PATH}/metadata/{output_file_name}_all_platforms.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_all_platforms.csv",
             index=False,
         )
         to_json(
@@ -5974,7 +5970,7 @@ def plot_query_specificity_distribution_by_iteration(
                 ],
                 "platform_data_sources": specificity_source_paths,
             },
-            f"{OUTPUT_PATH}/metadata/{output_file_name}_all_platforms_sources.json",
+            f"{OUTPUT_PATH}/chatgpt/metadata/{output_file_name}_all_platforms_sources.json",
         )
 
     overall_rows = []
@@ -6121,7 +6117,7 @@ def plot_query_specificity_distribution_by_iteration(
             f"{output_file_name}_overall_specificity_direction"
         )
         overall_df.to_csv(
-            f"{OUTPUT_PATH}/metadata/{overall_output_file_name}.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/{overall_output_file_name}.csv",
             index=False,
         )
         to_json(
@@ -6132,7 +6128,7 @@ def plot_query_specificity_distribution_by_iteration(
                 ],
                 "platform_data_sources": source_paths,
             },
-            f"{OUTPUT_PATH}/metadata/{overall_output_file_name}_sources.json",
+            f"{OUTPUT_PATH}/chatgpt/metadata/{overall_output_file_name}_sources.json",
         )
 
         line_fig = go.Figure()
@@ -6215,7 +6211,7 @@ def plot_query_specificity_distribution_by_iteration(
             f"{output_file_name}_dimension_specificity_direction"
         )
         dimension_direction_df.to_csv(
-            f"{OUTPUT_PATH}/metadata/{dimension_output_file_name}.csv",
+            f"{OUTPUT_PATH}/chatgpt/metadata/{dimension_output_file_name}.csv",
             index=False,
         )
         to_json(
@@ -6226,7 +6222,7 @@ def plot_query_specificity_distribution_by_iteration(
                 ],
                 "platform_data_sources": source_paths,
             },
-            f"{OUTPUT_PATH}/metadata/{dimension_output_file_name}_sources.json",
+            f"{OUTPUT_PATH}/chatgpt/metadata/{dimension_output_file_name}_sources.json",
         )
 
         if overall_rows:
@@ -6438,7 +6434,7 @@ def _plot_user_web_query_relation_distribution_from_df(
         ]
     )
     assignment_path = (
-        f"{OUTPUT_PATH}/metadata/"
+        f"{OUTPUT_PATH}/chatgpt/metadata/"
         f"{assignment_file_name}"
     )
     assignment_df.to_csv(
@@ -6557,7 +6553,7 @@ def _plot_user_web_query_relation_distribution_from_df(
 
 def plot_user_web_query_relation_distribution():
     df = pd.read_csv(
-        f"{OUTPUT_PATH}/metadata/query_reformulations_user_web_query_relations.csv"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulations_user_web_query_relations.csv"
     )
     _plot_user_web_query_relation_distribution_from_df(df)
 
@@ -6565,7 +6561,7 @@ def plot_user_web_query_relation_distribution():
 def query_specificity_evaluation():
     output_stem = "query_reformulations_query_specificity"
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/metadata/query_reformulation_with_thought_src_mem.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     df = _filter_query_reformulation_df(df)
 

@@ -82,13 +82,13 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 CONF = "./response_generation"
 
 RESPONSE_SOURCE_EFFECT_EVALUATIONS_BASE = (
-    f"{OUTPUT_PATH}/metadata/response_source_effect_evaluations"
+    f"{OUTPUT_PATH}/chatgpt/metadata/response_source_effect_evaluations"
 )
 RESPONSE_SOURCE_NLI_SENTENCE_BASED_JUDGE_BASE = (
-    f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_judge"
+    f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge"
 )
 RESPONSE_SOURCE_NLI_SENTENCE_BASED_BERT_BASE = (
-    f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_bert"
+    f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_bert"
 )
 EXTERNAL_PLATFORM_CLAIM_LATEST_PRECEDING_BASES = {
     "Claude": {
@@ -121,7 +121,7 @@ EXTERNAL_PLATFORM_ORDER = ["ChatGPT"] + list(
 )
 
 CITED_URL_VALIDITY_LABELS_PATH = (
-    f"{OUTPUT_PATH}/metadata/cited_url_validity_labels.json"
+    f"{OUTPUT_PATH}/chatgpt/metadata/cited_url_validity_labels.json"
 )
 BERT_NLI_MODEL_NAME = os.getenv("BERT_NLI_MODEL_NAME")
 BERT_NLI_MAX_LENGTH = int(os.getenv("BERT_NLI_MAX_LENGTH"))
@@ -1354,7 +1354,7 @@ def response_source_claim_cache_factuality(
 
 
 def summarize_response_source_nli_sentence_based_factuality(
-    input_path=f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_judge_claim.json",
+    input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json",
     factuality_input_path=None,
     n_boot=1000,
     random_state=42,
@@ -1727,7 +1727,7 @@ def summarize_response_source_nli_sentence_based_factuality(
 
 
 def plot_claim_bucket_tranco_rank_comparison(
-    input_path=f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_judge_claim.json",
+    input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json",
     tranco_input_path=None,
     file_name="claim_bucket_tranco_rank_comparison",
 ):
@@ -1746,7 +1746,7 @@ def plot_claim_bucket_tranco_rank_comparison(
         raise ValueError(f"Expected a JSON list at {input_path}")
 
     tranco_input_path = tranco_input_path or (
-        f"{OUTPUT_PATH}/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
     )
     if not os.path.exists(tranco_input_path):
         raise FileNotFoundError(
@@ -1955,7 +1955,7 @@ def plot_claim_bucket_tranco_rank_comparison(
 
 
 def diagnose_snippet_unexplained_rows(
-    input_path=f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_judge_claim_snippet.json",
+    input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim_snippet.json",
 ):
     """
     Diagnose why snippet-mode judge outputs produce many Unexplained rows.
@@ -2066,8 +2066,8 @@ def diagnose_snippet_unexplained_rows(
 
 
 def sample_response_source_nli_method_comparison(
-    full_input_path=f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_judge_claim.json",
-    snippet_input_path=f"{OUTPUT_PATH}/metadata/response_source_nli_sentence_based_judge_claim_snippet.json",
+    full_input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json",
+    snippet_input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim_snippet.json",
     sample_size=10,
     random_state=42,
     output_path=None,
@@ -2086,7 +2086,7 @@ def sample_response_source_nli_method_comparison(
 
     if output_path is None:
         output_path = (
-            f"{OUTPUT_PATH}/metadata/"
+            f"{OUTPUT_PATH}/chatgpt/metadata/"
             "response_source_nli_method_comparison_samples.json"
         )
 
