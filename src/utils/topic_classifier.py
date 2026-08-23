@@ -9,9 +9,9 @@ for anyone running this pipeline on their own export. Rather than label
 every conversation "Other" in that (common) case, `classify_topic` derives a
 topic directly from the conversation's own text: a simple, transparent
 keyword match against the same topic taxonomy
-(web_tool_invocation.topic_to_situation_mapping) the rest of the pipeline
-already expects topic values to be drawn from. No API calls, no ML model --
-just observing what the conversation is actually about.
+(web_tool_invocation.ALL_TOPICS) the rest of the pipeline already expects
+topic values to be drawn from. No API calls, no ML model -- just
+observing what the conversation is actually about.
 
 This is a heuristic, not a replacement for the paper's LLM-annotated
 labels: it is meant to make the pipeline meaningfully topic-aware out of
@@ -23,7 +23,7 @@ from collections import Counter
 
 # Keyword lists are intentionally simple substrings (checked against
 # lowercased text), one list per topic in the taxonomy every other analysis
-# module already expects (see web_tool_invocation.topic_to_situation_mapping).
+# module already expects (see web_tool_invocation.ALL_TOPICS).
 # "Misc" has no keywords -- like "Other", it's a fallback only, never a match.
 _TOPIC_KEYWORDS = {
     "Travel": ["travel", "trip", "flight", "vacation", "hotel", "itinerary",

@@ -38,58 +38,27 @@ from src.web_search_decision.extraction import (
 
 CONF = "./web_tool_invocation"
 
-topic_to_situation_mapping = {
-    "Travel": "High-Investment Recommendation",
-    "Cars": "High-Investment Recommendation",
-    "Mobile phones": "High-Investment Recommendation",
-    "Gift Suggestion": "High-Investment Recommendation",
-    "Fashion": "High-Investment Recommendation",
-    "Household Work": "High-Investment Recommendation",
-    "Event Planning": "High-Investment Recommendation",
+# Flat list of every topic in the taxonomy the rest of the pipeline expects
+# `topic` column values to be drawn from (see topic_classifier.py's
+# _TOPIC_KEYWORDS, which mirrors this same list). Used to make sure
+# zero-count topics still show up as a 0% row instead of silently being
+# left out of per-topic breakdowns -- see topic_distriction_of_whole_data.
+ALL_TOPICS = [
+    "Travel", "Cars", "Mobile phones", "Gift Suggestion", "Fashion",
+    "Household Work", "Event Planning",
+    "Weather and Climate", "Finance", "Energy", "Politics & History",
+    "Games", "Music", "Military",
+    "Health", "Mental Health", "Law", "Security & Privacy",
+    "Scientific Writing", "Books", "Programming",
+    "AI", "GPT", "Science", "Physics", "Astrology", "Religion",
+    "Gender and Diversity", "Animals/Pets information", "Art", "Drinks",
+    "Languages", "Time conversion",
+    "Math", "Troubleshooting", "Cooking",
+    "Social Media Content Generation", "Email Drafting", "Job Search",
+    "Art Generation",
+    "Misc", "Roleplay",
+]
 
-    "Weather and Climate": "Volatile/Temporal Information",
-    "Finance": "Volatile/Temporal Information",
-    "Energy": "Volatile/Temporal Information",
-    "Politics & History": "Volatile/Temporal Information",
-    "Games": "Volatile/Temporal Information",
-    "Music": "Volatile/Temporal Information",
-    "Military": "Volatile/Temporal Information",
-
-    "Health": "High-Stakes Accuracy",
-    "Mental Health": "High-Stakes Accuracy",
-    "Law": "High-Stakes Accuracy",
-    "Security & Privacy": "High-Stakes Accuracy",
-
-    "Scientific Writing": "External Reference",
-    "Books": "External Reference",
-    "Programming": "External Reference",
-
-    "AI": "Low Confidence/Niche Fact",
-    "GPT": "Low Confidence/Niche Fact",
-    "Science": "Low Confidence/Niche Fact",
-    "Physics": "Low Confidence/Niche Fact",
-    "Astrology": "Low Confidence/Niche Fact",
-    "Religion": "Low Confidence/Niche Fact",
-    "Gender and Diversity": "Low Confidence/Niche Fact",
-    "Animals/Pets information": "Low Confidence/Niche Fact",
-    "Art": "Low Confidence/Niche Fact",
-    "Drinks": "Low Confidence/Niche Fact",
-
-    "Languages": "Unfamiliar Term/Typo",
-    "Time conversion": "Unfamiliar Term/Typo",
-
-    "Math": "User Verification",
-    "Troubleshooting": "User Verification",
-    "Cooking": "User Verification",
-
-    "Social Media Content Generation": "Attribution/Sourcing Needed",
-    "Email Drafting": "Attribution/Sourcing Needed",
-    "Job Search": "Attribution/Sourcing Needed",
-    "Art Generation": "Attribution/Sourcing Needed",
-
-    "Misc": "Explicit Command",
-    "Roleplay": "Explicit Command"
-}
 
 def _primary_model(models):
     if not isinstance(models, list):
@@ -679,48 +648,6 @@ def topic_distribution_of_web_data(web_df, platform="chatgpt"):
     fig.update_yaxes(tickfont=dict(size=10))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
-#      topic  rate                                                                                  
-# 0                           Finance  6440                                                                                  
-# 1                             Games  3919                                                                                  
-# 2                            Health  3442                                                                                  
-# 3                   Troubleshooting  2347                                                                                  
-# 4                            Travel  2284                                                                                  
-# 5                Politics & History  1502                                                                                  
-# 6                              Cars  1446                                                                                  
-# 7                          Roleplay  1427                                                                                  
-# 8                     Mental Health  1278                                                                                  
-# 9                           Fashion  1268                                                                                  
-# 10                    Mobile phones  1158                                                                                  
-# 11                            Music  1047                                                                                  
-# 12                          Cooking   992                                                                                  
-# 13                   Art Generation   898                                                                                  
-# 14  Social Media Content Generation   877                                                                                  
-# 15                        Languages   799                                                                                  
-# 16                       Job Search   710
-# 17                            Books   668
-# 18                  Gift Suggestion   652
-# 19                              Law   635
-# 20                   Email Drafting   553
-# 21         Animals/Pets information   529
-# 22              Weather and Climate   465
-# 23                   Household Work   448
-# 24                      Programming   421
-# 25                           Energy   413
-# 26                          Science   385
-# 27                         Religion   348
-# 28                        Astrology   260
-# 29                           Drinks   260
-# 30                             Misc   244
-# 31                             Math   237
-# 32               Security & Privacy   216
-# 33                              GPT   191
-# 34             Gender and Diversity   190
-# 35                         Military   143
-# 36                  Time conversion   112
-# 37                              Art    76
-# 38               Scientific Writing    49
-# 39                   Event Planning    30
-
  
 def topic_distriction_of_whole_data(df, platform="chatgpt"):
     # in the whole turns, rate of each topic calling the web over number of all turns with that topic: what topics are more prune to call web?
@@ -737,8 +664,8 @@ def topic_distriction_of_whole_data(df, platform="chatgpt"):
         set(df["topic"].dropna().astype(str))
         | {
             _normalize_topic_name(topic)
-            for topic in topic_to_situation_mapping
-            if topic not in {"Other", "Misc"}
+            for topic in ALL_TOPICS
+            if topic not in {"Other"}
         }
     )
 
