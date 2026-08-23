@@ -58,6 +58,16 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+🔁 In every new terminal session after that, just reactivate it (from the repo
+root) before running anything -- no need to recreate it or reinstall:
+
+```bash
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+```
+
+You'll see `(.venv)` show up in your prompt once it's active; run `deactivate`
+to leave it.
+
 One-time extras some modules need at runtime:
 
 ```bash
