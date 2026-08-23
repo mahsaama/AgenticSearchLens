@@ -526,72 +526,84 @@ def web_call_trend_over_time(df, platform="chatgpt"):
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def web_call_trend_over_time_all_convai(df):
-    min_valid_month = pd.Timestamp("2023-01-01")
-    cat = "Web & Browsing"
+def web_call_trend_over_time_all_convai(df=None):
+    """Cross-platform trend of monthly web-call rate, one line per platform.
 
-    def _monthly_web_rate(platform_df, tool_to_category):
-        platform_df = platform_df.copy()
-        platform_df["tools"] = platform_df["tools"].apply(_as_list_value)
-        platform_df["categories"] = platform_df["tools"].apply(
-            lambda tools: [tool_to_category.get(tool, "Others") for tool in tools]
-        )
-        platform_df["month"] = (
-            pd.to_datetime(platform_df["month"], errors="coerce", utc=True)
+    Was driven by a tools -> category lookup (`_tool_to_category_lookup`)
+    checking for the "Web & Browsing" category, which needs a hand-built
+    outputs/<platform>/metadata/all_tools_categorized.json -- a file that
+    doesn't exist for any of the 4 platforms here, so every run silently
+    fell back to `_AutoToolCategoryLookup`'s from-scratch heuristic (and
+    printed a "No such file" error per platform on every call).
+
+    data_summary.pkl (every turn) and web_data_summary.pkl (data_summary
+    filtered down to turns that invoked a Web-search tool) already encode
+    exactly this same web-vs-not split, straight from extraction.py's own
+    per-platform detection (extraction.web_call_mask) -- no category file
+    needed, and no risk of disagreeing with what extraction.py itself
+    reports as a web-call turn.
+
+    `df` is accepted (and ignored) for backwards compatibility with the old
+    call signature -- ChatGPT's data is now loaded the same way as the
+    other three platforms, not passed in by the caller.
+    """
+    min_valid_month = pd.Timestamp("2023-01-01")
+    platform_display = {
+        "chatgpt": "ChatGPT",
+        "claude": "Claude",
+        "grok": "Grok",
+        "deepseek": "DeepSeek",
+    }
+
+    def _normalize_month(frame):
+        frame = frame.copy()
+        frame["month"] = (
+            pd.to_datetime(frame["month"], errors="coerce", utc=True)
             .dt.tz_convert(None)
             .dt.to_period("M")
             .dt.to_timestamp()
         )
-        platform_df = platform_df.dropna(subset=["month"])
-        platform_df = platform_df[platform_df["month"] >= min_valid_month].copy()
+        return frame.dropna(subset=["month"])
 
-        platform_df["cat_used"] = platform_df["categories"].apply(lambda cats: cat in cats)
-        total_web_turns = int(platform_df["cat_used"].sum())
-        monthly_rate = (
-            platform_df.groupby("month")["cat_used"]
-            .mean()
-            .reset_index(name="cat_tooly_turns")
+    def _monthly_web_rate(platform):
+        full_df = _normalize_month(load_whole_data_from_file(fmt="pkl", platform=platform))
+        full_df = full_df[full_df["month"] >= min_valid_month]
+        try:
+            web_df = _normalize_month(load_web_data_from_file(fmt="pkl", platform=platform))
+            web_df = web_df[web_df["month"] >= min_valid_month]
+        except FileNotFoundError:
+            web_df = full_df.iloc[0:0]
+
+        monthly_total = full_df.groupby("month").size().rename("total_turns")
+        monthly_web = web_df.groupby("month").size().rename("web_turns")
+        monthly = (
+            pd.concat([monthly_total, monthly_web], axis=1)
+            .fillna(0)
+            .reset_index()
             .sort_values("month")
         )
-        return monthly_rate, total_web_turns, len(platform_df)
+        monthly["cat_tooly_turns"] = (
+            monthly["web_turns"] / monthly["total_turns"].replace(0, pd.NA)
+        ).fillna(0.0)
+        return monthly, int(len(web_df)), int(len(full_df))
 
-    openai_tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/chatgpt/metadata/all_tools_categorized.json")
-    openai_monthly, openai_total_web_turns, openai_total_turns = _monthly_web_rate(
-        df, openai_tool_to_category
-    )
-    overall_rates = [
-        {
-            "platform": "ChatGPT",
-            "web_call_turns": openai_total_web_turns,
-            "num_turns": openai_total_turns,
-        }
-    ]
+    overall_rates = []
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=openai_monthly["month"],
-        y=openai_monthly["cat_tooly_turns"],
-        mode="lines+markers",
-        name=f"ChatGPT",
-    ))
-
-    for cai in ["claude", "grok", "deepseek"]:
-        cai_df = load_whole_data_from_file(fmt="pkl", platform=cai)
-        cai_tool_to_category = _tool_to_category_lookup(f"{OUTPUT_PATH}/{cai}/metadata/all_tools_categorized.json")
-        monthly_tooly_turns, total_web_turns, total_turns = _monthly_web_rate(
-            cai_df, cai_tool_to_category
-        )
+    for platform in PLATFORMS:
+        monthly, total_web_turns, total_turns = _monthly_web_rate(platform)
+        display_name = platform_display.get(platform, platform.capitalize())
         overall_rates.append(
             {
-                "platform": cai.capitalize(),
+                "platform": display_name,
                 "web_call_turns": total_web_turns,
                 "num_turns": total_turns,
             }
         )
         fig.add_trace(go.Scatter(
-            x=monthly_tooly_turns["month"],
-            y=monthly_tooly_turns["cat_tooly_turns"],
+            x=monthly["month"],
+            y=monthly["cat_tooly_turns"],
             mode="lines+markers",
-            name=cai.capitalize(),
+            name=display_name,
         ))
 
     overall_rates_df = pd.DataFrame(overall_rates)
@@ -612,6 +624,7 @@ def web_call_trend_over_time_all_convai(df):
     fig.update_yaxes(tickformat=".0%")
     file_name = "tooly_turns_rate_over_time_across_convais"
     fig = with_paper_style(fig, config=styler(20, 24), legend_pos=(0.5, 1))
+    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
     fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
 
 
@@ -1606,7 +1619,6 @@ if __name__ == "__main__":
     # under its own outputs/<platform>/web_tool_invocation/ so results from
     # different platforms never overwrite each other.
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-    chatgpt_full_df = None
     for platform in PLATFORMS:
         try:
             full_df = load_whole_data_from_file(fmt="pkl", platform=platform)
@@ -1614,8 +1626,6 @@ if __name__ == "__main__":
             print(f"[{platform}] Skipping -- failed to load extracted data: {e}")
             continue
         print(f"[{platform}] # all turns:", len(full_df))
-        if platform == "chatgpt":
-            chatgpt_full_df = full_df
 
         try:
             web_df = load_web_data_from_file(fmt="pkl", platform=platform)
@@ -1631,8 +1641,6 @@ if __name__ == "__main__":
         topic_prompt_volume_and_web_rate_over_time(full_df, top_k=5, platform=platform)
 
     # Cross-platform comparison plot: combines all four platforms into one
-    # figure by design, so it runs once (not per platform), seeded with
-    # ChatGPT's df -- see its own docstring/_load_platform_df for how it
-    # loads the other three itself.
-    if chatgpt_full_df is not None:
-        web_call_trend_over_time_all_convai(chatgpt_full_df)
+    # figure by design, so it runs once (not per platform) -- it loads all
+    # 4 platforms' data_summary/web_data_summary itself, see its docstring.
+    web_call_trend_over_time_all_convai()
