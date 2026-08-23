@@ -148,34 +148,70 @@ def extract_retrieved_cited_source(web_df):
                                 }
                             )
 
-                            
-                        if "fallback_items" in r and r["fallback_items"]:
-                            keys_to_check = ["images", "fallback_items"]
-                        else:
-                            keys_to_check = ["images", "items"]
+                # Structured item-level citations (content_references
+                # entries carrying their own items/fallback_items list with
+                # per-item refs, e.g. type == "grouped_webpages") -- NOT
+                # gated on matched_text above: newer exports' entries of
+                # this kind never carry matched_text at all (no inline
+                # ...-delimited marker in the response text),
+                # so nesting this under `if matched_text:` silently dropped
+                # every citation for any export using this newer shape.
+                if "fallback_items" in r and r["fallback_items"]:
+                    keys_to_check = ["images", "fallback_items"]
+                else:
+                    keys_to_check = ["images", "items"]
 
-                        for key in keys_to_check:
-                            items = r.get(key, [])
-                            refs = r.get("refs", [])
-                            if items:
-                                for ii, item in enumerate(items):
-                                    url = item.get("url", "").removesuffix("?utm_source=chatgpt.com").removesuffix("&utm_source=chatgpt.com")
-                                    d = urlparse(url).netloc.replace("www.", "")
-                                    if item.get("refs", []):
-                                        ref = item.get("refs", [])[0]
-                                    else:
-                                        ref = refs[ii] if ii < len(refs) else {}
-                                    if url:
-                                        srcs_cited.append(
-                                            {
-                                                "url": url,
-                                                "domain": d,
-                                                "title": item.get("title", ""),
-                                                "snippet": item.get("snippet", ""),
-                                                "ref_index": ref.get("ref_index", None),
-                                                "turn_index": ref.get("turn_index", None)
-                                            }
-                                        )
+                for key in keys_to_check:
+                    items = r.get(key, [])
+                    refs = r.get("refs", [])
+                    if items:
+                        for ii, item in enumerate(items):
+                            url = item.get("url", "").removesuffix("?utm_source=chatgpt.com").removesuffix("&utm_source=chatgpt.com")
+                            d = urlparse(url).netloc.replace("www.", "")
+                            if item.get("refs", []):
+                                ref = item.get("refs", [])[0]
+                            else:
+                                ref = refs[ii] if ii < len(refs) else {}
+                            if url:
+                                srcs_cited.append(
+                                    {
+                                        "url": url,
+                                        "domain": d,
+                                        "title": item.get("title", ""),
+                                        "snippet": item.get("snippet", ""),
+                                        "ref_index": ref.get("ref_index", None),
+                                        "turn_index": ref.get("turn_index", None)
+                                    }
+                                )
+
+                # Footnote-style aggregate source lists
+                # (type == "sources_footnote"): a plain url/title list with
+                # no per-item ref_index/turn_index. _dedupe_cited_items
+                # below prefers the richer grouped_webpages entry for the
+                # same URL when both are present.
+                footnote_sources = r.get("sources", [])
+                if isinstance(footnote_sources, list):
+                    for src in footnote_sources:
+                        if not isinstance(src, dict):
+                            continue
+                        url = (
+                            str(src.get("url", ""))
+                            .removesuffix("?utm_source=chatgpt.com")
+                            .removesuffix("&utm_source=chatgpt.com")
+                        )
+                        if not url:
+                            continue
+                        d = urlparse(url).netloc.replace("www.", "")
+                        srcs_cited.append(
+                            {
+                                "url": url,
+                                "domain": d,
+                                "title": src.get("title", ""),
+                                "snippet": "",
+                                "ref_index": None,
+                                "turn_index": None,
+                            }
+                        )
 
 
         web_df.at[i, "srcs_retrieved"] = srcs_retrieved
@@ -764,96 +800,6 @@ def compute_average_citations_and_retrievals_per_response_by_model(
             grounding_level=grounding_level,
             label_prefix=f"chatgpt::{model_name}",
         )
-
-
-def plot_retrieved_urls_per_web_query_histogram(unique=False, bins=40):
-    for model in PLATFORMS:
-        df = _prepare_source_count_df(model)
-        df = df.copy()
-        query_count_lookup = _load_query_count_lookup(model)
-        query_groups_lookup = _load_query_groups_lookup(model)
-        query_keys = set(query_count_lookup.keys())
-        df["web_queries"] = df.apply(
-            lambda row: query_groups_lookup.get(
-                (
-                    str(row.get("user_id", "")),
-                    str(row.get("conv_id", "")),
-                    str(row.get("turn_id", "")),
-                ),
-                [],
-            ),
-            axis=1,
-        )
-
-        retrieved_counts = df["srcs_retrieved"].apply(
-            lambda items: _source_item_count(items, key="url", unique=unique)
-        )
-        query_trace_counts = df.apply(
-            lambda row: query_count_lookup.get(
-                (
-                    str(row.get("user_id", "")),
-                    str(row.get("conv_id", "")),
-                    str(row.get("turn_id", "")),
-                ),
-                np.nan,
-            ),
-            axis=1,
-        )
-        has_web_query_data = df.apply(
-            lambda row: (
-                str(row.get("user_id", "")),
-                str(row.get("conv_id", "")),
-                str(row.get("turn_id", "")),
-            ) in query_keys,
-            axis=1,
-        )
-
-        query_url_counts = []
-        for _, row in df[has_web_query_data].iterrows():
-            query_url_counts.extend(
-                _build_query_url_counts_from_response(
-                    row.get("web_queries", []),
-                    row.get("srcs_retrieved", []),
-                    unique=unique,
-                )
-            )
-        if not query_url_counts:
-            continue
-
-        print(model)
-        print(len(query_url_counts))
-        print(float(np.mean(query_url_counts)))
-        print(float(np.sum(query_url_counts)))
-
-        plot_df = pd.DataFrame(
-            {"retrieved_urls_per_web_query": query_url_counts}
-        )
-        fig = go.Figure()
-        fig.add_trace(
-            go.Histogram(
-                x=plot_df["retrieved_urls_per_web_query"],
-                nbinsx=bins,
-                marker_color="#3765E5",
-                showlegend=False,
-            )
-        )
-        fig.update_layout(
-            xaxis_title="Retrieved URLs per Web Query",
-            yaxis_title="Count",
-            bargap=0.08,
-            margin=dict(l=70, b=70, t=40, r=30),
-        )
-
-        model_output_dir = f"{OUTPUT_PATH}/{model}/{CONF}"
-        os.makedirs(model_output_dir, exist_ok=True)
-        file_name = "retrieved_urls_per_web_query_histogram"
-        pdf_path = f"{model_output_dir}/{file_name}.pdf"
-        fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
-        try:
-            print(f"Writing histogram PDF: {pdf_path}")
-            fig.write_image(pdf_path, format="pdf")
-        except Exception as exc:
-            print(f"Failed to write histogram PDF for {model}: {exc}")
 
 def _normalize_domain_for_top_plots(domain):
     if not isinstance(domain, str):
@@ -1523,303 +1469,6 @@ def plot_retrieved_url_counts_over_time_by_model(platform="chatgpt"):
     fig = with_paper_style(fig, config=styler(18, 18), legend_pos=(0.8, 1.8))
     fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
-
-def plot_retrieved_cited_positions(separate_cited_external_internal=False, platform="chatgpt"):
-    """Per-source retrieved/cited "Rank" position over web-query "Loop"
-    iteration.
-
-    Reads response_and_sources.pkl -- produced for every platform by
-    response_generation.extract_response_and_sources[_other_platforms] --
-    rather than the ChatGPT-only retrieved_cited_extracted_from_srcs.pkl
-    this used to be tied to. ref_index/turn_index (the source's rank
-    within its retrieval batch, and which web-query loop it came from) are
-    only populated by ChatGPT's extractor (and ref_index alone by
-    DeepSeek's, via its SEARCH fragments' cite_index) -- Claude/Grok's
-    srcs_retrieved/srcs_cited entries carry neither field, since their
-    simpler single-shot tool-call flow doesn't track either concept the
-    same way. For sources missing them, this falls back to: rank = the
-    source's own 0-based position within its row's srcs_retrieved/
-    srcs_cited list (still a meaningful "how early did this source
-    appear" signal), and turn_index = 0 (one implicit loop), so every
-    platform gets a real, if less granular, plot instead of being
-    silently excluded.
-    """
-    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
-    os.makedirs(output_dir, exist_ok=True)
-    df = pd.read_pickle(
-        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl"
-    ).copy()
-
-    def _valid_ref_index(value, fallback=None):
-        try:
-            rank = float(value)
-        except (TypeError, ValueError):
-            rank = np.nan
-        if not np.isfinite(rank) or rank < 0:
-            if fallback is None:
-                return np.nan
-            rank = float(fallback)
-        # Source ranks are 0-indexed in metadata; shift by +1 for plotting so
-        # log10(rank) starts at 0 instead of negative values.
-        return rank + 1.0
-
-    def _append_average_rank(rows, group_name, ranks):
-        valid_ranks = [rank for rank in ranks if np.isfinite(rank)]
-        if valid_ranks:
-            rows.append(
-                {
-                    "group": group_name,
-                    "average_rank": float(np.mean(valid_ranks)),
-                }
-            )
-
-    plot_rows = []
-    avg_rank_rows = []
-    for _, row in df.iterrows():
-        retrieved_urls = {
-            _normalize_url_for_source_matching(item.get("url", ""))
-            for item in row["srcs_retrieved"]
-            if isinstance(item, dict) and item.get("url", "")
-        }
-        retrieved_ref_indices = []
-        for list_idx, item in enumerate(row["srcs_retrieved"]):
-            if not isinstance(item, dict):
-                continue
-            ref_index = _valid_ref_index(item.get("ref_index"), fallback=list_idx)
-            if not np.isfinite(ref_index):
-                continue
-            retrieved_ref_indices.append(ref_index)
-            turn_index = item.get("turn_index")
-            if turn_index is None:
-                turn_index = 0
-            plot_rows.append(
-                {
-                    "group": "Retrieved URLs",
-                    "ref_index": ref_index,
-                    "turn_index": turn_index,
-                }
-            )
-
-        cited_ref_indices = []
-        cited_external_ref_indices = []
-        cited_internal_ref_indices = []
-        for list_idx, item in enumerate(row["srcs_cited"]):
-            if not isinstance(item, dict):
-                continue
-            ref_index = _valid_ref_index(item.get("ref_index"), fallback=list_idx)
-            if not np.isfinite(ref_index):
-                continue
-            if separate_cited_external_internal:
-                cited_url = _normalize_url_for_source_matching(item.get("url", ""))
-                is_external = bool(cited_url and cited_url in retrieved_urls)
-                if is_external:
-                    group_name = "Cited Retrieved/External URLs"
-                    cited_external_ref_indices.append(ref_index)
-                else:
-                    group_name = "Cited Unexplained/Internal URLs"
-                    cited_internal_ref_indices.append(ref_index)
-            else:
-                group_name = "Cited URLs"
-                cited_ref_indices.append(ref_index)
-            turn_index = item.get("turn_index")
-            if turn_index is None:
-                turn_index = 0
-            plot_rows.append(
-                {
-                    "group": group_name,
-                    "ref_index": ref_index,
-                    "turn_index": turn_index,
-                }
-            )
-
-        _append_average_rank(avg_rank_rows, "Retrieved URLs", retrieved_ref_indices)
-        if separate_cited_external_internal:
-            _append_average_rank(
-                avg_rank_rows,
-                "Cited Retrieved/External URLs",
-                cited_external_ref_indices,
-            )
-            _append_average_rank(
-                avg_rank_rows,
-                "Cited Unexplained/Internal URLs",
-                cited_internal_ref_indices,
-            )
-        else:
-            _append_average_rank(avg_rank_rows, "Cited URLs", cited_ref_indices)
-
-    plot_df = pd.DataFrame(plot_rows)
-    avg_rank_df = pd.DataFrame(avg_rank_rows)
-    if len(plot_df) == 0 and len(avg_rank_df) == 0:
-        return
-
-    if separate_cited_external_internal:
-        rank_specs = [
-            ("Retrieved URLs", "Retrieved", "#636EFA"),
-            (
-                "Cited Unexplained/Internal URLs",
-                "Cited<br>Unexplained/Internal",
-                "#E45756",
-            ),
-            (
-                "Cited Retrieved/External URLs",
-                "Cited<br>Retrieved/External",
-                "#00CC96",
-            ),
-        ]
-    else:
-        rank_specs = [
-            ("Retrieved URLs", "Retrieved", "#636EFA"),
-            ("Cited URLs", "Cited", "#EF553B"),
-        ]
-    group_order = [group_name for group_name, _label, _color in rank_specs]
-
-    if len(plot_df) > 0:
-        aggregated_df = (
-            plot_df.groupby(["group", "turn_index", "ref_index"])
-            .size()
-            .reset_index(name="count")
-        )
-
-        if len(group_order) == 1:
-            offsets = [0.0]
-        elif len(group_order) == 2:
-            offsets = [-0.15, 0.15]
-        elif len(group_order) == 3:
-            offsets = [-0.2, 0.0, 0.2]
-        else:
-            offsets = np.linspace(-0.25, 0.25, len(group_order))
-        x_offsets = {group_name: float(offset) for group_name, offset in zip(group_order, offsets)}
-
-        fig = go.Figure()
-        for group_name in group_order:
-            subset = aggregated_df[aggregated_df["group"] == group_name]
-            fig.add_trace(
-                go.Scatter(
-                    x=subset["turn_index"] + 1 + x_offsets[group_name],
-                    y=subset["ref_index"],
-                    mode="markers",
-                    name=group_name,
-                    marker=dict(
-                        size=3,
-                    ),
-                    hovertemplate="Loop=%{x}<br>Rank=%{y}<extra></extra>",
-                )
-            )
-
-        fig.update_layout(
-            xaxis_title="Loop",
-            yaxis_title="Rank",
-        )
-        fig.update_xaxes(dtick=5)
-        fig.update_yaxes(autorange="reversed")
-        file_name = "retrieved_cited_positions"
-        if separate_cited_external_internal:
-            file_name += "_split_cited"
-        fig = with_paper_style(fig, config=styler(18, 16))
-        fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
-
-    if len(avg_rank_df) == 0:
-        return
-
-    violin_fig = go.Figure()
-    use_log10_violin = separate_cited_external_internal
-    if use_log10_violin:
-        valid_values = pd.to_numeric(
-            avg_rank_df["average_rank"], errors="coerce"
-        ).to_numpy()
-        valid_values = valid_values[np.isfinite(valid_values)]
-        valid_values = valid_values[valid_values > 0]
-        if len(valid_values) == 0:
-            return
-        valid_log_values = np.log10(valid_values)
-        main_rank_min = float(np.floor(np.min(valid_log_values)))
-        main_rank_max = float(np.ceil(np.max(valid_log_values)))
-        if not np.isfinite(main_rank_min):
-            main_rank_min = 0.0
-        if not np.isfinite(main_rank_max):
-            main_rank_max = 1.0
-        if main_rank_max <= main_rank_min:
-            main_rank_max = main_rank_min + 1.0
-    else:
-        main_rank_min = 0.0
-        main_rank_max = float(avg_rank_df["average_rank"].max())
-        if not np.isfinite(main_rank_max) or main_rank_max <= 0:
-            main_rank_max = 1.0
-    for group_name, label, color in rank_specs:
-        subset = avg_rank_df.loc[
-            avg_rank_df["group"] == group_name, "average_rank"
-        ].dropna()
-        if len(subset) == 0:
-            continue
-
-        zoom_percentile = 85 if ("Cited" in label and "Internal" in label) or label == "Cited" else 90
-        if use_log10_violin:
-            subset = subset[subset > 0]
-            if len(subset) == 0:
-                continue
-            subset_plot = np.log10(subset.to_numpy())
-        else:
-            subset_plot = subset.to_numpy()
-
-        violin_fig.add_trace(
-            go.Violin(
-                x=[label] * len(subset_plot),
-                y=subset_plot,
-                name=label,
-                marker_color=color,
-                line_color=color,
-                box_visible=True,
-                width=0.9,
-                meanline_visible=True,
-                showlegend=True,
-                legendgroup=label,
-            )
-        )
-        # mean_value = float(np.mean(subset_plot))
-        # median_value = float(np.median(subset_plot))
-        # annotation_text = f"mean={mean_value:,.1f}<br>median={median_value:,.1f}"
-        # annotation_y = float(np.nanpercentile(subset_plot, zoom_percentile))
-        # if not np.isfinite(annotation_y):
-        #     annotation_y = mean_value
-        # violin_fig.add_annotation(
-        #     x=label,
-        #     y=min(main_rank_max - 0.05, annotation_y),
-        #     text=annotation_text,
-        #     showarrow=True,
-        #     arrowhead=1,
-        #     ax=35,
-        #     ay=-25,
-        #     font=dict(size=12, color=color),
-        #     bgcolor="rgba(255,255,255,0.85)",
-        #     bordercolor=color,
-        # )
-
-    violin_fig.update_layout(
-        xaxis_title="Source Type",
-        yaxis_title="Average Rank (log10)" if use_log10_violin else "Average Rank",
-        xaxis=dict(
-            categoryorder="array",
-            categoryarray=[label for _group_name, label, _color in rank_specs],
-            tickangle=0,
-        ),
-        yaxis=dict(range=[main_rank_min, main_rank_max], autorange=False),
-        # height=680,
-        # width=900,
-    )
-
-    file_name = "retrieved_cited_positions_rank_violinplot"
-    if separate_cited_external_internal:
-        file_name += "_split_cited"
-    violin_fig = with_paper_style(violin_fig, config=styler(18, 16), legend_pos=None)
-    violin_fig.update_xaxes(tickangle=0, tickfont=dict(size=16))
-    violin_fig.update_layout(
-        # height=680,
-        # width=900,
-        yaxis=dict(range=[main_rank_min, main_rank_max], autorange=False),
-    )
-    violin_fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
-
-
 def _as_list(value):
     if isinstance(value, list):
         return value
@@ -2342,8 +1991,7 @@ if __name__ == "__main__":
     # extract_retrieved_cited_source reads ChatGPT's raw turn_msgs wire
     # format directly -- no Claude/Grok/DeepSeek equivalent -- but is only
     # needed for _load_domain_plot_df's richer ChatGPT domain data
-    # (plot_top_domains); plot_retrieved_cited_positions now reads
-    # response_and_sources.pkl instead, so it runs for every platform below.
+    # (plot_top_domains).
     web_df = load_web_data_from_file(fmt="pkl", platform="chatgpt")
     print(f"Loaded web data: {len(web_df)}")
     extract_retrieved_cited_source(web_df)
@@ -2359,22 +2007,11 @@ if __name__ == "__main__":
             grounding_level="conversation",
             platform=platform,
         )
-        plot_retrieved_cited_positions(
+        evaluate_source_tranco_ranks(
             separate_cited_external_internal=True,
+            grounding_level="conversation",
             platform=platform,
         )
-        try:
-            evaluate_source_tranco_ranks(
-                separate_cited_external_internal=True,
-                grounding_level="conversation",
-                platform=platform,
-            )
-        except Exception as e:
-            # evaluate_source_tranco_ranks generates
-            # response_and_sources_with_tranco_ranks.pkl itself if missing
-            # (downloading the Tranco list on first use) -- this now only
-            # catches a genuine failure (e.g. no network access).
-            print(f"[{platform}] Skipping evaluate_source_tranco_ranks -- {e}")
 
     # Combined/cross-platform: each of these already loops over all 4
     # platforms internally (or is inherently ChatGPT-model-specific), so
@@ -2385,7 +2022,6 @@ if __name__ == "__main__":
     compute_average_citations_and_retrievals_per_response_by_model(
         grounding_level="conversation"
     )
-    plot_retrieved_urls_per_web_query_histogram()
     evaluate_unique_retrieved_domains_by_platform()
 
     pass

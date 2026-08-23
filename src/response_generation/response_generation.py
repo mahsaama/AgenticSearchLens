@@ -248,39 +248,76 @@ def extract_response_and_sources(web_df):
                                 }
                             )
 
-                        if "fallback_items" in r and r["fallback_items"]:
-                            keys_to_check = ["images", "fallback_items"]
-                        else:
-                            keys_to_check = ["images", "items"]
+                # Structured item-level citations (content_references
+                # entries carrying their own items/fallback_items list with
+                # per-item refs, e.g. type == "grouped_webpages") -- NOT
+                # gated on matched_text above: newer exports' entries of
+                # this kind never carry matched_text at all (no inline
+                # ...-delimited marker in the response text),
+                # so nesting this under `if matched_text:` silently dropped
+                # every citation for any export using this newer shape.
+                if "fallback_items" in r and r["fallback_items"]:
+                    keys_to_check = ["images", "fallback_items"]
+                else:
+                    keys_to_check = ["images", "items"]
 
-                        for key in keys_to_check:
-                            items = r.get(key, [])
-                            refs = r.get("refs", [])
-                            if items:
-                                for ii, item in enumerate(items):
-                                    url = (
-                                        item.get("url", "")
-                                        .removesuffix("?utm_source=chatgpt.com")
-                                        .removesuffix("&utm_source=chatgpt.com")
-                                    )
-                                    d = urlparse(url).netloc.replace("www.", "")
-                                    if item.get("refs", []):
-                                        ref = item.get("refs", [])[0]
-                                    else:
-                                        ref = refs[ii] if ii < len(refs) else {}
-                                    if url:
-                                        srcs_cited.append(
-                                            {
-                                                "url": url,
-                                                "domain": d,
-                                                "title": item.get("title", ""),
-                                                "snippet": item.get("snippet", ""),
-                                                "ref_index": ref.get("ref_index", None),
-                                                "turn_index": ref.get(
-                                                    "turn_index", None
-                                                ),
-                                            }
-                                        )
+                for key in keys_to_check:
+                    items = r.get(key, [])
+                    refs = r.get("refs", [])
+                    if items:
+                        for ii, item in enumerate(items):
+                            url = (
+                                item.get("url", "")
+                                .removesuffix("?utm_source=chatgpt.com")
+                                .removesuffix("&utm_source=chatgpt.com")
+                            )
+                            d = urlparse(url).netloc.replace("www.", "")
+                            if item.get("refs", []):
+                                ref = item.get("refs", [])[0]
+                            else:
+                                ref = refs[ii] if ii < len(refs) else {}
+                            if url:
+                                srcs_cited.append(
+                                    {
+                                        "url": url,
+                                        "domain": d,
+                                        "title": item.get("title", ""),
+                                        "snippet": item.get("snippet", ""),
+                                        "ref_index": ref.get("ref_index", None),
+                                        "turn_index": ref.get(
+                                            "turn_index", None
+                                        ),
+                                    }
+                                )
+
+                # Footnote-style aggregate source lists
+                # (type == "sources_footnote"): a plain url/title list with
+                # no per-item ref_index/turn_index. _dedupe_cited_items
+                # below prefers the richer grouped_webpages entry for the
+                # same URL when both are present.
+                footnote_sources = r.get("sources", [])
+                if isinstance(footnote_sources, list):
+                    for src in footnote_sources:
+                        if not isinstance(src, dict):
+                            continue
+                        url = (
+                            str(src.get("url", ""))
+                            .removesuffix("?utm_source=chatgpt.com")
+                            .removesuffix("&utm_source=chatgpt.com")
+                        )
+                        if not url:
+                            continue
+                        d = urlparse(url).netloc.replace("www.", "")
+                        srcs_cited.append(
+                            {
+                                "url": url,
+                                "domain": d,
+                                "title": src.get("title", ""),
+                                "snippet": "",
+                                "ref_index": None,
+                                "turn_index": None,
+                            }
+                        )
 
         web_df.at[i, "srcs_retrieved"] = srcs_retrieved
         web_df.at[i, "srcs_safe_urls"] = srcs_safe_urls
