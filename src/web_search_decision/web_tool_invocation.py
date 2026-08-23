@@ -70,6 +70,7 @@ topic_to_situation_mapping = {
     "Physics": "Low Confidence/Niche Fact",
     "Astrology": "Low Confidence/Niche Fact",
     "Religion": "Low Confidence/Niche Fact",
+    "Gender and Diversity": "Low Confidence/Niche Fact",
     "Animals/Pets information": "Low Confidence/Niche Fact",
     "Art": "Low Confidence/Niche Fact",
     "Drinks": "Low Confidence/Niche Fact",
