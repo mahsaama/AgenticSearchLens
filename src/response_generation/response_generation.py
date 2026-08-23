@@ -1402,8 +1402,13 @@ def plot_retrieved_and_cited_urls_over_time(
 if __name__ == "__main__":
     # Run every stage for every platform we have extracted
     # data_summary/web_data_summary for (see src.utils.common_io.PLATFORMS);
-    # each writes under its own outputs/<platform>/response_generation/ so
-    # results from different platforms never overwrite each other.
+    # each writes under its own outputs/<platform>/... so results from
+    # different platforms never overwrite each other. The per-platform
+    # claim/entailment generation step (ea.response_source_nli_sentence_
+    # based) must run here, before the flat multi-platform summaries below,
+    # since those summaries only read each platform's already-written
+    # outputs/<platform>/metadata/response_source_nli_sentence_based_judge_
+    # claim.* -- they don't generate it themselves.
     for platform in PLATFORMS:
         try:
             web_df = load_web_data_from_file(fmt="pkl", platform=platform)
@@ -1422,46 +1427,66 @@ if __name__ == "__main__":
         try:
             response_source_similarity(platform=platform)
         except Exception as e:
-            print(f"[{platform}] Skipping response_source_similarity -- {e}")
-            continue
+            print(f"[{platform}] response_source_similarity failed: {e}")
 
-        plot_response_source_quality_summary(platform=platform)
+        try:
+            plot_response_source_quality_summary(platform=platform)
+        except Exception as e:
+            print(f"[{platform}] plot_response_source_quality_summary failed: {e}")
+
         plot_retrieved_and_cited_urls_over_time(platform=platform)
 
-    # ea.response_source_nli_sentence_based(nli_method="judge", chunking_method="claim", claim_selection_mode="all", source_text_mode="snippet")
-    # ea.plot_response_source_nli_sentence_based_judge(
-    #     chunking_method="claim",
-    #     source_text_mode="snippet",
-    #     claim_selection_mode="all",
-    # )
-    # ea.plot_response_source_nli_sentence_based_judge(
-    #     chunking_method="claim",
-    #     # source_text_mode="snippet",
-    #     claim_selection_mode="all",
-    # )
+        # Claim extraction (claim_extraction.extract_claims_from_text, via
+        # ea's internal cache) + NLI entailment scoring of each claim
+        # against its candidate sources -- writes outputs/<platform>/
+        # metadata/response_source_nli_sentence_based_judge_claim.*.
+        try:
+            ea.response_source_nli_sentence_based(
+                nli_method="judge",
+                chunking_method="claim",
+                claim_selection_mode="all",
+                platform=platform,
+            )
+        except Exception as e:
+            print(f"[{platform}] response_source_nli_sentence_based failed: {e}")
 
-    # ea.plot_response_source_nli_entailment_score_boxplot(nli_method="judge", chunking_method="claim")
+        try:
+            ea.plot_response_source_nli_entailment_score_boxplot(
+                nli_method="judge",
+                chunking_method="claim",
+                platform=platform,
+            )
+        except Exception as e:
+            print(f"[{platform}] plot_response_source_nli_entailment_score_boxplot failed: {e}")
 
-    # ea.response_source_nli_sentence_based_factuality(
-    #     input_path="outputs/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json"
-    # )
+        # Per-claim factuality, judged by `platform`'s own model (see
+        # llm_judge.JUDGE_MODEL_BY_PLATFORM) -- reads the file just written
+        # by response_source_nli_sentence_based above.
+        try:
+            ea.response_source_nli_sentence_based_factuality(
+                input_path=(
+                    f"{OUTPUT_PATH}/{platform}/metadata/"
+                    "response_source_nli_sentence_based_judge_claim.json"
+                ),
+                platform=platform,
+            )
+        except Exception as e:
+            print(f"[{platform}] response_source_nli_sentence_based_factuality failed: {e}")
 
-    # ea.summarize_response_source_nli_sentence_based_factuality(
-    #     # input_path=f"{OUTPUT_PATH}/chatgpt/metadata/response_source_nli_sentence_based_judge_claim.json"
-    # )
+    # Flat, multi-platform comparison analyses: read every platform's own
+    # outputs/<platform>/metadata/... written above and combine them into
+    # one comparison figure/table (see entailment_analysis.py's
+    # EXTERNAL_PLATFORM_ORDER / EXTERNAL_PLATFORM_CLAIM_LATEST_PRECEDING_
+    # BASES) -- these run once, not per platform.
+    try:
+        ea.plot_response_source_nli_sentence_based_judge(
+            chunking_method="claim",
+            claim_selection_mode="all",
+        )
+    except Exception as e:
+        print(f"plot_response_source_nli_sentence_based_judge failed: {e}")
 
-    # ea.sample_response_source_nli_method_comparison()
-
-    # plot_retrieved_and_cited_urls_over_time()
-
-    # ea.plot_claim_bucket_tranco_rank_comparison()
-
-    # ea.bootstrap_response_source_nli_sentence_based_confidence_intervals(
-    #     nli_method="judge",
-    #     chunking_method="claim",
-    #     claim_selection_mode="all",
-    #     source_text_mode="full_url_content",
-    #     n_boot=1000,
-    #     random_state=42,
-    # )
-    pass
+    try:
+        ea.summarize_response_source_nli_sentence_based_factuality()
+    except Exception as e:
+        print(f"summarize_response_source_nli_sentence_based_factuality failed: {e}")
