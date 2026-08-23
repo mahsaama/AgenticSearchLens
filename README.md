@@ -135,9 +135,12 @@ Notes:
 
 **1. Extract raw exports into summary dataframes.** This parses the JSON exports
 above into per-turn dataframes (`data_summary.*` and `web_data_summary.*`, in
-parquet/pickle/csv, under `outputs/metadata/` for ChatGPT or
-`outputs/<platform>/metadata/` for the others -- see "Pipeline Order & Known
-Gaps" below for why ChatGPT's path doesn't have the `<platform>/` prefix):
+parquet/pickle/csv). ChatGPT's real files land in the flat `outputs/metadata/`
+(see "Pipeline Order & Known Gaps" below for why); the others get their own
+`outputs/<platform>/metadata/`. For a consistent, browsable layout across all
+four, `outputs/chatgpt/metadata` is created too, as a symlink to `../metadata`
+-- `ls outputs/chatgpt/metadata` shows the same files `ls outputs/metadata`
+does, nothing duplicated on disk:
 
 ```bash
 python -m src.web_search_decision.extraction --platform chatgpt    # ChatGPT
@@ -194,6 +197,19 @@ a function fails in a way that isn't obviously about missing data:
   "Other", extraction now falls back to `topic_classifier.classify_topic()`,
   a small dependency-free keyword classifier applied to each conversation's
   opening message.
+- **ChatGPT's output path is flat (`outputs/metadata/`), not
+  `outputs/chatgpt/metadata/` like the other three platforms.** That's
+  because every analysis module downstream of extraction already hardcodes
+  the flat path for ChatGPT specifically -- it predates this module's
+  Claude/Grok/DeepSeek support, which used a per-platform subfolder from
+  the start (see `extraction._metadata_dir()`'s docstring). Changing it
+  would mean updating dozens of hardcoded paths across
+  `response_generation.py`/`source_selection.py`/`query_reformulations.py`/
+  `chat_replayer.py`/`extract_replay_artifacts.py`, which wasn't attempted.
+  Running `extraction.py --platform chatgpt` does create
+  `outputs/chatgpt/metadata` as a symlink to `../metadata`, though, so
+  browsing `outputs/` looks consistent across all four platforms even
+  though the ChatGPT data isn't really stored there.
 - **ChatGPT web-search detection is a two-step process across export
   formats.** Older/plugin-era exports route a tool call through a message
   explicitly routed to a named tool (`recipient` set to something like

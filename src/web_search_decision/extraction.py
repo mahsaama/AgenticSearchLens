@@ -28,6 +28,7 @@ donated dataset:
 
 import argparse
 import json
+import logging
 import sys
 
 sys.setrecursionlimit(5000)
@@ -40,6 +41,13 @@ from tqdm import tqdm
 import src.utils.other_platforms_parsing_utils as du
 from src.utils.common_io import DATA_BASE_PATH
 from src.utils.topic_classifier import classify_topic
+
+logger = logging.getLogger(__name__)
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level="INFO",
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
 
 
 def parse_args():
@@ -776,6 +784,49 @@ def _metadata_dir(platform):
     return f"{OUTPUT_PATH}/{platform}/metadata"
 
 
+def _ensure_chatgpt_metadata_symlink(output_path):
+    """Make outputs/chatgpt/metadata browsable like the other platforms'
+    outputs/<platform>/metadata, without moving ChatGPT's real data out of
+    the flat outputs/metadata/ every other module still hardcodes (see
+    _metadata_dir's docstring).
+
+    outputs/chatgpt/metadata is created as a symlink pointing at
+    ../metadata rather than a second copy of the data -- so
+    `ls outputs/chatgpt/metadata` shows the same data_summary.*/
+    web_data_summary.* files `ls outputs/metadata` does, with nothing
+    duplicated on disk. Best-effort: on platforms/filesystems where
+    symlinks aren't available (e.g. Windows without Developer Mode or
+    admin rights), this just logs a warning and extraction still succeeds.
+    """
+    chatgpt_dir = Path(output_path) / "chatgpt"
+    link_path = chatgpt_dir / "metadata"
+    target = Path("../metadata")
+
+    if link_path.is_symlink():
+        if link_path.readlink() == target:
+            return
+        link_path.unlink()
+    elif link_path.exists():
+        logger.warning(
+            "%s already exists and isn't the expected symlink -- leaving it alone.",
+            link_path,
+        )
+        return
+
+    try:
+        chatgpt_dir.mkdir(parents=True, exist_ok=True)
+        link_path.symlink_to(target)
+    except OSError as e:
+        logger.warning(
+            "Could not create %s -> %s symlink (%s); "
+            "outputs/chatgpt/metadata won't be browsable, but ChatGPT's "
+            "data at outputs/metadata is unaffected.",
+            link_path,
+            target,
+            e,
+        )
+
+
 def load_whole_data_from_file(fmt, platform="chatgpt"):
     """Load a previously extracted data_summary.<fmt> back into a DataFrame."""
     base_dir = _metadata_dir(platform)
@@ -848,6 +899,9 @@ def main():
     web_df.to_pickle(f"{base_dir}/web_data_summary.pkl")
     web_df.to_csv(f"{base_dir}/web_data_summary.csv", index=False)
     print("Web Data Saved Successfully!")
+
+    if args.platform == "chatgpt":
+        _ensure_chatgpt_metadata_symlink(OUTPUT_PATH)
 
 
 if __name__ == "__main__":
