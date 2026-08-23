@@ -58,6 +58,12 @@ if not logging.getLogger().handlers:
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+# Quiet down noisy third-party libraries' own INFO logs (Kaleido/Choreographer
+# print one line per browser tab/tempdir operation during fig.write_image;
+# SentenceTransformer prints its device/model-load banner on every import) --
+# they'd otherwise flood the console at the same INFO level set above.
+for _noisy_logger in ("kaleido", "choreographer", "sentence_transformers"):
+    logging.getLogger(_noisy_logger).setLevel(logging.WARNING)
 
 pio.defaults.mathjax = None
 from src.utils.common_io import *
