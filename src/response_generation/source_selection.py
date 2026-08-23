@@ -926,7 +926,21 @@ def _cited_domain_counter_split(df, top_k=20, grounding_level="turn"):
             if not domain:
                 continue
 
-            # External/internal split must be determined via URL overlap only.
+            # External/internal split must be determined via exact URL
+            # overlap only (not domain): a cited URL only counts as
+            # "external/retrieved" if that literal URL is itself in
+            # srcs_retrieved. Deliberately strict, not a bug -- but note
+            # "internal"/"Parametric" is a bit of a misnomer for what
+            # lands here: it means "not traceable to a recorded
+            # search-result URL", not necessarily "hallucinated from
+            # training data". ChatGPT's exported search_result_groups
+            # metadata doesn't capture every URL the web tool actually
+            # visited (confirmed against this repo's own sample data: a
+            # cited URL can be entirely absent from search_result_groups
+            # anywhere in the turn, same domain as a retrieved URL but a
+            # genuinely different article), so a same-domain, different-
+            # page citation lands in "internal" here even though it was
+            # very likely fetched via the same web tool call.
             is_external = cited_url in retrieved_urls
 
             if is_external:
@@ -1790,6 +1804,10 @@ def evaluate_source_tranco_ranks(
                 previous_retrieved_by_conv,
                 grounding_level,
             )
+            # Exact-URL external/internal split -- see
+            # _cited_domain_counter_split's comment on why "internal" here
+            # means "not traceable to a recorded search-result URL", not
+            # necessarily hallucinated/parametric knowledge.
             cited_sources = _as_list(getattr(row, "srcs_cited", []))
             external_mask = []
             internal_mask = []
