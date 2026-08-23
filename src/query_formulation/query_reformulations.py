@@ -965,7 +965,7 @@ def plot_number_of_loops_histogram(platform="chatgpt"):
         platform_dir = "chatgpt" if platform == "openai" else platform
         if platform == "openai":
             return [
-                f"{OUTPUT_PATH}/{platform_dir}/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
+                f"{OUTPUT_PATH}/{platform_dir}/metadata/query_reformulation_with_thought_src_mem.pkl",
             ]
         return [
             f"{OUTPUT_PATH}/{platform_dir}/metadata/query_reformulation_with_thought_src_mem.pkl",
@@ -1032,7 +1032,7 @@ def plot_number_of_loops_histogram(platform="chatgpt"):
         }
 
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     )
     results = _plot_number_of_loops_histogram_from_df(df, platform=platform)
 
@@ -1169,7 +1169,7 @@ def plot_number_of_query_reformulations_over_time(
     platform="chatgpt",
 ):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1242,7 +1242,7 @@ def plot_number_of_parallel_queries_over_time(
     platform="chatgpt",
 ):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1338,7 +1338,7 @@ def plot_number_of_fanout_queries_and_iterations_over_time(
     xaxis_end = pd.Timestamp("2026-01-31")
     full_month_range = pd.date_range(start=xaxis_start, end=xaxis_end, freq="MS")
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem_v2.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/query_reformulation_with_thought_src_mem.pkl"
     ).copy()
 
     if "web_queries" not in df.columns:
@@ -1532,7 +1532,7 @@ def _plot_query_term_count_trends_over_time_multiplatform(remove_stopwords=False
     def _platform_candidate_paths(platform):
         if platform == "openai":
             return [
-                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem_v2.pkl",
+                f"{OUTPUT_PATH}/chatgpt/metadata/query_reformulation_with_thought_src_mem.pkl",
             ]
 
         candidates = [
@@ -2839,14 +2839,13 @@ def plot_query_specificity_distribution_by_iteration(
         return 0
 
     def _platform_specificity_candidates(platform):
-        if platform in {"openai", "chatgpt"}:
-            return [
-                f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl",
-                f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.csv",
-            ]
+        # platform_configs' "openai" entry maps to outputs/chatgpt/ -- this
+        # file's folder convention is "chatgpt", not "openai" (see
+        # plot_number_of_loops_histogram's equivalent fix).
+        platform_dir = "chatgpt" if platform == "openai" else platform
         return [
-            f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl",
-            f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.csv",
+            f"{OUTPUT_PATH}/{platform_dir}/metadata/{input_stem}.pkl",
+            f"{OUTPUT_PATH}/{platform_dir}/metadata/{input_stem}.csv",
         ]
 
     input_pkl_path = f"{OUTPUT_PATH}/{platform}/metadata/{input_stem}.pkl"
@@ -2878,7 +2877,9 @@ def plot_query_specificity_distribution_by_iteration(
         5: "#e45756",
     }
 
-    def _write_specificity_distribution_plot(platform_plot_df, plot_base_name):
+    def _write_specificity_distribution_plot(
+        platform_plot_df, plot_base_name, plot_platform
+    ):
         fig = make_subplots(
             rows=2,
             cols=2,
@@ -2969,50 +2970,59 @@ def plot_query_specificity_distribution_by_iteration(
         )
 
         fig = with_paper_style(fig, config=styler(20, 18), legend_pos=(1, 1.25))
-        fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{plot_base_name}.pdf", format="pdf")
+        os.makedirs(f"{OUTPUT_PATH}/{plot_platform}/{CONF}", exist_ok=True)
+        fig.write_image(
+            f"{OUTPUT_PATH}/{plot_platform}/{CONF}/{plot_base_name}.pdf", format="pdf"
+        )
 
-    _write_specificity_distribution_plot(plot_df, output_file_name)
+    _write_specificity_distribution_plot(plot_df, output_file_name, platform)
 
     specificity_stage_frames = [plot_df.assign(platform="openai", platform_display="ChatGPT")]
     specificity_source_paths = {"openai": input_pkl_path if os.path.exists(input_pkl_path) else input_csv_path}
-    for platform, display_name in platform_configs:
-        if platform in {"openai", "chatgpt"}:
+    for loop_platform, display_name in platform_configs:
+        if loop_platform in {"openai", "chatgpt"}:
             continue
         platform_df, source_path = _load_dataframe_from_candidates(
-            _platform_specificity_candidates(platform)
+            _platform_specificity_candidates(loop_platform)
         )
         if platform_df is None:
-            print(f"No query specificity file found for `{platform}`.")
+            print(f"No query specificity file found for `{loop_platform}`.")
             continue
         platform_plot_df = _build_query_specificity_stage_df(platform_df)
         if platform_plot_df.empty:
-            print(f"No query specificity rows to plot for `{platform}`.")
+            print(f"No query specificity rows to plot for `{loop_platform}`.")
             continue
-        platform_plot_df["platform"] = platform
+        platform_plot_df["platform"] = loop_platform
         platform_plot_df["platform_display"] = display_name
         specificity_stage_frames.append(platform_plot_df)
-        specificity_source_paths[platform] = source_path
+        specificity_source_paths[loop_platform] = source_path
         _write_specificity_distribution_plot(
             platform_plot_df,
-            f"{output_file_name}_{platform}",
+            f"{output_file_name}_{loop_platform}",
+            loop_platform,
         )
 
     if len(specificity_stage_frames) > 1:
+        # Combined all-platform comparison -- stays flat, not nested under
+        # any single platform's folder (see plot_number_of_loops_histogram's
+        # equivalent comment).
+        os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
+        os.makedirs(f"{OUTPUT_PATH}/metadata", exist_ok=True)
         combined_specificity_df = pd.concat(specificity_stage_frames, ignore_index=True)
         combined_specificity_df.to_csv(
-            f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}_all_platforms.csv",
+            f"{OUTPUT_PATH}/{CONF}/{output_file_name}_all_platforms.csv",
             index=False,
         )
         to_json(
             {
                 "platforms_plotted": [
-                    platform
-                    for platform, _ in platform_configs
-                    if platform in set(combined_specificity_df["platform"])
+                    loop_platform
+                    for loop_platform, _ in platform_configs
+                    if loop_platform in set(combined_specificity_df["platform"])
                 ],
                 "platform_data_sources": specificity_source_paths,
             },
-            f"{OUTPUT_PATH}/{platform}/metadata/{output_file_name}_all_platforms_sources.json",
+            f"{OUTPUT_PATH}/metadata/{output_file_name}_all_platforms_sources.json",
         )
 
     overall_rows = []
@@ -3040,14 +3050,14 @@ def plot_query_specificity_distribution_by_iteration(
         "numeric": "Numeric",
         "overall": "Overall",
     }
-    for platform, display_name in platform_configs:
+    for loop_platform, display_name in platform_configs:
         platform_df, source_path = _load_dataframe_from_candidates(
-            _platform_specificity_candidates(platform)
+            _platform_specificity_candidates(loop_platform)
         )
         if platform_df is None:
-            print(f"No query specificity file found for `{platform}`.")
+            print(f"No query specificity file found for `{loop_platform}`.")
             continue
-        source_paths[platform] = source_path
+        source_paths[loop_platform] = source_path
 
         stage_direction_values = {}
         dimension_stage_direction_values = {
@@ -3109,7 +3119,7 @@ def plot_query_specificity_distribution_by_iteration(
             mean_value = sum(values) / len(values) if values else None
             overall_rows.append(
                 {
-                    "platform": platform,
+                    "platform": loop_platform,
                     "platform_display": display_name,
                     "stage_idx": int(stage_idx),
                     "stage_label": stage_label,
@@ -3137,7 +3147,7 @@ def plot_query_specificity_distribution_by_iteration(
                 mean_value = sum(values) / len(values) if values else None
                 dimension_direction_rows.append(
                     {
-                        "platform": platform,
+                        "platform": loop_platform,
                         "platform_display": display_name,
                         "dimension": dimension,
                         "dimension_display": dimension_display_map[dimension],
@@ -3154,23 +3164,28 @@ def plot_query_specificity_distribution_by_iteration(
                 )
 
     if overall_rows:
+        # Combined all-platform comparison -- stays flat, not nested under
+        # any single platform's folder (see plot_number_of_loops_histogram's
+        # equivalent comment).
+        os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
+        os.makedirs(f"{OUTPUT_PATH}/metadata", exist_ok=True)
         overall_df = pd.DataFrame(overall_rows)
         overall_output_file_name = (
             f"{output_file_name}_overall_specificity_direction"
         )
         overall_df.to_csv(
-            f"{OUTPUT_PATH}/{platform}/metadata/{overall_output_file_name}.csv",
+            f"{OUTPUT_PATH}/metadata/{overall_output_file_name}.csv",
             index=False,
         )
         to_json(
             {
                 "platforms_plotted": [
-                    platform for platform, _ in platform_configs
-                    if platform in set(overall_df["platform"])
+                    loop_platform for loop_platform, _ in platform_configs
+                    if loop_platform in set(overall_df["platform"])
                 ],
                 "platform_data_sources": source_paths,
             },
-            f"{OUTPUT_PATH}/{platform}/metadata/{overall_output_file_name}_sources.json",
+            f"{OUTPUT_PATH}/metadata/{overall_output_file_name}_sources.json",
         )
 
         line_fig = go.Figure()
@@ -3187,13 +3202,13 @@ def plot_query_specificity_distribution_by_iteration(
             "deepseek": "diamond",
         }
         plotted_platforms = [
-            (platform, display_name)
-            for platform, display_name in platform_configs
-            if platform in set(overall_df["platform"])
+            (loop_platform, display_name)
+            for loop_platform, display_name in platform_configs
+            if loop_platform in set(overall_df["platform"])
         ]
-        for platform, display_name in plotted_platforms:
+        for loop_platform, display_name in plotted_platforms:
             platform_line_df = overall_df[
-                overall_df["platform"] == platform
+                overall_df["platform"] == loop_platform
             ].sort_values("stage_idx")
             line_fig.add_trace(
                 go.Scatter(
@@ -3201,11 +3216,11 @@ def plot_query_specificity_distribution_by_iteration(
                     y=platform_line_df["percentage_overall_specificity_direction"],
                     mode="lines+markers",
                     name=display_name,
-                    line=dict(color=platform_color_map.get(platform)),
+                    line=dict(color=platform_color_map.get(loop_platform)),
                     marker=dict(
                         size=16,
-                        color=platform_color_map.get(platform),
-                        symbol=platform_marker_map.get(platform, "circle"),
+                        color=platform_color_map.get(loop_platform),
+                        symbol=platform_marker_map.get(loop_platform, "circle"),
                     ),
                     customdata=platform_line_df[["count", "stage_label"]].values,
                     hovertemplate=(
@@ -3240,28 +3255,34 @@ def plot_query_specificity_distribution_by_iteration(
             # legend_pos=(0.9, 1.2),
         )
         line_fig.write_image(
-            f"{OUTPUT_PATH}/{platform}/{CONF}/{overall_output_file_name}.pdf",
+            f"{OUTPUT_PATH}/{CONF}/{overall_output_file_name}.pdf",
             format="pdf",
         )
 
     if dimension_direction_rows:
+        # The CSV/JSON below are a combined all-platform comparison -- stay
+        # flat, not nested under any single platform's folder (see
+        # plot_number_of_loops_histogram's equivalent comment). The
+        # per-platform dimension-breakdown chart written inside the loop
+        # below is genuinely per-platform, and stays nested.
+        os.makedirs(f"{OUTPUT_PATH}/metadata", exist_ok=True)
         dimension_direction_df = pd.DataFrame(dimension_direction_rows)
         dimension_output_file_name = (
             f"{output_file_name}_dimension_specificity_direction"
         )
         dimension_direction_df.to_csv(
-            f"{OUTPUT_PATH}/{platform}/metadata/{dimension_output_file_name}.csv",
+            f"{OUTPUT_PATH}/metadata/{dimension_output_file_name}.csv",
             index=False,
         )
         to_json(
             {
                 "platforms_plotted": [
-                    platform for platform, _ in platform_configs
-                    if platform in set(dimension_direction_df["platform"])
+                    loop_platform for loop_platform, _ in platform_configs
+                    if loop_platform in set(dimension_direction_df["platform"])
                 ],
                 "platform_data_sources": source_paths,
             },
-            f"{OUTPUT_PATH}/{platform}/metadata/{dimension_output_file_name}_sources.json",
+            f"{OUTPUT_PATH}/metadata/{dimension_output_file_name}_sources.json",
         )
 
         if overall_rows:
@@ -3270,16 +3291,16 @@ def plot_query_specificity_distribution_by_iteration(
             overall_df = pd.DataFrame()
 
         plotted_platforms = [
-            (platform, display_name)
-            for platform, display_name in platform_configs
-            if platform in set(dimension_direction_df["platform"])
+            (loop_platform, display_name)
+            for loop_platform, display_name in platform_configs
+            if loop_platform in set(dimension_direction_df["platform"])
         ]
-        for platform, display_name in plotted_platforms:
+        for loop_platform, display_name in plotted_platforms:
             platform_dimension_df = dimension_direction_df[
-                dimension_direction_df["platform"] == platform
+                dimension_direction_df["platform"] == loop_platform
             ].copy()
             platform_overall_df = overall_df[
-                overall_df["platform"] == platform
+                overall_df["platform"] == loop_platform
             ].copy()
 
             per_platform_line_fig = go.Figure()
@@ -3366,15 +3387,16 @@ def plot_query_specificity_distribution_by_iteration(
             )
             per_platform_line_fig.update_yaxes(ticksuffix="%")
             per_platform_file_name = (
-                f"{dimension_output_file_name}__{platform}"
+                f"{dimension_output_file_name}__{loop_platform}"
             )
             per_platform_line_fig = with_paper_style(
                 per_platform_line_fig,
                 config=styler(24, 24),
                 # legend_pos=(0.9, 1.18),
             )
+            os.makedirs(f"{OUTPUT_PATH}/{loop_platform}/{CONF}", exist_ok=True)
             per_platform_line_fig.write_image(
-                f"{OUTPUT_PATH}/{platform}/{CONF}/{per_platform_file_name}.pdf",
+                f"{OUTPUT_PATH}/{loop_platform}/{CONF}/{per_platform_file_name}.pdf",
                 format="pdf",
             )
 
