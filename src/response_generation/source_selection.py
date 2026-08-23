@@ -259,11 +259,11 @@ def _prepare_source_count_df(model=""):
     return df
 
 
-def count_unique_retrieved_safe_cited():
+def count_unique_retrieved_safe_cited(platform="chatgpt"):
     """Count of responses with at least one retrieved/safe/cited URL each.
-    Requires response_generation.extract_response_and_sources() to have
-    been run first -- see _prepare_source_count_df()'s docstring."""
-    df = _prepare_source_count_df()
+    Requires response_generation.extract_response_and_sources[_other_platforms]()
+    to have been run first -- see _prepare_source_count_df()'s docstring."""
+    df = _prepare_source_count_df(platform)
     return {
         "retrieved_urls": (df["num_retrieved_urls"] > 0).sum(),
         "safe_urls": (df["num_safe_urls"] > 0).sum(),
@@ -541,9 +541,10 @@ def _print_source_count_summaries_for_df(
     unique=False,
     grounding_level="turn",
     label_prefix=None,
+    platform="chatgpt",
 ):
-    query_count_lookup = _load_query_count_lookup("chatgpt")
-    query_groups_lookup = _load_query_groups_lookup("chatgpt")
+    query_count_lookup = _load_query_count_lookup(platform)
+    query_groups_lookup = _load_query_groups_lookup(platform)
     query_keys = set(query_count_lookup.keys())
     df = df.copy()
     df["web_queries"] = df.apply(
@@ -746,13 +747,14 @@ def compute_average_citations_and_retrievals_per_response(
 
     os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
 
-    for model in ["chatgpt", "claude", "grok", "deepseek"]:
+    for model in PLATFORMS:
         print(model)
         df = _prepare_source_count_df(model)
         _print_source_count_summaries_for_df(
             df,
             unique=unique,
             grounding_level=grounding_level,
+            platform=model,
         )
 
 
@@ -778,9 +780,7 @@ def compute_average_citations_and_retrievals_per_response_by_openai_model(
 
 
 def plot_retrieved_urls_per_web_query_histogram(unique=False, bins=40):
-    os.makedirs(f"{OUTPUT_PATH}/{CONF}", exist_ok=True)
-
-    for model in ["chatgpt", "claude", "grok", "deepseek"]:
+    for model in PLATFORMS:
         df = _prepare_source_count_df(model)
         df = df.copy()
         query_count_lookup = _load_query_count_lookup(model)
@@ -857,9 +857,11 @@ def plot_retrieved_urls_per_web_query_histogram(unique=False, bins=40):
             margin=dict(l=70, b=70, t=40, r=30),
         )
 
-        file_name = f"{model}_retrieved_urls_per_web_query_histogram"
-        html_path = f"{OUTPUT_PATH}/{CONF}/{file_name}.html"
-        pdf_path = f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf"
+        model_output_dir = f"{OUTPUT_PATH}/{model}/{CONF}"
+        os.makedirs(model_output_dir, exist_ok=True)
+        file_name = "retrieved_urls_per_web_query_histogram"
+        html_path = f"{model_output_dir}/{file_name}.html"
+        pdf_path = f"{model_output_dir}/{file_name}.pdf"
         print(f"Writing histogram HTML: {html_path}")
         fig.write_html(html_path)
         fig = with_paper_style(fig, config=styler(18, 16), legend_pos=None)
@@ -976,11 +978,17 @@ def plot_subset_condition_counts():
         xaxis_title="Subset Conditions",
         yaxis_title="#Turns",
     )
+    # extract_retrieved_safe_cited_source()'s output is ChatGPT-only (it
+    # parses ChatGPT's raw search_result_groups/content_references wire
+    # format directly; there's no Claude/Grok/DeepSeek equivalent), so this
+    # analysis is too.
+    output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     file_name = "subset_relations_urls_and_domains"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 18))
     fig.update_xaxes(tickfont=dict(size=14))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
 def save_topic_to_domains_json():
@@ -1287,12 +1295,11 @@ def plot_top_domains(
     separate_cited_external_internal=False,
     grounding_level="turn",
     top_k=10,
+    platform="chatgpt",
 ):
     grounding_level = _validated_grounding_level(grounding_level)
-    platform = "deepseek"
-    safe_platform = platform if platform else "chatgpt"
     df = _load_domain_plot_df(platform=platform)
-    output_dir = f"{OUTPUT_PATH}/{CONF}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
 
     if separate_cited_external_internal:
@@ -1317,7 +1324,7 @@ def plot_top_domains(
 
     retrieved_all_df = _domain_counter(df, "srcs_retrieved", top_k=None)
     retrieved_all_df.to_csv(
-        f"{output_dir}/{safe_platform}_retrieved_domains_sorted.csv",
+        f"{output_dir}/retrieved_domains_sorted.csv",
         index=False,
     )
     retrieved_denominator = float(retrieved_all_df["count"].sum()) if len(retrieved_all_df) > 0 else 0.0
@@ -1342,7 +1349,7 @@ def plot_top_domains(
         split_df.to_csv(
             (
                 f"{output_dir}/"
-                f"{safe_platform}_cited_domains_split_{grounding_level}_grounding_sorted.csv"
+                f"cited_domains_split_{grounding_level}_grounding_sorted.csv"
             ),
             index=False,
         )
@@ -1352,7 +1359,7 @@ def plot_top_domains(
         ).to_csv(
             (
                 f"{output_dir}/"
-                f"{safe_platform}_cited_external_domains_{grounding_level}_grounding_sorted.csv"
+                f"cited_external_domains_{grounding_level}_grounding_sorted.csv"
             ),
             index=False,
         )
@@ -1362,7 +1369,7 @@ def plot_top_domains(
         ).to_csv(
             (
                 f"{output_dir}/"
-                f"{safe_platform}_cited_internal_domains_{grounding_level}_grounding_sorted.csv"
+                f"cited_internal_domains_{grounding_level}_grounding_sorted.csv"
             ),
             index=False,
         )
@@ -1403,7 +1410,7 @@ def plot_top_domains(
     else:
         cited_all_df = _domain_counter(df, "srcs_cited", top_k=None)
         cited_all_df.to_csv(
-            f"{output_dir}/{safe_platform}_cited_domains_sorted.csv",
+            f"{output_dir}/cited_domains_sorted.csv",
             index=False,
         )
         cited_denominator = float(cited_all_df["count"].sum()) if len(cited_all_df) > 0 else 0.0
@@ -1439,7 +1446,7 @@ def plot_top_domains(
     )
     fig.update_yaxes(tickformat=".0%")
     file_name = (
-        f"top_domains_overall_split_cited_{grounding_level}_grounding_{platform}"
+        f"top_domains_overall_split_cited_{grounding_level}_grounding"
         if separate_cited_external_internal
         else "top_domains_overall"
     )
@@ -1590,8 +1597,8 @@ def _plot_top_domains_for_subset(
     )
 
 
-def plot_top_domains_by_selected_topics(separate_cited_external_internal=False):
-    df = _load_domain_plot_df()
+def plot_top_domains_by_selected_topics(separate_cited_external_internal=False, platform="chatgpt"):
+    df = _load_domain_plot_df(platform=platform)
     # selected_topics = ["Health", "Travel", "Finance", "Politics & History", "Science"]
     selected_topics = set(df["topic"].unique())
 
@@ -1600,7 +1607,7 @@ def plot_top_domains_by_selected_topics(separate_cited_external_internal=False):
         if len(topic_df) == 0:
             continue
         safe_topic = re.sub(r"[^A-Za-z0-9]+", "_", topic).strip("_").lower()
-        output_dir = f"{OUTPUT_PATH}/{CONF}/top_domains_by_topic/{safe_topic}"
+        output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}/top_domains_by_topic/{safe_topic}"
         _plot_top_domains_for_subset(
             topic_df,
             topic,
@@ -1610,8 +1617,8 @@ def plot_top_domains_by_selected_topics(separate_cited_external_internal=False):
         )
 
 
-def plot_top_domains_by_model(separate_cited_external_internal=False):
-    df = _load_domain_plot_df()
+def plot_top_domains_by_model(separate_cited_external_internal=False, platform="chatgpt"):
+    df = _load_domain_plot_df(platform=platform)
     df["model"] = df["openai_models"].apply(_primary_model)
     df = df[df["model"].str.lower() != "unknown"].copy()
 
@@ -1620,7 +1627,7 @@ def plot_top_domains_by_model(separate_cited_external_internal=False):
         if len(model_df) == 0:
             continue
         safe_model = re.sub(r"[^A-Za-z0-9]+", "_", model).strip("_").lower()
-        output_dir = f"{OUTPUT_PATH}/{CONF}/top_domains_by_model/{safe_model}"
+        output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}/top_domains_by_model/{safe_model}"
         _plot_top_domains_for_subset(
             model_df,
             model,
@@ -1630,7 +1637,7 @@ def plot_top_domains_by_model(separate_cited_external_internal=False):
 
 
 def _load_domain_rank_lookup(platform):
-    path = f"{OUTPUT_PATH}/{CONF}/{platform}_retrieved_domains_sorted.csv"
+    path = f"{OUTPUT_PATH}/{platform}/{CONF}/retrieved_domains_sorted.csv"
     df = pd.read_csv(path).copy()
     if "domain" not in df.columns:
         raise ValueError(f"Missing `domain` column in {path}")
@@ -1700,6 +1707,7 @@ def plot_chatgpt_claude_retrieved_domain_rank_scatter(top_k=100):
     )
 
     output_dir = f"{OUTPUT_PATH}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     file_name = "chatgpt_claude_retrieved_domain_rank_scatter"
     fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 10), legend_pos=None)
@@ -1716,14 +1724,14 @@ def plot_chatgpt_claude_retrieved_domain_rank_scatter(top_k=100):
 
 
 def evaluate_unique_retrieved_domains_by_platform():
-    platforms = ["chatgpt", "claude", "grok", "deepseek"]
+    platforms = PLATFORMS
     output_dir = f"{OUTPUT_PATH}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
 
     platform_dfs = {}
     platform_sets = {}
     for platform in platforms:
-        path = f"{output_dir}/{platform}_retrieved_domains_sorted.csv"
+        path = f"{OUTPUT_PATH}/{platform}/{CONF}/retrieved_domains_sorted.csv"
         if not os.path.exists(path):
             raise FileNotFoundError(
                 f"Missing retrieved-domain CSV for platform {platform!r}: {path}"
@@ -1827,11 +1835,14 @@ def evaluate_unique_retrieved_domains_by_platform():
 
 
 def compare_domain_reliability_by_source_type(model_name="gpt-4o-mini", temperature=0.0):
+    # ChatGPT-only: reads extract_retrieved_safe_cited_source()'s output,
+    # which has no Claude/Grok/DeepSeek equivalent (see plot_subset_
+    # condition_counts()'s comment).
     df = pd.read_pickle(
         f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
     results_path = (
-        f"{OUTPUT_PATH}/{CONF}/domain_reliability_evaluation/"
+        f"{OUTPUT_PATH}/chatgpt/{CONF}/domain_reliability_evaluation/"
         f"{model_name}/{temperature}/results.json"
     )
     reliability_results = load_json(results_path)
@@ -1905,12 +1916,14 @@ def compare_domain_reliability_by_source_type(model_name="gpt-4o-mini", temperat
     )
     fig.update_yaxes(range=[1, 5])
 
+    output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     file_name = "domain_reliability_by_source_type"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 14))
     fig.update_xaxes(tickfont=dict(size=10))
     fig.update_yaxes(tickfont=dict(size=10))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
     ttest_results = {}
     comparisons = [
@@ -1931,7 +1944,7 @@ def compare_domain_reliability_by_source_type(model_name="gpt-4o-mini", temperat
 
     to_json(
         ttest_results,
-        f"{OUTPUT_PATH}/{CONF}/{file_name}_paired_ttests.json",
+        f"{output_dir}/{file_name}_paired_ttests.json",
     )
     plot_df[
         [
@@ -1943,15 +1956,15 @@ def compare_domain_reliability_by_source_type(model_name="gpt-4o-mini", temperat
             "cited_reliability",
         ]
     ].to_csv(
-        f"{OUTPUT_PATH}/{CONF}/{file_name}_samples.csv",
+        f"{output_dir}/{file_name}_samples.csv",
         index=False,
     )
 
     return ttest_results
 
 
-def plot_url_counts_over_time(separate_cited_external_internal=False):
-    df = _prepare_source_count_df()
+def plot_url_counts_over_time(separate_cited_external_internal=False, platform="chatgpt"):
+    df = _prepare_source_count_df(platform)
 
     if separate_cited_external_internal:
         def _count_cited_external_internal_urls(row):
@@ -2065,16 +2078,19 @@ def plot_url_counts_over_time(separate_cited_external_internal=False):
         ),
         margin=dict(b=90),
     )
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     file_name = "url_counts_over_time"
     if separate_cited_external_internal:
         file_name += "_split_cited"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 20))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def plot_grounding_rate_violin_over_time():
-    df = _prepare_source_count_df()
+def plot_grounding_rate_violin_over_time(platform="chatgpt"):
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
+    df = _prepare_source_count_df(platform)
 
     rows = []
     for _, row in df.iterrows():
@@ -2180,7 +2196,7 @@ def plot_grounding_rate_violin_over_time():
     fig.update_yaxes(tickformat=".0%")
 
     file_name = "grounding_rate_violin_over_time"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
     fig.update_xaxes(
         tickangle=-30,
@@ -2188,7 +2204,7 @@ def plot_grounding_rate_violin_over_time():
         tickvals=[month_to_pos[m] for m in shown_month_order],
         ticktext=shown_month_order,
     )
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     monthly_stats = (
         plot_df.groupby(["month", "month_label"])
@@ -2297,7 +2313,7 @@ def plot_grounding_rate_violin_over_time():
     mean_std_fig.update_yaxes(tickformat=".0%")
 
     mean_std_file_name = "grounding_rate_mean_std_over_time"
-    mean_std_fig.write_html(f"{OUTPUT_PATH}/{CONF}/{mean_std_file_name}.html")
+    mean_std_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{mean_std_file_name}.html")
     mean_std_fig = with_paper_style(mean_std_fig, config=styler(18, 16))
     mean_std_fig.update_xaxes(
         tickangle=-30,
@@ -2305,11 +2321,11 @@ def plot_grounding_rate_violin_over_time():
         tickvals=shown_month_order,
     )
     mean_std_fig.write_image(
-        f"{OUTPUT_PATH}/{CONF}/{mean_std_file_name}.pdf",
+        f"{OUTPUT_PATH}/{platform}/{CONF}/{mean_std_file_name}.pdf",
         format="pdf",
     )
     monthly_stats.to_csv(
-        f"{OUTPUT_PATH}/{CONF}/{mean_std_file_name}_monthly_stats.csv",
+        f"{OUTPUT_PATH}/{platform}/{CONF}/{mean_std_file_name}_monthly_stats.csv",
         index=False,
     )
 
@@ -2327,15 +2343,15 @@ def plot_grounding_rate_violin_over_time():
             "unexplained_rate",
         ]
     ].to_csv(
-        f"{OUTPUT_PATH}/{CONF}/{file_name}_samples.csv",
+        f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}_samples.csv",
         index=False,
     )
 
     return plot_df
 
 
-def plot_retrieved_url_counts_over_time_by_model():
-    df = _prepare_source_count_df()
+def plot_retrieved_url_counts_over_time_by_model(platform="chatgpt"):
+    df = _prepare_source_count_df(platform)
     df = df[df["model"].str.lower() != "unknown"].copy()
     df = df.dropna(subset=["month"])
     if len(df) == 0:
@@ -2388,13 +2404,15 @@ def plot_retrieved_url_counts_over_time_by_model():
         ),
         margin=dict(b=90),
     )
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     file_name = "retrieved_url_counts_over_time_by_model"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 18), legend_pos=(0.8, 1.8))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def _plot_url_counts_grouped(df, group_col, file_name, xaxis_title):
+def _plot_url_counts_grouped(df, group_col, file_name, xaxis_title, platform="chatgpt"):
     grouped = (
         df.groupby(group_col)[["num_retrieved_urls", "num_cited_urls"]]
         .agg(["mean", "sem"])
@@ -2433,31 +2451,35 @@ def _plot_url_counts_grouped(df, group_col, file_name, xaxis_title):
         yaxis_title="Average # URLs per Turn",
         xaxis=dict(tickangle=-30),
     )
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 20))
     fig.update_xaxes(tickfont=dict(size=10))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def plot_url_counts_by_model():
-    df = _prepare_source_count_df()
+def plot_url_counts_by_model(platform="chatgpt"):
+    df = _prepare_source_count_df(platform)
     df = df[df["model"].str.lower() != "unknown"].copy()
     _plot_url_counts_grouped(
         df,
         group_col="model",
         file_name="url_counts_by_model",
         xaxis_title="Model",
+        platform=platform,
     )
 
 
-def plot_url_counts_by_topic():
-    df = _prepare_source_count_df()
+def plot_url_counts_by_topic(platform="chatgpt"):
+    df = _prepare_source_count_df(platform)
     df = df[df["topic"].fillna("").str.lower() != "other"].copy()
     _plot_url_counts_grouped(
         df,
         group_col="topic",
         file_name="url_counts_by_topic",
         xaxis_title="Topic",
+        platform=platform,
     )
 
 
@@ -2561,15 +2583,18 @@ def compare_safe_vs_retrieved_minus_safe_reachability():
         margin=dict(b=90),
     )
     fig.update_yaxes(tickformat=".0%", range=[0, 1])
+    output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     file_name = "safe_vs_retrieved_minus_safe_reachability"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
     return comparison_df
 
 
 def plot_retrieved_safe_cited_positions(separate_cited_external_internal=False):
+    os.makedirs(f"{OUTPUT_PATH}/chatgpt/{CONF}", exist_ok=True)
     df = pd.read_pickle(
         f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
@@ -2737,9 +2762,9 @@ def plot_retrieved_safe_cited_positions(separate_cited_external_internal=False):
         file_name = "retrieved_safe_cited_positions"
         if separate_cited_external_internal:
             file_name += "_split_cited"
-        fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+        fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
         fig = with_paper_style(fig, config=styler(18, 16))
-        fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+        fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
 
     if len(avg_rank_df) == 0:
         return
@@ -2833,7 +2858,7 @@ def plot_retrieved_safe_cited_positions(separate_cited_external_internal=False):
     file_name = "retrieved_safe_cited_positions_rank_violinplot"
     if separate_cited_external_internal:
         file_name += "_split_cited"
-    violin_fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    violin_fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
     violin_fig = with_paper_style(violin_fig, config=styler(18, 16), legend_pos=None)
     violin_fig.update_xaxes(tickangle=0, tickfont=dict(size=16))
     violin_fig.update_layout(
@@ -2841,7 +2866,7 @@ def plot_retrieved_safe_cited_positions(separate_cited_external_internal=False):
         # width=900,
         yaxis=dict(range=[main_rank_min, main_rank_max], autorange=False),
     )
-    violin_fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    violin_fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
 
 
 def _as_list(value):
@@ -2935,7 +2960,7 @@ def _build_retrieved_safe_cited_rank_plot_rows(
     return plot_rows
 
 
-def _plot_retrieved_safe_cited_ranks(plot_rows, file_name, yaxis_title):
+def _plot_retrieved_safe_cited_ranks(plot_rows, file_name, yaxis_title, platform="chatgpt"):
     plot_df = pd.DataFrame(plot_rows)
     if len(plot_df) == 0:
         return
@@ -2973,14 +2998,16 @@ def _plot_retrieved_safe_cited_ranks(plot_rows, file_name, yaxis_title):
     )
     fig.update_xaxes(dtick=5)
     fig.update_yaxes(autorange="reversed")
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
-def plot_retrieved_safe_cited_tranco_ranks():
+def plot_retrieved_safe_cited_tranco_ranks(platform="chatgpt"):
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_tranco_ranks.pkl"
     ).copy()
     plot_rows = _build_retrieved_safe_cited_rank_plot_rows(
         df,
@@ -2992,14 +3019,15 @@ def plot_retrieved_safe_cited_tranco_ranks():
         plot_rows,
         file_name="retrieved_safe_cited_tranco_ranks",
         yaxis_title="Tranco Rank",
+        platform=platform,
     )
 
 
-def plot_retrieved_safe_cited_judge_ranks():
+def plot_retrieved_safe_cited_judge_ranks(platform="chatgpt"):
     df = _load_first_existing_pickle(
         [
-            f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.pkl",
-            f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks_v2.pkl",
+            f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks.pkl",
+            f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks_v2.pkl",
         ]
     )
     plot_rows = _build_retrieved_safe_cited_rank_plot_rows(
@@ -3012,10 +3040,12 @@ def plot_retrieved_safe_cited_judge_ranks():
         plot_rows,
         file_name="retrieved_safe_cited_judge_ranks",
         yaxis_title="Judge Rank (5 - Score)",
+        platform=platform,
     )
 
 
 def cited_sources_reachability():
+    os.makedirs(f"{OUTPUT_PATH}/chatgpt/{CONF}", exist_ok=True)
     cache_path = f"{OUTPUT_PATH}/chatgpt/metadata/cited_sources_reachability.csv"
     if os.path.exists(cache_path):
         reachability_df = pd.read_csv(cache_path)
@@ -3072,10 +3102,12 @@ def cited_sources_reachability():
         hallucinated_col="num_novel_cited_urls_hallucinated",
         file_name="novel_cited_url_hallucination_rate_over_time",
         yaxis_title="Hallucinated Cited URLs (%)",
+        platform="chatgpt",
     )
 
 
 def plot_citations_round():
+    os.makedirs(f"{OUTPUT_PATH}/chatgpt/{CONF}", exist_ok=True)
     df = pd.read_pickle(
         f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     ).copy()
@@ -3118,9 +3150,9 @@ def plot_citations_round():
         yaxis_title="Number of Citations",
     )
     file_name = "citation_round_distribution"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
 
 
 def check_url(url):
@@ -3219,7 +3251,7 @@ def count_reachable_urls(urls):
         return sum(int(result) for result in executor.map(check_url, urls))
 
 
-def plot_hallucination_rate_over_time(df, total_col, hallucinated_col, file_name, yaxis_title):
+def plot_hallucination_rate_over_time(df, total_col, hallucinated_col, file_name, yaxis_title, platform="chatgpt"):
     plot_df = df.copy()
     plot_df["month"] = pd.to_datetime(plot_df["month"], errors="coerce")
     plot_df = plot_df.dropna(subset=["month"])
@@ -3272,12 +3304,15 @@ def plot_hallucination_rate_over_time(df, total_col, hallucinated_col, file_name
         line_dash="dash",
         line_color="black",
     )
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 17))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
 
 def venn_diagram_of_sources():
+    os.makedirs(f"{OUTPUT_PATH}/chatgpt/{CONF}", exist_ok=True)
     df = pd.read_pickle(
         f"{OUTPUT_PATH}/chatgpt/metadata/retrieved_safe_cited_extracted_from_srcs.pkl"
     )
@@ -3499,7 +3534,7 @@ def venn_diagram_of_sources():
     )
 
     file_name = "venn_diagram_of_sources"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.html")
     fig = with_paper_style(
         fig,
         config=styler(18, 16),
@@ -3516,16 +3551,23 @@ def venn_diagram_of_sources():
             font=dict(size=14, color="black"),
         ),
     )
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{OUTPUT_PATH}/chatgpt/{CONF}/{file_name}.pdf", format="pdf")
 
 
 def evaluate_source_tranco_ranks(
     separate_cited_external_internal=False,
     grounding_level="turn",
+    platform="chatgpt",
 ):
-    grounding_level = _validated_grounding_level(grounding_level) 
+    # response_and_sources_with_tranco_ranks.pkl is a research-only artifact
+    # (an external Tranco top-1M-domains ranking pass) not produced by
+    # anything in this repo, for any platform -- same category of gap as
+    # all_tools_categorized.json/web_calls_characterization.csv (see
+    # README's "Pipeline Order & Known Gaps").
+    grounding_level = _validated_grounding_level(grounding_level)
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_tranco_ranks.pkl"
     ).copy()
 
     def _as_list(value):
@@ -3694,10 +3736,10 @@ def evaluate_source_tranco_ranks(
     violin_file_name = "source_rank_violinplot"
     if separate_cited_external_internal:
         violin_file_name += f"_split_cited_{grounding_level}_grounding"
-    box_fig.write_html(f"{OUTPUT_PATH}/{CONF}/{violin_file_name}.html")
+    box_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{violin_file_name}.html")
     box_fig = with_paper_style(box_fig, config=styler(26, 16), legend_pos=None)
     box_fig.update_xaxes(tickangle=0, tickfont=dict(size=26))
-    box_fig.write_image(f"{OUTPUT_PATH}/{CONF}/{violin_file_name}.pdf", format="pdf")
+    box_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{violin_file_name}.pdf", format="pdf")
 
     paired_fig = make_subplots(rows=1, cols=1)
     if separate_cited_external_internal:
@@ -3775,7 +3817,7 @@ def evaluate_source_tranco_ranks(
     paired_file_name = "source_rank_paired_plot"
     if separate_cited_external_internal:
         paired_file_name += f"_split_cited_{grounding_level}_grounding"
-    paired_fig.write_html(f"{OUTPUT_PATH}/{CONF}/{paired_file_name}.html")
+    paired_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{paired_file_name}.html")
     legend_pos = (0.98, 1.2) if separate_cited_external_internal else None
     paired_fig = with_paper_style(
         paired_fig,
@@ -3783,12 +3825,15 @@ def evaluate_source_tranco_ranks(
         legend_pos=legend_pos,
     )
     paired_fig.update_layout(width=700 if separate_cited_external_internal else 500, height=400)
-    paired_fig.write_image(f"{OUTPUT_PATH}/{CONF}/{paired_file_name}.pdf", format="pdf")
+    paired_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{paired_file_name}.pdf", format="pdf")
 
 
-def evaluate_source_topical_judge_ranks():
+def evaluate_source_topical_judge_ranks(platform="chatgpt"):
+    # Same category of missing research-only artifact as
+    # evaluate_source_tranco_ranks() -- see its comment.
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks.pkl"
     ).copy()
 
     def _as_list(value):
@@ -3878,10 +3923,10 @@ def evaluate_source_topical_judge_ranks():
     )
     violin_fig.update_yaxes(range=[1, 5])
     file_name = "source_topic_judge_rank_violinplot"
-    violin_fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    violin_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     violin_fig = with_paper_style(violin_fig, config=styler(18, 16), legend_pos=None)
     # violin_fig.update_layout(height=600, width=800)
-    violin_fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    violin_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
     paired_fig = make_subplots(
         rows=1,
@@ -3990,15 +4035,18 @@ def evaluate_source_topical_judge_ranks():
         paired_fig.update_yaxes(title_text=y_col.replace("_", " ").title(), row=1, col=idx)
 
     file_name = "source_topic_judge_rank_paired_plot"
-    paired_fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    paired_fig.write_html(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.html")
     paired_fig = with_paper_style(paired_fig, config=styler(18, 16), legend_pos=None)
     paired_fig.update_layout(width=500, height=400)
-    paired_fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    paired_fig.write_image(f"{OUTPUT_PATH}/{platform}/{CONF}/{file_name}.pdf", format="pdf")
 
 
-def calculate_invivo_tranco_rank_correlation():
+def calculate_invivo_tranco_rank_correlation(platform="chatgpt"):
+    # Same category of missing research-only artifact as
+    # evaluate_source_tranco_ranks() -- see its comment.
+    os.makedirs(f"{OUTPUT_PATH}/{platform}/{CONF}", exist_ok=True)
     df = pd.read_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_tranco_ranks.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_tranco_ranks.pkl"
     ).copy()
 
     tranco_col = "ranks_srcs_retrieved"
@@ -4078,7 +4126,7 @@ def calculate_invivo_tranco_rank_correlation():
     if len(sample_avg_df) == 0:
         raise ValueError("No valid per-sample averages found for plotting.")
 
-    output_dir = f"{OUTPUT_PATH}/{CONF}"
+    output_dir = f"{OUTPUT_PATH}/{platform}/{CONF}"
     os.makedirs(output_dir, exist_ok=True)
     pair_df.to_csv(f"{output_dir}/invivo_tranco_rank_pairs.csv", index=False)
     sample_avg_df.to_csv(
@@ -4272,10 +4320,10 @@ def calculate_invivo_tranco_rank_correlation():
     return sample_avg_df
 
 
-def add_retrieved_safe_reliability_scores_to_topical_judge_ranks():
-    df = _load_response_source_similarity_input()
+def add_retrieved_safe_reliability_scores_to_topical_judge_ranks(platform="chatgpt"):
+    df = _load_response_source_similarity_input(platform=platform)
     df_scores = pd.read_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/source_reliability_scores.csv"
+        f"{OUTPUT_PATH}/{platform}/metadata/source_reliability_scores.csv"
     )
 
     required_score_cols = {"topic", "url", "score"}
@@ -4367,10 +4415,10 @@ def add_retrieved_safe_reliability_scores_to_topical_judge_ranks():
         df[score_col] = scores
 
     df.to_pickle(
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.pkl"
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks.pkl"
     )
     df.to_csv(
-        f"{OUTPUT_PATH}/chatgpt/metadata/response_and_sources_with_topical_judge_ranks.csv",
+        f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources_with_topical_judge_ranks.csv",
         index=False,
     )
     print(f"Final length: {len(df)}")
@@ -4384,6 +4432,12 @@ def get_encoding(model):
     
 
 def count_token_density():
+    # ChatGPT-only: reads extract_retrieved_safe_cited_source()'s output
+    # (no Claude/Grok/DeepSeek equivalent) and uses a ChatGPT-specific
+    # model whitelist, same as web_tool_invocation.py's now-removed
+    # web_call_trend_over_time_by_model().
+    output_dir = f"{OUTPUT_PATH}/chatgpt/{CONF}"
+    os.makedirs(output_dir, exist_ok=True)
     max_token_count = 6000
     token_bin_size = 250
     selected_models = [
@@ -4439,9 +4493,9 @@ def count_token_density():
     )
 
     file_name = "token_density_all_models"
-    fig_all.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig_all.write_html(f"{output_dir}/{file_name}.html")
     fig_all = with_paper_style(fig_all, config=styler(18, 16), legend_pos=None)
-    fig_all.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig_all.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
     token_df = all_token_df[all_token_df["model"].isin(selected_models)].copy()
     if token_df.empty:
@@ -4471,9 +4525,9 @@ def count_token_density():
     )
 
     file_name = "token_density_by_model"
-    fig.write_html(f"{OUTPUT_PATH}/{CONF}/{file_name}.html")
+    fig.write_html(f"{output_dir}/{file_name}.html")
     fig = with_paper_style(fig, config=styler(18, 16), legend_pos=(0.9, 1.2))
-    fig.write_image(f"{OUTPUT_PATH}/{CONF}/{file_name}.pdf", format="pdf")
+    fig.write_image(f"{output_dir}/{file_name}.pdf", format="pdf")
 
     token_df.to_csv(
         f"{OUTPUT_PATH}/chatgpt/metadata/token_density_by_model.csv", index=False

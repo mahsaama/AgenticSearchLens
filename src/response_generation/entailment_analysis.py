@@ -1778,7 +1778,7 @@ def plot_claim_bucket_tranco_rank_comparison(
     # Reuse the existing Tranco evaluation helper so the standard rank artifacts
     # and sanity checks stay in sync with this analysis.
     try:
-        evaluate_source_tranco_ranks()
+        evaluate_source_tranco_ranks(platform=platform)
     except Exception as e:
         logger.warning("evaluate_source_tranco_ranks() failed before plotting: %s", e)
 
