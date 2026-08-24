@@ -1,0 +1,51 @@
+{
+  "gpt-4.1-mini-2025-04-14": {
+    "ranges": {
+      "Search Results": {
+        "min": 25646.454545454544,
+        "max": 25646.454545454544
+      },
+      "Cited<br>Search Results": {
+        "min": 8781.833333333334,
+        "max": 8781.833333333334
+      },
+      "Cited<br>Parametric": null
+    }
+  },
+  "claude-sonnet-4-6": {
+    "ranges": {
+      "Search Results": {
+        "min": 4992.846153846154,
+        "max": 224070.22222222222
+      },
+      "Cited<br>Search Results": {
+        "min": 1103.4545454545455,
+        "max": 208476.42857142858
+      },
+      "Cited<br>Parametric": null
+    }
+  },
+  "grok-4.3": {
+    "ranges": {
+      "Search Results": {
+        "min": 2537.5625,
+        "max": 135958.81818181818
+      },
+      "Cited<br>Search Results": {
+        "min": 2809.285714285714,
+        "max": 2809.285714285714
+      },
+      "Cited<br>Parametric": null
+    }
+  },
+  "deepseek-v4-flash": {
+    "ranges": {
+      "Search Results": {
+        "min": 9119.111111111111,
+        "max": 12584.42857142857
+      },
+      "Cited<br>Search Results": null,
+      "Cited<br>Parametric": null
+    }
+  }
+}

@@ -1,0 +1,342 @@
+{
+  "gpt-4.1-mini-2025-04-14": {
+    "retrieved": [
+      {
+        "domain": "cbsnews.com",
+        "count": 2
+      },
+      {
+        "domain": "eadaily.com",
+        "count": 2
+      },
+      {
+        "domain": "bernama.com",
+        "count": 1
+      },
+      {
+        "domain": "antena3.ro",
+        "count": 1
+      },
+      {
+        "domain": "pragati365.com",
+        "count": 1
+      },
+      {
+        "domain": "aa.com.tr",
+        "count": 1
+      },
+      {
+        "domain": "tagesschau.de",
+        "count": 1
+      },
+      {
+        "domain": "spokesman.com",
+        "count": 1
+      },
+      {
+        "domain": "theguardian.com",
+        "count": 1
+      },
+      {
+        "domain": "wincalendar.com",
+        "count": 1
+      }
+    ],
+    "cited": [
+      {
+        "domain": "cbsnews.com",
+        "count": 2
+      },
+      {
+        "domain": "bernama.com",
+        "count": 2
+      },
+      {
+        "domain": "pragati365.com",
+        "count": 2
+      },
+      {
+        "domain": "aa.com.tr",
+        "count": 1
+      },
+      {
+        "domain": "theguardian.com",
+        "count": 1
+      }
+    ],
+    "cited_split": [
+      {
+        "domain": "bernama.com",
+        "external_count": 2,
+        "internal_count": 0,
+        "total_count": 2
+      },
+      {
+        "domain": "cbsnews.com",
+        "external_count": 2,
+        "internal_count": 0,
+        "total_count": 2
+      },
+      {
+        "domain": "pragati365.com",
+        "external_count": 2,
+        "internal_count": 0,
+        "total_count": 2
+      },
+      {
+        "domain": "aa.com.tr",
+        "external_count": 1,
+        "internal_count": 0,
+        "total_count": 1
+      },
+      {
+        "domain": "theguardian.com",
+        "external_count": 1,
+        "internal_count": 0,
+        "total_count": 1
+      }
+    ],
+    "num_samples": 1
+  },
+  "claude-sonnet-4-6": {
+    "retrieved": [
+      {
+        "domain": "euronews.com",
+        "count": 5
+      },
+      {
+        "domain": "npr.org",
+        "count": 2
+      },
+      {
+        "domain": "6abc.com",
+        "count": 1
+      },
+      {
+        "domain": "abc7ny.com",
+        "count": 1
+      },
+      {
+        "domain": "mprnews.org",
+        "count": 1
+      },
+      {
+        "domain": "cbsnews.com",
+        "count": 1
+      },
+      {
+        "domain": "foxnews.com",
+        "count": 1
+      },
+      {
+        "domain": "timesofisrael.com",
+        "count": 1
+      },
+      {
+        "domain": "robinsoncenter.uw.edu",
+        "count": 1
+      }
+    ],
+    "cited": [
+      {
+        "domain": "npr.org",
+        "count": 3
+      },
+      {
+        "domain": "cbsnews.com",
+        "count": 3
+      },
+      {
+        "domain": "foxnews.com",
+        "count": 3
+      },
+      {
+        "domain": "timesofisrael.com",
+        "count": 2
+      }
+    ],
+    "cited_split": [
+      {
+        "domain": "cbsnews.com",
+        "external_count": 3,
+        "internal_count": 0,
+        "total_count": 3
+      },
+      {
+        "domain": "foxnews.com",
+        "external_count": 3,
+        "internal_count": 0,
+        "total_count": 3
+      },
+      {
+        "domain": "npr.org",
+        "external_count": 3,
+        "internal_count": 0,
+        "total_count": 3
+      },
+      {
+        "domain": "timesofisrael.com",
+        "external_count": 2,
+        "internal_count": 0,
+        "total_count": 2
+      }
+    ],
+    "num_samples": 1
+  },
+  "grok-4.3": {
+    "retrieved": [
+      {
+        "domain": "cbsnews.com",
+        "count": 2
+      },
+      {
+        "domain": "washingtonpost.com",
+        "count": 2
+      },
+      {
+        "domain": "npr.org",
+        "count": 1
+      },
+      {
+        "domain": "youtube.com",
+        "count": 1
+      },
+      {
+        "domain": "pbs.org",
+        "count": 1
+      },
+      {
+        "domain": "goodmorningamerica.com",
+        "count": 1
+      },
+      {
+        "domain": "britannica.com",
+        "count": 1
+      },
+      {
+        "domain": "news.google.com",
+        "count": 1
+      },
+      {
+        "domain": "abcnews.com",
+        "count": 1
+      },
+      {
+        "domain": "cnn.com",
+        "count": 1
+      }
+    ],
+    "cited": [
+      {
+        "domain": "npr.org",
+        "count": 2
+      },
+      {
+        "domain": "cbsnews.com",
+        "count": 1
+      },
+      {
+        "domain": "goodmorningamerica.com",
+        "count": 1
+      },
+      {
+        "domain": "nytimes.com",
+        "count": 1
+      },
+      {
+        "domain": "cnn.com",
+        "count": 1
+      },
+      {
+        "domain": "pbs.org",
+        "count": 1
+      }
+    ],
+    "cited_split": [
+      {
+        "domain": "npr.org",
+        "external_count": 2,
+        "internal_count": 0,
+        "total_count": 2
+      },
+      {
+        "domain": "cbsnews.com",
+        "external_count": 1,
+        "internal_count": 0,
+        "total_count": 1
+      },
+      {
+        "domain": "cnn.com",
+        "external_count": 1,
+        "internal_count": 0,
+        "total_count": 1
+      },
+      {
+        "domain": "goodmorningamerica.com",
+        "external_count": 1,
+        "internal_count": 0,
+        "total_count": 1
+      },
+      {
+        "domain": "nytimes.com",
+        "external_count": 1,
+        "internal_count": 0,
+        "total_count": 1
+      },
+      {
+        "domain": "pbs.org",
+        "external_count": 1,
+        "internal_count": 0,
+        "total_count": 1
+      }
+    ],
+    "num_samples": 1
+  },
+  "deepseek-v4-flash": {
+    "retrieved": [
+      {
+        "domain": "bbc.com",
+        "count": 5
+      },
+      {
+        "domain": "images.thedailystar.net",
+        "count": 2
+      },
+      {
+        "domain": "abc7news.com",
+        "count": 2
+      },
+      {
+        "domain": "wistv.com:443",
+        "count": 2
+      },
+      {
+        "domain": "thedailystar.net",
+        "count": 2
+      },
+      {
+        "domain": "edition.cnn.com",
+        "count": 1
+      },
+      {
+        "domain": "postandcourier.com",
+        "count": 1
+      },
+      {
+        "domain": "lbc.co.uk",
+        "count": 1
+      },
+      {
+        "domain": "abcnews.go.com",
+        "count": 1
+      },
+      {
+        "domain": "kcrg.com",
+        "count": 1
+      }
+    ],
+    "cited": [],
+    "cited_split": [],
+    "num_samples": 1
+  }
+}

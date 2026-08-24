@@ -1,0 +1,753 @@
+[
+  {
+    "model": "gpt-4.1-mini-2025-04-14",
+    "provider": "openai",
+    "result_key": "web::6a8712d5-bc24-83ed-a880-52106c9c8a40::aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "sample_idx": 0,
+    "sample_source": "web",
+    "conv_id": "6a8712d5-bc24-83ed-a880-52106c9c8a40",
+    "turn_id": "aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "user_prompt": "What are the News today?",
+    "web_queries": [
+      [
+        "news today"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 3,
+        "reason": "The query specifies 'today', indicating a relative time frame for the requested information."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only specifies a generic category without identifying any specific news outlet, topic, or event."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query has no numeric constraints."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "news today",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 3,
+            "reason": "The query specifies a relative time reference by indicating 'today'."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query is too generic, only referring to a broad category without specific identifiers."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query 'news today' has no numeric constraints."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "model": "gpt-4.1-mini-2025-04-14",
+    "provider": "openai",
+    "result_key": "non_web::6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5::a03e9314-c73a-47f0-b01f-270474714e93",
+    "sample_idx": 1,
+    "sample_source": "non_web",
+    "conv_id": "6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5",
+    "turn_id": "a03e9314-c73a-47f0-b01f-270474714e93",
+    "user_prompt": "What are the 10 best places that everyone should visit in the world?",
+    "web_queries": [],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only refers to a generic category of places without specific identifiers."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query asks for a list without any numeric constraints beyond the count of places."
+      }
+    },
+    "web_query_specificity_info": []
+  },
+  {
+    "model": "gpt-4.1-mini-2025-04-14",
+    "provider": "openai",
+    "result_key": "non_web::6a8714b9-5438-83eb-8ea5-5238ce7a60cb::e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "sample_idx": 2,
+    "sample_source": "non_web",
+    "conv_id": "6a8714b9-5438-83eb-8ea5-5238ce7a60cb",
+    "turn_id": "e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "user_prompt": "How can I swap keys and values in a python dictionary?",
+    "web_queries": [],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query contains no location information."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query references a generic programming concept without specifying any particular code, library, or framework."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query does not include any numeric constraints or specifications."
+      }
+    },
+    "web_query_specificity_info": []
+  },
+  {
+    "model": "claude-sonnet-4-6",
+    "provider": "claude",
+    "result_key": "web::6a8712d5-bc24-83ed-a880-52106c9c8a40::aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "sample_idx": 0,
+    "sample_source": "web",
+    "conv_id": "6a8712d5-bc24-83ed-a880-52106c9c8a40",
+    "turn_id": "aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "user_prompt": "What are the News today?",
+    "web_queries": [
+      [
+        "top news today August 23 2026"
+      ],
+      [
+        "breaking news August 23 2026"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 3,
+        "reason": "The query specifies 'today', indicating a relative time frame for the requested information."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only specifies a generic category without identifying any specific news outlet, topic, or event."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query has no numeric constraints."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "top news today August 23 2026",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 5,
+            "reason": "The query specifies an exact date, August 23, 2026."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query is a generic category and does not specify any particular news source or topic."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query does not contain any numeric constraints related to quantities, measurements, or specifications."
+          }
+        }
+      },
+      {
+        "query": "breaking news August 23 2026",
+        "iteration": 2,
+        "specificity": {
+          "temporal": {
+            "score": 4,
+            "reason": "The query specifies a specific date, August 23, 2026."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query only identifies a generic category of news without specifying any unique or identifiable content."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query has no numeric constraints related to quantities or specifications, only a date."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "model": "claude-sonnet-4-6",
+    "provider": "claude",
+    "result_key": "non_web::6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5::a03e9314-c73a-47f0-b01f-270474714e93",
+    "sample_idx": 1,
+    "sample_source": "non_web",
+    "conv_id": "6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5",
+    "turn_id": "a03e9314-c73a-47f0-b01f-270474714e93",
+    "user_prompt": "What are the 10 best places that everyone should visit in the world?",
+    "web_queries": [
+      [
+        "best places to visit in the world 2026"
+      ],
+      [
+        "top 10 must visit places in the world all time bucket list"
+      ],
+      [
+        "Machu Picchu Santorini Serengeti Kyoto Great Barrier Reef why visit world's best destinations"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only refers to a generic category of places without specific identifiers."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query asks for a list without any numeric constraints beyond the count of places."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "best places to visit in the world 2026",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 4,
+            "reason": "The query specifies a particular year, 2026, but not a specific date or time."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query is a generic category asking for travel destinations without any specific names or identifiers."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query contains no numeric constraints regarding measurements or specifications."
+          }
+        }
+      },
+      {
+        "query": "top 10 must visit places in the world all time bucket list",
+        "iteration": 2,
+        "specificity": {
+          "temporal": {
+            "score": 1,
+            "reason": "The query has no time reference."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query only refers to a generic category of places without specifying any exact locations."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query contains no numeric constraints."
+          }
+        }
+      },
+      {
+        "query": "Machu Picchu Santorini Serengeti Kyoto Great Barrier Reef why visit world's best destinations",
+        "iteration": 3,
+        "specificity": {
+          "temporal": {
+            "score": 1,
+            "reason": "The query has no time reference."
+          },
+          "geographic": {
+            "score": 5,
+            "reason": "The query lists specific locations, each of which is an exact place."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query lists several travel destinations without identifying any specific item or unique entity."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query does not contain any numeric constraints."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "model": "claude-sonnet-4-6",
+    "provider": "claude",
+    "result_key": "non_web::6a8714b9-5438-83eb-8ea5-5238ce7a60cb::e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "sample_idx": 2,
+    "sample_source": "non_web",
+    "conv_id": "6a8714b9-5438-83eb-8ea5-5238ce7a60cb",
+    "turn_id": "e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "user_prompt": "How can I swap keys and values in a python dictionary?",
+    "web_queries": [],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query contains no location information."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query references a generic programming concept without specifying any particular code, library, or framework."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query does not include any numeric constraints or specifications."
+      }
+    },
+    "web_query_specificity_info": []
+  },
+  {
+    "model": "grok-4.3",
+    "provider": "grok",
+    "result_key": "web::6a8712d5-bc24-83ed-a880-52106c9c8a40::aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "sample_idx": 0,
+    "sample_source": "web",
+    "conv_id": "6a8712d5-bc24-83ed-a880-52106c9c8a40",
+    "turn_id": "aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "user_prompt": "What are the News today?",
+    "web_queries": [
+      [
+        "top news headlines August 23 2026"
+      ],
+      [
+        "breaking news today"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 3,
+        "reason": "The query specifies 'today', indicating a relative time frame for the requested information."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only specifies a generic category without identifying any specific news outlet, topic, or event."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query has no numeric constraints."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "top news headlines August 23 2026",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 4,
+            "reason": "The query specifies a particular date, but not an exact time."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query only refers to a generic category of news headlines without any specific entities."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query does not include any numeric constraints beyond a date."
+          }
+        }
+      },
+      {
+        "query": "breaking news today",
+        "iteration": 2,
+        "specificity": {
+          "temporal": {
+            "score": 3,
+            "reason": "The query specifies a relative time with 'today.'"
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query refers to a generic category without specifying any particular news item or source."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query contains no numeric constraints."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "model": "grok-4.3",
+    "provider": "grok",
+    "result_key": "non_web::6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5::a03e9314-c73a-47f0-b01f-270474714e93",
+    "sample_idx": 1,
+    "sample_source": "non_web",
+    "conv_id": "6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5",
+    "turn_id": "a03e9314-c73a-47f0-b01f-270474714e93",
+    "user_prompt": "What are the 10 best places that everyone should visit in the world?",
+    "web_queries": [
+      [
+        "top 10 best places to visit in the world"
+      ],
+      [
+        "best bucket list destinations world 2025 OR 2026"
+      ],
+      [
+        "most visited tourist attractions in the world"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only refers to a generic category of places without specific identifiers."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query asks for a list without any numeric constraints beyond the count of places."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "top 10 best places to visit in the world",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 1,
+            "reason": "The query includes no time reference."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query refers to a generic category of travel destinations without specifying any particular locations."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query has no numeric constraints, only a general request for a list."
+          }
+        }
+      },
+      {
+        "query": "best bucket list destinations world 2025 OR 2026",
+        "iteration": 2,
+        "specificity": {
+          "temporal": {
+            "score": 4,
+            "reason": "The query specifies a timeframe of either 2025 or 2026, which is a specific year reference."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query refers to a generic category of destinations without specifying any particular places or identifiers."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query contains no numeric constraints or specific values."
+          }
+        }
+      },
+      {
+        "query": "most visited tourist attractions in the world",
+        "iteration": 3,
+        "specificity": {
+          "temporal": {
+            "score": 1,
+            "reason": "The query has no time reference."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify a location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query refers to a generic category of tourist attractions without specific identifiers."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query contains no numeric constraints."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "model": "grok-4.3",
+    "provider": "grok",
+    "result_key": "non_web::6a8714b9-5438-83eb-8ea5-5238ce7a60cb::e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "sample_idx": 2,
+    "sample_source": "non_web",
+    "conv_id": "6a8714b9-5438-83eb-8ea5-5238ce7a60cb",
+    "turn_id": "e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "user_prompt": "How can I swap keys and values in a python dictionary?",
+    "web_queries": [],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query contains no location information."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query references a generic programming concept without specifying any particular code, library, or framework."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query does not include any numeric constraints or specifications."
+      }
+    },
+    "web_query_specificity_info": []
+  },
+  {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "result_key": "web::6a8712d5-bc24-83ed-a880-52106c9c8a40::aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "sample_idx": 0,
+    "sample_source": "web",
+    "conv_id": "6a8712d5-bc24-83ed-a880-52106c9c8a40",
+    "turn_id": "aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "user_prompt": "What are the News today?",
+    "web_queries": [
+      [
+        "today's top news headlines"
+      ],
+      [
+        "breaking news today"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 3,
+        "reason": "The query specifies 'today', indicating a relative time frame for the requested information."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only specifies a generic category without identifying any specific news outlet, topic, or event."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query has no numeric constraints."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "today's top news headlines",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 3,
+            "reason": "The query specifies a relative time by referring to 'today.'"
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query is a generic category without any specific identifiers."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "There are no numeric constraints in the query."
+          }
+        }
+      },
+      {
+        "query": "breaking news today",
+        "iteration": 2,
+        "specificity": {
+          "temporal": {
+            "score": 3,
+            "reason": "The query specifies a relative time with 'today.'"
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query refers to a generic category without specifying any particular news item or source."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query contains no numeric constraints."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "result_key": "non_web::6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5::a03e9314-c73a-47f0-b01f-270474714e93",
+    "sample_idx": 1,
+    "sample_source": "non_web",
+    "conv_id": "6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5",
+    "turn_id": "a03e9314-c73a-47f0-b01f-270474714e93",
+    "user_prompt": "What are the 10 best places that everyone should visit in the world?",
+    "web_queries": [
+      [
+        "10 best places to visit in the world everyone should see"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query does not specify any location."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query only refers to a generic category of places without specific identifiers."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query asks for a list without any numeric constraints beyond the count of places."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "10 best places to visit in the world everyone should see",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 1,
+            "reason": "The query has no time reference."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query is a generic category asking for places to visit without specifying any particular location."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query contains no numeric constraints related to specific measurements or quantities beyond a general count."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "result_key": "non_web::6a8714b9-5438-83eb-8ea5-5238ce7a60cb::e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "sample_idx": 2,
+    "sample_source": "non_web",
+    "conv_id": "6a8714b9-5438-83eb-8ea5-5238ce7a60cb",
+    "turn_id": "e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "user_prompt": "How can I swap keys and values in a python dictionary?",
+    "web_queries": [
+      [
+        "swap keys and values in python dictionary"
+      ]
+    ],
+    "user_query_specificity": {
+      "temporal": {
+        "score": 1,
+        "reason": "The query contains no time reference."
+      },
+      "geographic": {
+        "score": 1,
+        "reason": "The query contains no location information."
+      },
+      "entity": {
+        "score": 1,
+        "reason": "The query references a generic programming concept without specifying any particular code, library, or framework."
+      },
+      "numeric": {
+        "score": 1,
+        "reason": "The query does not include any numeric constraints or specifications."
+      }
+    },
+    "web_query_specificity_info": [
+      {
+        "query": "swap keys and values in python dictionary",
+        "iteration": 1,
+        "specificity": {
+          "temporal": {
+            "score": 1,
+            "reason": "The query contains no time reference."
+          },
+          "geographic": {
+            "score": 1,
+            "reason": "The query does not specify any location."
+          },
+          "entity": {
+            "score": 1,
+            "reason": "The query is a generic category related to programming without any specific identifiers."
+          },
+          "numeric": {
+            "score": 1,
+            "reason": "The query does not contain any numeric constraints."
+          }
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,130 @@
+{
+  "web::6a8712d5-bc24-83ed-a880-52106c9c8a40::aa46c3d4-d77f-41cd-922a-bda37bb6d346": {
+    "sample_idx": 0,
+    "sample_source": "web",
+    "conv_id": "6a8712d5-bc24-83ed-a880-52106c9c8a40",
+    "turn_id": "aa46c3d4-d77f-41cd-922a-bda37bb6d346",
+    "user_prompt": null,
+    "models": {
+      "gpt-4.1-mini-2025-04-14": {
+        "provider": "openai",
+        "web_queries": [
+          [
+            "news today"
+          ]
+        ]
+      },
+      "claude-sonnet-4-6": {
+        "provider": "claude",
+        "web_queries": [
+          [
+            "top news today August 23 2026"
+          ],
+          [
+            "breaking news August 23 2026"
+          ]
+        ]
+      },
+      "grok-4.3": {
+        "provider": "grok",
+        "web_queries": [
+          [
+            "top news headlines August 23 2026"
+          ],
+          [
+            "breaking news today"
+          ]
+        ]
+      },
+      "deepseek-v4-flash": {
+        "provider": "deepseek",
+        "web_queries": [
+          [
+            "today's top news headlines"
+          ],
+          [
+            "breaking news today"
+          ]
+        ]
+      }
+    }
+  },
+  "non_web::6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5::a03e9314-c73a-47f0-b01f-270474714e93": {
+    "sample_idx": 1,
+    "sample_source": "non_web",
+    "conv_id": "6a8714f0-96c0-83eb-9e78-0d7b18dbf4e5",
+    "turn_id": "a03e9314-c73a-47f0-b01f-270474714e93",
+    "user_prompt": null,
+    "models": {
+      "gpt-4.1-mini-2025-04-14": {
+        "provider": "openai",
+        "web_queries": []
+      },
+      "claude-sonnet-4-6": {
+        "provider": "claude",
+        "web_queries": [
+          [
+            "best places to visit in the world 2026"
+          ],
+          [
+            "top 10 must visit places in the world all time bucket list"
+          ],
+          [
+            "Machu Picchu Santorini Serengeti Kyoto Great Barrier Reef why visit world's best destinations"
+          ]
+        ]
+      },
+      "grok-4.3": {
+        "provider": "grok",
+        "web_queries": [
+          [
+            "top 10 best places to visit in the world"
+          ],
+          [
+            "best bucket list destinations world 2025 OR 2026"
+          ],
+          [
+            "most visited tourist attractions in the world"
+          ]
+        ]
+      },
+      "deepseek-v4-flash": {
+        "provider": "deepseek",
+        "web_queries": [
+          [
+            "10 best places to visit in the world everyone should see"
+          ]
+        ]
+      }
+    }
+  },
+  "non_web::6a8714b9-5438-83eb-8ea5-5238ce7a60cb::e21de86c-d803-4875-aca1-2cc4aef30a04": {
+    "sample_idx": 2,
+    "sample_source": "non_web",
+    "conv_id": "6a8714b9-5438-83eb-8ea5-5238ce7a60cb",
+    "turn_id": "e21de86c-d803-4875-aca1-2cc4aef30a04",
+    "user_prompt": null,
+    "models": {
+      "gpt-4.1-mini-2025-04-14": {
+        "provider": "openai",
+        "web_queries": []
+      },
+      "claude-sonnet-4-6": {
+        "provider": "claude",
+        "web_queries": []
+      },
+      "grok-4.3": {
+        "provider": "grok",
+        "web_queries": []
+      },
+      "deepseek-v4-flash": {
+        "provider": "deepseek",
+        "web_queries": [
+          [
+            "swap keys and values in python dictionary"
+          ]
+        ]
+      }
+    }
+  }
+}

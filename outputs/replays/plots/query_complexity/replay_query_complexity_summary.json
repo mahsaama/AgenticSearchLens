@@ -1,0 +1,422 @@
+{
+  "models_plotted": [
+    "gpt-4.1-mini-2025-04-14",
+    "claude-sonnet-4-6",
+    "grok-4.3",
+    "deepseek-v4-flash"
+  ],
+  "summary_by_model": {
+    "gpt-4.1-mini-2025-04-14": {
+      "num_web_queries": 1,
+      "num_prompts": 1,
+      "mean_web_query_terms": 2.0,
+      "median_web_query_terms": 2.0,
+      "mean_user_prompt_terms": 5.0,
+      "median_user_prompt_terms": 5.0,
+      "mean_avg_web_query_terms_per_prompt": 2.0,
+      "median_avg_web_query_terms_per_prompt": 2.0,
+      "mean_total_web_query_terms_per_prompt": 2.0,
+      "median_total_web_query_terms_per_prompt": 2.0,
+      "mean_total_web_queries_per_prompt": 1.0,
+      "median_total_web_queries_per_prompt": 1.0,
+      "mean_retrieved_urls_per_prompt": 12.0,
+      "median_retrieved_urls_per_prompt": 12.0,
+      "mean_retrieved_urls_per_web_query": 12.0,
+      "median_retrieved_urls_per_web_query": 12.0,
+      "mean_iterations_per_prompt": 1.0,
+      "median_iterations_per_prompt": 1.0
+    },
+    "claude-sonnet-4-6": {
+      "num_web_queries": 2,
+      "num_prompts": 1,
+      "mean_web_query_terms": 5.5,
+      "median_web_query_terms": 5.5,
+      "mean_user_prompt_terms": 5.0,
+      "median_user_prompt_terms": 5.0,
+      "mean_avg_web_query_terms_per_prompt": 5.5,
+      "median_avg_web_query_terms_per_prompt": 5.5,
+      "mean_total_web_query_terms_per_prompt": 11.0,
+      "median_total_web_query_terms_per_prompt": 11.0,
+      "mean_total_web_queries_per_prompt": 2.0,
+      "median_total_web_queries_per_prompt": 2.0,
+      "mean_retrieved_urls_per_prompt": 14.0,
+      "median_retrieved_urls_per_prompt": 14.0,
+      "mean_retrieved_urls_per_web_query": 7.0,
+      "median_retrieved_urls_per_web_query": 7.0,
+      "mean_iterations_per_prompt": 2.0,
+      "median_iterations_per_prompt": 2.0
+    },
+    "grok-4.3": {
+      "num_web_queries": 2,
+      "num_prompts": 1,
+      "mean_web_query_terms": 4.5,
+      "median_web_query_terms": 4.5,
+      "mean_user_prompt_terms": 5.0,
+      "median_user_prompt_terms": 5.0,
+      "mean_avg_web_query_terms_per_prompt": 4.5,
+      "median_avg_web_query_terms_per_prompt": 4.5,
+      "mean_total_web_query_terms_per_prompt": 9.0,
+      "median_total_web_query_terms_per_prompt": 9.0,
+      "mean_total_web_queries_per_prompt": 2.0,
+      "median_total_web_queries_per_prompt": 2.0,
+      "mean_retrieved_urls_per_prompt": 17.0,
+      "median_retrieved_urls_per_prompt": 17.0,
+      "mean_retrieved_urls_per_web_query": 8.5,
+      "median_retrieved_urls_per_web_query": 8.5,
+      "mean_iterations_per_prompt": 2.0,
+      "median_iterations_per_prompt": 2.0
+    },
+    "deepseek-v4-flash": {
+      "num_web_queries": 2,
+      "num_prompts": 1,
+      "mean_web_query_terms": 3.5,
+      "median_web_query_terms": 3.5,
+      "mean_user_prompt_terms": 5.0,
+      "median_user_prompt_terms": 5.0,
+      "mean_avg_web_query_terms_per_prompt": 3.5,
+      "median_avg_web_query_terms_per_prompt": 3.5,
+      "mean_total_web_query_terms_per_prompt": 7.0,
+      "median_total_web_query_terms_per_prompt": 7.0,
+      "mean_total_web_queries_per_prompt": 2.0,
+      "median_total_web_queries_per_prompt": 2.0,
+      "mean_retrieved_urls_per_prompt": 20.0,
+      "median_retrieved_urls_per_prompt": 20.0,
+      "mean_retrieved_urls_per_web_query": 10.0,
+      "median_retrieved_urls_per_web_query": 10.0,
+      "mean_iterations_per_prompt": 2.0,
+      "median_iterations_per_prompt": 2.0
+    }
+  },
+  "web_query_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "web_query_terms": 2.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "web_query_terms": 5.0,
+        "cdf": 0.5
+      },
+      {
+        "web_query_terms": 6.0,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "web_query_terms": 3.0,
+        "cdf": 0.5
+      },
+      {
+        "web_query_terms": 6.0,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "web_query_terms": 3.0,
+        "cdf": 0.5
+      },
+      {
+        "web_query_terms": 4.0,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "user_prompt_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "user_prompt_terms": 5.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "user_prompt_terms": 5.0,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "user_prompt_terms": 5.0,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "user_prompt_terms": 5.0,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "avg_web_query_terms_per_prompt_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "avg_web_query_terms_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "avg_web_query_terms_per_prompt": 5.5,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "avg_web_query_terms_per_prompt": 4.5,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "avg_web_query_terms_per_prompt": 3.5,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "total_web_query_terms_per_prompt_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "total_web_query_terms_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "total_web_query_terms_per_prompt": 11.0,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "total_web_query_terms_per_prompt": 9.0,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "total_web_query_terms_per_prompt": 7.0,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "total_web_queries_per_prompt_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "total_web_queries_per_prompt": 1.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "total_web_queries_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "total_web_queries_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "total_web_queries_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "retrieved_urls_per_prompt_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "retrieved_urls_per_prompt": 12.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "retrieved_urls_per_prompt": 14.0,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "retrieved_urls_per_prompt": 17.0,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "retrieved_urls_per_prompt": 20.0,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "retrieved_urls_per_web_query_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "retrieved_urls_per_web_query": 12.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "retrieved_urls_per_web_query": 7.0,
+        "cdf": 0.5
+      },
+      {
+        "retrieved_urls_per_web_query": 7.0,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "retrieved_urls_per_web_query": 8.5,
+        "cdf": 0.5
+      },
+      {
+        "retrieved_urls_per_web_query": 8.5,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "retrieved_urls_per_web_query": 10.0,
+        "cdf": 0.5
+      },
+      {
+        "retrieved_urls_per_web_query": 10.0,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "iterations_per_prompt_cdf_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "iterations_per_prompt": 1.0,
+        "cdf": 1.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "iterations_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "iterations_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "iterations_per_prompt": 2.0,
+        "cdf": 1.0
+      }
+    ]
+  },
+  "web_prompts_by_iteration_over_time_points_by_model": {
+    "gpt-4.1-mini-2025-04-14": [
+      {
+        "month": "2026-08",
+        "iteration_bucket": "1",
+        "num_prompts": 1,
+        "month_total_prompts": 1,
+        "pct_prompts": 100.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "2",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "3+",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      }
+    ],
+    "claude-sonnet-4-6": [
+      {
+        "month": "2026-08",
+        "iteration_bucket": "1",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "2",
+        "num_prompts": 1,
+        "month_total_prompts": 1,
+        "pct_prompts": 100.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "3+",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      }
+    ],
+    "grok-4.3": [
+      {
+        "month": "2026-08",
+        "iteration_bucket": "1",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "2",
+        "num_prompts": 1,
+        "month_total_prompts": 1,
+        "pct_prompts": 100.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "3+",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      }
+    ],
+    "deepseek-v4-flash": [
+      {
+        "month": "2026-08",
+        "iteration_bucket": "1",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "2",
+        "num_prompts": 1,
+        "month_total_prompts": 1,
+        "pct_prompts": 100.0
+      },
+      {
+        "month": "2026-08",
+        "iteration_bucket": "3+",
+        "num_prompts": 0,
+        "month_total_prompts": 1,
+        "pct_prompts": 0.0
+      }
+    ]
+  },
+  "web_prompts_by_iteration_over_time_plot_files_by_model": {
+    "gpt-4.1-mini-2025-04-14": "replay_web_prompts_by_iteration_over_time_gpt-4.1-mini-2025-04-14",
+    "claude-sonnet-4-6": "replay_web_prompts_by_iteration_over_time_claude-sonnet-4-6",
+    "grok-4.3": "replay_web_prompts_by_iteration_over_time_grok-4.3",
+    "deepseek-v4-flash": "replay_web_prompts_by_iteration_over_time_deepseek-v4-flash"
+  }
+}

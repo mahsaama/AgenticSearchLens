@@ -1,0 +1,37 @@
+model,model_display,dimension,dimension_display,stage_idx,stage_label,mean_specificity_direction,percentage_specificity_direction,count
+claude-sonnet-4-6,Claude Sonnet 4.6,temporal,Temporal,1,Iter. 1,1.0,100.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,temporal,Temporal,2,Iter. 2,0.5,50.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,temporal,Temporal,3,Iter. 3+,0.0,0.0,1
+claude-sonnet-4-6,Claude Sonnet 4.6,geographic,Geographic,1,Iter. 1,0.0,0.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,geographic,Geographic,2,Iter. 2,0.0,0.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,geographic,Geographic,3,Iter. 3+,1.0,100.0,1
+claude-sonnet-4-6,Claude Sonnet 4.6,entity,Entity,1,Iter. 1,0.0,0.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,entity,Entity,2,Iter. 2,0.0,0.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,entity,Entity,3,Iter. 3+,0.0,0.0,1
+claude-sonnet-4-6,Claude Sonnet 4.6,numeric,Numeric,1,Iter. 1,0.0,0.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,numeric,Numeric,2,Iter. 2,0.0,0.0,2
+claude-sonnet-4-6,Claude Sonnet 4.6,numeric,Numeric,3,Iter. 3+,0.0,0.0,1
+deepseek-v4-flash,DeepSeek V4 Flash,temporal,Temporal,1,Iter. 1,0.0,0.0,3
+deepseek-v4-flash,DeepSeek V4 Flash,temporal,Temporal,2,Iter. 2,0.0,0.0,1
+deepseek-v4-flash,DeepSeek V4 Flash,geographic,Geographic,1,Iter. 1,0.0,0.0,3
+deepseek-v4-flash,DeepSeek V4 Flash,geographic,Geographic,2,Iter. 2,0.0,0.0,1
+deepseek-v4-flash,DeepSeek V4 Flash,entity,Entity,1,Iter. 1,0.0,0.0,3
+deepseek-v4-flash,DeepSeek V4 Flash,entity,Entity,2,Iter. 2,0.0,0.0,1
+deepseek-v4-flash,DeepSeek V4 Flash,numeric,Numeric,1,Iter. 1,0.0,0.0,3
+deepseek-v4-flash,DeepSeek V4 Flash,numeric,Numeric,2,Iter. 2,0.0,0.0,1
+gpt-4.1-mini-2025-04-14,GPT-4.1 Mini,temporal,Temporal,1,Iter. 1,0.0,0.0,1
+gpt-4.1-mini-2025-04-14,GPT-4.1 Mini,geographic,Geographic,1,Iter. 1,0.0,0.0,1
+gpt-4.1-mini-2025-04-14,GPT-4.1 Mini,entity,Entity,1,Iter. 1,0.0,0.0,1
+gpt-4.1-mini-2025-04-14,GPT-4.1 Mini,numeric,Numeric,1,Iter. 1,0.0,0.0,1
+grok-4.3,Grok-4.3,temporal,Temporal,1,Iter. 1,0.5,50.0,2
+grok-4.3,Grok-4.3,temporal,Temporal,2,Iter. 2,0.5,50.0,2
+grok-4.3,Grok-4.3,temporal,Temporal,3,Iter. 3+,0.0,0.0,1
+grok-4.3,Grok-4.3,geographic,Geographic,1,Iter. 1,0.0,0.0,2
+grok-4.3,Grok-4.3,geographic,Geographic,2,Iter. 2,0.0,0.0,2
+grok-4.3,Grok-4.3,geographic,Geographic,3,Iter. 3+,0.0,0.0,1
+grok-4.3,Grok-4.3,entity,Entity,1,Iter. 1,0.0,0.0,2
+grok-4.3,Grok-4.3,entity,Entity,2,Iter. 2,0.0,0.0,2
+grok-4.3,Grok-4.3,entity,Entity,3,Iter. 3+,0.0,0.0,1
+grok-4.3,Grok-4.3,numeric,Numeric,1,Iter. 1,0.0,0.0,2
+grok-4.3,Grok-4.3,numeric,Numeric,2,Iter. 2,0.0,0.0,2
+grok-4.3,Grok-4.3,numeric,Numeric,3,Iter. 3+,0.0,0.0,1
