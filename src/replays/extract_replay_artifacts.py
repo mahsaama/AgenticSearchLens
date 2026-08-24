@@ -5529,6 +5529,7 @@ def response_source_nli_sentence_based_factuality_for_replays(
     import pandas as pd
 
     from src.response_generation.entailment_analysis import FACTUALITY_JUDGE_MODEL, _json_safe, evaluate_claim_factuality
+    from src.replays.chat_replayer_evaluation import judge_platform_for_replay_model
 
     factuality_model_name = factuality_model_name or FACTUALITY_JUDGE_MODEL
     model_slug = _model_subset_slug(model_names)
@@ -5615,14 +5616,19 @@ def response_source_nli_sentence_based_factuality_for_replays(
         if not claim:
             continue
         user_query = str(record.get("user_prompt", "") or "").strip()
-        cache_key = (user_query, claim)
+        # Judge each claim with ITS OWN replayed model's platform (records
+        # here can span multiple models -- see _load_records_from_per_
+        # model_files), not a single fixed factuality_model_name, matching
+        # every other factuality judge in this codebase.
+        platform = judge_platform_for_replay_model(record.get("model", ""))
+        cache_key = (platform, user_query, claim)
         if cache_key in claim_cache:
             factuality = claim_cache[cache_key]
         else:
             factuality = evaluate_claim_factuality(
                 claim,
                 user_query=user_query,
-                model_name=factuality_model_name,
+                platform=platform,
             )
             claim_cache[cache_key] = factuality
 
@@ -6944,7 +6950,7 @@ if __name__ == "__main__":
 
     # plot_openai_replay_dev_prompt_web_call_heatmap()
 
-    evaluate_replay_source_tranco_ranks(separate_cited_external_internal=True)
+    # evaluate_replay_source_tranco_ranks(separate_cited_external_internal=True)
 
     for model in DEFAULT_MODELS:
         asyncio.run(
