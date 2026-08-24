@@ -423,11 +423,19 @@ def _claims_output_path_for_model(model_name_value):
     return Path(f"{OUTPUT_PATH}/replays/extracted/{model_name_value}_claims.json")
 
 
-def load_multi_model_claim_analysis_results(model_names=None):
+def load_multi_model_claim_analysis_results(model_names=None, auto_build=True, limit=None):
     """Load build_claim_analysis() output for each of `model_names`
-    (default: MODEL_NAMES, all four platforms) into
-    {model_name: records}. Raises FileNotFoundError only if none of them
-    have results yet; otherwise warns and skips the missing ones."""
+    (default: MODEL_NAMES, all four platforms) into {model_name: records}.
+
+    A model with no build_claim_analysis() output yet is not simply
+    skipped: if `auto_build` (the default) and that model's replay file
+    exists, its claim analysis is built right here -- run with whatever
+    replay data is actually available instead of requiring a separate
+    manual `--platform <x>` run per model first. A model is only skipped
+    (with a warning) if its replay file doesn't exist, or building it
+    genuinely fails (e.g. an API error); this only raises if nothing
+    could be loaded or built for ANY model.
+    """
     model_names = model_names or MODEL_NAMES
     loaded_results = {}
     missing_paths = []
@@ -436,19 +444,67 @@ def load_multi_model_claim_analysis_results(model_names=None):
         input_path = _claims_output_path_for_model(model_name_value)
         records = load_json(input_path)
         if not isinstance(records, dict):
-            missing_paths.append(str(input_path))
-            continue
+            if not auto_build:
+                missing_paths.append(str(input_path))
+                continue
+
+            replay_path = Path(f"{OUTPUT_PATH}/replays/{model_name_value}.json")
+            if not replay_path.exists():
+                logger.warning(
+                    "Skipping %s: no build_claim_analysis() output at %s and no "
+                    "replay file at %s to build it from (run chat_replayer.py "
+                    "for this model first).",
+                    model_name_value,
+                    input_path,
+                    replay_path,
+                )
+                missing_paths.append(str(input_path))
+                continue
+
+            logger.info(
+                "%s has no claim-analysis results yet -- building from %s now.",
+                model_name_value,
+                replay_path,
+            )
+            try:
+                records = build_claim_analysis(
+                    replay_path=replay_path,
+                    output_path=input_path,
+                    cache_path=Path(
+                        f"{OUTPUT_PATH}/replays/extracted/{model_name_value}_claims_cache.json"
+                    ),
+                    limit=limit,
+                    model_name_value=model_name_value,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Skipping %s: building claim analysis failed: %s",
+                    model_name_value,
+                    exc,
+                )
+                missing_paths.append(str(input_path))
+                continue
+
+            if not isinstance(records, dict) or not records:
+                logger.warning(
+                    "Skipping %s: build_claim_analysis() produced no qualifying "
+                    "samples (e.g. none of its replay samples called Web search).",
+                    model_name_value,
+                )
+                missing_paths.append(str(input_path))
+                continue
+
         loaded_results[model_name_value] = records
 
     if not loaded_results:
         raise FileNotFoundError(
-            "No claim-analysis result files were found. Missing paths: "
-            + ", ".join(missing_paths)
+            "No claim-analysis result files were found or could be built. "
+            "Missing paths: " + ", ".join(missing_paths)
         )
 
     if missing_paths:
         logger.warning(
-            "Skipping missing or unreadable claim-analysis files: %s",
+            "Skipping missing or unbuildable claim-analysis files: %s",
             ", ".join(missing_paths),
         )
 
@@ -590,12 +646,21 @@ def _stacked_bar_figure(distributions_by_model, category_order, color_map, title
 def plot_multi_model_claim_comparison_summaries(
     model_names=None,
     output_dir=PLOT_OUTPUT_DIR,
+    auto_build=True,
+    limit=None,
 ):
     """Build and save (PDF, under `output_dir`) two stacked-bar charts
     comparing `model_names` (default MODEL_NAMES): claim-level relation
     distribution, and response-level category distribution. Returns the
-    figures and output paths."""
-    model_results = load_multi_model_claim_analysis_results(model_names=model_names)
+    figures and output paths.
+
+    Uses whatever models have (or, if `auto_build`, can have built for
+    them -- see load_multi_model_claim_analysis_results) claim-analysis
+    results available; a model with no replay data at all is skipped, not
+    fatal, as long as at least one other model has something to plot."""
+    model_results = load_multi_model_claim_analysis_results(
+        model_names=model_names, auto_build=auto_build, limit=limit
+    )
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -736,7 +801,17 @@ def main():
     parser.add_argument(
         "--plot-multi-model-summary",
         action="store_true",
-        help="Load the four model result files and generate stacked summary plots.",
+        help="Load each model's result file and generate stacked summary "
+        "plots -- a model with no results yet is built automatically from "
+        "its own replay file (see --no-auto-build), not required as a "
+        "separate manual run first.",
+    )
+    parser.add_argument(
+        "--no-auto-build",
+        action="store_true",
+        help="With --plot-multi-model-summary: don't auto-build missing "
+        "models' claim analysis -- just skip (or, if none have results, "
+        "fail) instead.",
     )
     args = parser.parse_args()
 
@@ -764,7 +839,10 @@ def main():
         return
 
     if args.plot_multi_model_summary:
-        plot_multi_model_claim_comparison_summaries()
+        plot_multi_model_claim_comparison_summaries(
+            auto_build=not args.no_auto_build,
+            limit=args.limit,
+        )
         return
 
     build_claim_analysis(
