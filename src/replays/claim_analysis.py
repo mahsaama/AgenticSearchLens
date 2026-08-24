@@ -94,6 +94,15 @@ REPLAY_PATH = Path(f"{OUTPUT_PATH}/replays/{model_name}.json")
 OUTPUT_PATH_CLAIMS = Path(f"{OUTPUT_PATH}/replays/extracted/{model_name}_claims.json")
 CACHE_PATH = Path(f"{OUTPUT_PATH}/replays/extracted/{model_name}_claims_cache.json")
 PLOT_OUTPUT_DIR = Path(f"{OUTPUT_PATH}/replays/plots")
+# run_judge()'s own default (1024) is too low for claim comparison: a
+# response pair with many claims produces many alignments plus an
+# explanation, and Anthropic-compatible platforms (claude/deepseek) --
+# unlike the OpenAI-compatible tool-free path, which sets no cap at all --
+# always pass max_tokens through to the API, so the judge's JSON gets cut
+# off mid-object well before it finishes (silently: the API call succeeds,
+# it's just truncated, so compare_claim_sets sees no error, only an empty
+# judgment after parsing fails on the incomplete text).
+CLAIM_COMPARISON_JUDGE_MAX_OUTPUT_TOKENS = 4096
 
 
 def _load_replay_json(path):
@@ -230,10 +239,20 @@ def compare_claim_sets(user_query, claims_without_web, claims_with_web, platform
             system_prompt=SYSTEM_PROMPT_CLAIM_COMPARISON,
             user_prompt=user_prompt,
             temperature=0,
+            max_tokens=CLAIM_COMPARISON_JUDGE_MAX_OUTPUT_TOKENS,
         )
     except Exception as exc:
         logger.warning("Claim comparison judge failed: %s", exc)
         return {"judgment": {}, "error": str(exc)}
+
+    if not judge_result["parsed_judgment"] and judge_result["raw_judgment"]:
+        logger.warning(
+            "Claim comparison judge (%s) returned unparseable/truncated "
+            "output (%d chars, doesn't close its JSON object); judgment "
+            "will be empty for this sample.",
+            platform,
+            len(judge_result["raw_judgment"]),
+        )
 
     normalized_judgment = _normalize_claim_comparison_judgment(
         judge_result["parsed_judgment"]
