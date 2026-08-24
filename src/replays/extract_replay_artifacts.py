@@ -6953,31 +6953,31 @@ if __name__ == "__main__":
 
     # evaluate_replay_source_tranco_ranks(separate_cited_external_internal=True)
 
-    for model in DEFAULT_MODELS:
-        asyncio.run(
-            extract_replay_urls_content(
-                model_names=[model],
-                common_filter_model_names=DEFAULT_MODELS,
-                replay_mode="auto",
-                force_refresh=False,
-            )
-        )
+    # for model in DEFAULT_MODELS:
+    #     asyncio.run(
+    #         extract_replay_urls_content(
+    #             model_names=[model],
+    #             common_filter_model_names=DEFAULT_MODELS,
+    #             replay_mode="auto",
+    #             force_refresh=False,
+    #         )
+    #     )
 
-        response_source_nli_sentence_based_for_replays(
-            model_names=[model],
-            common_filter_model_names=DEFAULT_MODELS,
-            nli_method="judge",
-            chunking_method="claim",
-            claim_selection_mode="all",
-        )
+    #     response_source_nli_sentence_based_for_replays(
+    #         model_names=[model],
+    #         common_filter_model_names=DEFAULT_MODELS,
+    #         nli_method="judge",
+    #         chunking_method="claim",
+    #         claim_selection_mode="all",
+    #     )
 
-        asyncio.run(
-            replay_hallucinated_url_detection(
-                model_names=[model],
-                common_filter_model_names=DEFAULT_MODELS,
-                replay_mode="auto",
-            )
-        )
+    #     asyncio.run(
+    #         replay_hallucinated_url_detection(
+    #             model_names=[model],
+    #             common_filter_model_names=DEFAULT_MODELS,
+    #             replay_mode="auto",
+    #         )
+    #     )
 
     plot_response_source_nli_sentence_based_judge_for_replays(
         model_names=DEFAULT_MODELS,
