@@ -104,6 +104,20 @@ def normalize_url(url):
     )
 
 
+def domain_of_url(url):
+    """Normalized domain (lowercased, no "www.") for a URL -- used to
+    classify a cited URL as "cited_and_retrieved" by DOMAIN rather than
+    exact URL: a cited page counts as retrieved if its domain was
+    searched, even if that specific page isn't itself among the recorded
+    retrieved URLs (per the same reasoning as source_selection.py's
+    _domain_from_url -- ChatGPT's exported search_result_groups metadata
+    doesn't capture every URL the web tool actually visited)."""
+    host = urlparse(str(url or "")).netloc.strip().lower()
+    if host.startswith("www."):
+        host = host[4:]
+    return host
+
+
 def parse_source_value(value):
     """Coerce a pkl column's raw source value -- which may already be a
     list/tuple/set, a stringified-list (as stored after a CSV/pickle
@@ -218,11 +232,13 @@ def build_citation_groups(
     cited_col="srcs_cited",
 ):
     """Stage 1: split every cited URL in `input_pkl` into "cited_and_retrieved"
-    (also appeared in that conversation's own retrieved sources, cumulative
-    across turns) vs. "cited_only" (cited but never actually retrieved --
-    the group most likely to contain hallucinated citations), writing
-    per-group occurrences/unique-URLs/cite-months JSON under `output_dir`.
-    Returns a summary dict (also written to citation_grouping_summary.json).
+    (its DOMAIN also appeared in that conversation's own retrieved
+    sources, cumulative across turns -- not an exact-URL match, see
+    domain_of_url) vs. "cited_only" (cited but its domain was never
+    actually retrieved -- the group most likely to contain hallucinated
+    citations), writing per-group occurrences/unique-URLs/cite-months
+    JSON under `output_dir`. Returns a summary dict (also written to
+    citation_grouping_summary.json).
 
     `input_pkl` is normally a path to a pickled DataFrame (e.g.
     response_and_sources.pkl), but an already-loaded DataFrame is also
@@ -266,9 +282,16 @@ def build_citation_groups(
         retrieved_set = conversation_retrieved[conv_id]
         retrieved_set.update(retrieved_urls)
         month = row_month(row)
+        # Domain-level match, not exact URL -- see domain_of_url's
+        # docstring for why.
+        retrieved_domains = {domain_of_url(u) for u in retrieved_set}
 
         for url in cited_urls:
-            group = "cited_and_retrieved" if url in retrieved_set else "cited_only"
+            group = (
+                "cited_and_retrieved"
+                if domain_of_url(url) in retrieved_domains
+                else "cited_only"
+            )
             occurrence = {
                 "url": url,
                 "group": group,
