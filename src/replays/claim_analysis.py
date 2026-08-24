@@ -5,10 +5,24 @@ claim pairs (MATCH/REFINEMENT/CONTRADICTION/UNMATCHED) to characterize what
 Web search actually changed about the response, not just whether quality
 scores moved.
 
-Run directly (`python -m src.web_search_decision.claim_analysis --help`)
-for the CLI: build a claim analysis from a replay file, print a summary, or
-plot a multi-model comparison. Requires OPENAI_API_KEY in .env, and a
-replay file already produced by src/replays/chat_replayer.py.
+Claim extraction reuses src.response_generation.claim_extraction.
+extract_claims_from_text() (the same extractor response_generation.py's
+NLI pipeline uses) rather than a separate duplicated implementation.
+Claim comparison is judged by the replayed model's OWN platform's model
+(see src.utils.llm_judge.JUDGE_MODEL_BY_PLATFORM and
+chat_replayer_evaluation.judge_platform_for_replay_model), not a single
+fixed judge -- consistent with every other judge in this codebase.
+
+Lives in src/replays/ (not src/web_search_decision/) alongside
+chat_replayer.py/chat_replayer_evaluation.py/extract_replay_artifacts.py:
+it operates on chat_replayer.py's replay output, not on the original
+web-search-decision conversation data.
+
+Run directly (`python -m src.replays.claim_analysis --help`) for the CLI:
+build a claim analysis from a replay file, print a summary, or plot a
+multi-model comparison. Requires the relevant provider API key(s) in .env
+(see llm_judge.py), and a replay file already produced by
+src/replays/chat_replayer.py.
 """
 
 import argparse
@@ -22,18 +36,18 @@ from pathlib import Path
 
 import plotly.graph_objects as go
 from dotenv import load_dotenv
-from openai import OpenAI
 from tqdm import tqdm
 
 from src.prompts.evaluator_prompts import (
     SYSTEM_PROMPT_CLAIM_COMPARISON,
-    SYSTEM_PROMPT_CLAIM_EXTRACTION,
     USER_PROMPT_CLAIM_COMPARISON,
-    USER_PROMPT_CLAIM_EXTRACTION,
 )
+from src.replays.chat_replayer_evaluation import judge_platform_for_replay_model
 from src.replays.extract_replay_artifacts import _has_web_tool_call, _infer_provider
+from src.response_generation.claim_extraction import extract_claims_from_text as _extract_claims_from_text
 from src.utils.figure_style import styler, with_paper_style
 from src.utils.common_io import OUTPUT_PATH, load_json, to_json
+from src.utils.llm_judge import run_judge
 
 
 load_dotenv()
@@ -41,13 +55,13 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 if not logging.getLogger().handlers:
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL").upper(),
+        level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-# model_name = "gpt-5.3-chat-latest" 
-# model_name = "claude-sonnet-4-6" 
-# model_name = "grok-4.3" 
+# model_name = "gpt-5.3-chat-latest"
+# model_name = "claude-sonnet-4-6"
+# model_name = "grok-4.3"
 model_name = "deepseek-v4-flash"
 MODEL_NAMES = [
     "gpt-5.3-chat-latest",
@@ -67,9 +81,6 @@ REPLAY_PATH = Path(f"{OUTPUT_PATH}/replays/{model_name}.json")
 OUTPUT_PATH_CLAIMS = Path(f"{OUTPUT_PATH}/replays/extracted/{model_name}_claims.json")
 CACHE_PATH = Path(f"{OUTPUT_PATH}/replays/extracted/{model_name}_claims_cache.json")
 PLOT_OUTPUT_DIR = Path(f"{OUTPUT_PATH}/replays/plots")
-CLAIM_EXTRACTION_MODEL = os.getenv("CLAIM_ANALYSIS_MODEL")
-CLAIM_COMPARISON_JUDGE_MODEL = os.getenv("CLAIM_COMPARISON_JUDGE_MODEL")
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def _load_replay_json(path):
@@ -88,20 +99,6 @@ def _load_replay_json(path):
             f"Replay file `{path}` did not parse to a dict; got {type(parsed).__name__}."
         )
     return parsed
-
-
-def _coerce_claim_list(payload):
-    """Pull a list of claims out of a judge response, whether it returned a
-    bare JSON array or an object wrapping the array under a plausible key
-    ("claims", "claim_list", etc.)."""
-    if isinstance(payload, list):
-        return payload
-    if isinstance(payload, dict):
-        for key in ["claims", "claim_list", "items", "sentences", "chunks"]:
-            value = payload.get(key)
-            if isinstance(value, list):
-                return value
-    return []
 
 
 def _clean_claims(claims):
@@ -126,40 +123,6 @@ def _clean_claims(claims):
         seen.add(claim)
         cleaned_claims.append(claim)
     return cleaned_claims
-
-
-def _extract_first_json_array(text):
-    """Best-effort recovery of a JSON array from `text` when it isn't valid
-    JSON on its own (judge responses sometimes wrap the array in prose):
-    the substring from the first "[" to the last "]"."""
-    if not isinstance(text, str):
-        return None
-    start = text.find("[")
-    end = text.rfind("]")
-    if start == -1 or end == -1 or start >= end:
-        return None
-    try:
-        parsed = json.loads(text[start : end + 1])
-    except json.JSONDecodeError:
-        return None
-    return parsed
-
-
-def _extract_first_json_object(text):
-    """Best-effort recovery of a JSON object from `text` when it isn't
-    valid JSON on its own: the substring from the first "{" to the last
-    "}"."""
-    if not isinstance(text, str):
-        return None
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or start >= end:
-        return None
-    try:
-        parsed = json.loads(text[start : end + 1])
-    except json.JSONDecodeError:
-        return None
-    return parsed
 
 
 def _normalize_claim_comparison_judgment(payload):
@@ -220,99 +183,63 @@ def _normalize_claim_level_relation_label(label):
 
 def extract_claims_from_text(text):
     """Extract a deduplicated list of atomic factual claims from `text`
-    (typically one response's final answer) via SYSTEM_PROMPT_CLAIM_EXTRACTION.
-    Returns [] on empty input or judge failure."""
-    text = str(text or "").strip()
-    if not text:
-        return []
+    (typically one response's final answer). Thin wrapper around
+    src.response_generation.claim_extraction.extract_claims_from_text --
+    the same extractor response_generation.py's NLI pipeline uses -- so
+    claim extraction isn't duplicated between the two pipelines. Returns
+    [] on empty input or extraction failure."""
+    return _extract_claims_from_text(text)
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT_CLAIM_EXTRACTION},
-        {
-            "role": "user",
-            "content": USER_PROMPT_CLAIM_EXTRACTION.format(text=text),
-        },
-    ]
 
-    response_text = ""
+def compare_claim_sets(user_query, claims_without_web, claims_with_web, platform="chatgpt"):
+    """Have `platform`'s own judge model (see llm_judge.JUDGE_MODEL_BY_PLATFORM)
+    align and classify two claim sets for the same prompt
+    (SYSTEM_PROMPT_CLAIM_COMPARISON) -- e.g. the claims extracted from a
+    response generated without vs. with Web search. `platform` should be
+    the replayed model's own platform (see judge_platform_for_replay_model)
+    so a model's claim changes are judged by that model's own family, not
+    a single fixed judge. Returns {"raw_output": str, "judgment":
+    normalized_dict, "error": str}; on judge failure, judgment is {} and
+    error explains why."""
+    user_prompt = USER_PROMPT_CLAIM_COMPARISON.format(
+        user_query=str(user_query or "").strip(),
+        claims_without_web=json.dumps(
+            _clean_claims(claims_without_web), ensure_ascii=False, indent=2
+        ),
+        claims_with_web=json.dumps(
+            _clean_claims(claims_with_web), ensure_ascii=False, indent=2
+        ),
+    )
+
     try:
-        response = client.chat.completions.create(
-            model=CLAIM_EXTRACTION_MODEL,
-            messages=messages,
-            # max_tokens=CLAIM_EXTRACTION_MAX_OUTPUT_TOKENS,
-            temperature=0.0,
+        judge_result = run_judge(
+            platform,
+            system_prompt=SYSTEM_PROMPT_CLAIM_COMPARISON,
+            user_prompt=user_prompt,
+            temperature=0,
         )
-        response_text = response.choices[0].message.content or ""
-    except Exception as exc:
-        logger.warning("Claim extraction failed: %s", exc)
-        return []
-
-    parsed_payload = None
-    try:
-        parsed_payload = json.loads(response_text)
-    except json.JSONDecodeError:
-        parsed_payload = _extract_first_json_array(response_text)
-
-    claims = _coerce_claim_list(parsed_payload)
-    return _clean_claims(claims)
-
-
-def compare_claim_sets(user_query, claims_without_web, claims_with_web):
-    """Have an LLM judge align and classify two claim sets for the same
-    prompt (SYSTEM_PROMPT_CLAIM_COMPARISON) -- e.g. the claims extracted
-    from a response generated without vs. with Web search. Returns
-    {"raw_output": str, "judgment": normalized_dict, "error": str}; on
-    judge failure, judgment is {} and error explains why."""
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT_CLAIM_COMPARISON},
-        {
-            "role": "user",
-            "content": USER_PROMPT_CLAIM_COMPARISON.format(
-                user_query=str(user_query or "").strip(),
-                claims_without_web=json.dumps(
-                    _clean_claims(claims_without_web), ensure_ascii=False, indent=2
-                ),
-                claims_with_web=json.dumps(
-                    _clean_claims(claims_with_web), ensure_ascii=False, indent=2
-                ),
-            ),
-        },
-    ]
-
-    raw_text = ""
-    try:
-        response = client.chat.completions.create(
-            model=CLAIM_COMPARISON_JUDGE_MODEL,
-            messages=messages,
-            temperature=0.0,
-        )
-        raw_text = response.choices[0].message.content or ""
     except Exception as exc:
         logger.warning("Claim comparison judge failed: %s", exc)
         return {"judgment": {}, "error": str(exc)}
 
-    parsed = None
-    try:
-        parsed = json.loads(raw_text)
-    except json.JSONDecodeError:
-        parsed = _extract_first_json_object(raw_text)
-
-    normalized_judgment = _normalize_claim_comparison_judgment(parsed)
+    normalized_judgment = _normalize_claim_comparison_judgment(
+        judge_result["parsed_judgment"]
+    )
     return {
-        "raw_output": raw_text,
+        "raw_output": judge_result["raw_judgment"],
         "judgment": normalized_judgment,
         "error": "",
     }
 
 
-def _sample_has_auto_web_call(row):
+def _sample_has_auto_web_call(row, model_name_value):
     """True if a replayed sample's "auto" (Web-search-allowed) response
     actually invoked Web search -- build_claim_analysis() only compares
     samples where it did, since otherwise "auto" and "none" wouldn't differ
     in the way being studied."""
     auto_payload = row.get("auto") or {}
     response = auto_payload.get("response") or {}
-    provider = _infer_provider("gpt-5.3-chat-latest", row)
+    provider = _infer_provider(model_name_value, row)
     return _has_web_tool_call(provider, response)
 
 
@@ -348,6 +275,8 @@ def build_claim_analysis(
     output_path=OUTPUT_PATH_CLAIMS,
     cache_path=CACHE_PATH,
     limit=None,
+    model_name_value=model_name,
+    platform=None,
 ):
     """For every replayed sample at `replay_path` whose "auto" response
     actually called Web search, extract claims from both its "none" and
@@ -355,8 +284,12 @@ def build_claim_analysis(
     results to `output_path` and returns them; also persists the claim-
     extraction cache to `cache_path` if it changed. `limit`, if given, caps
     how many qualifying samples are processed (useful for a quick check
-    before a full, costly run).
+    before a full, costly run). `platform` is the judge platform for
+    compare_claim_sets (default: derived from `model_name_value` via
+    judge_platform_for_replay_model, i.e. the replayed model's own
+    platform).
     """
+    platform = platform or judge_platform_for_replay_model(model_name_value)
     replay_data = _load_replay_json(replay_path)
     cache = _load_cache(cache_path)
     cache_dirty_state = {"dirty": False}
@@ -368,7 +301,7 @@ def build_claim_analysis(
         and not row.get("skipped_replay")
         and row.get("auto")
         and row.get("none")
-        and _sample_has_auto_web_call(row)
+        and _sample_has_auto_web_call(row, model_name_value)
     ]
 
     if limit is not None:
@@ -385,6 +318,7 @@ def build_claim_analysis(
             user_prompt,
             none_claims,
             auto_claims,
+            platform=platform,
         )
 
         results[result_key] = {
@@ -644,10 +578,10 @@ def plot_multi_model_claim_comparison_summaries(
     model_names=None,
     output_dir=PLOT_OUTPUT_DIR,
 ):
-    """Build and save (HTML + PDF, under `output_dir`) two stacked-bar
-    charts comparing `model_names` (default MODEL_NAMES): claim-level
-    relation distribution, and response-level category distribution.
-    Returns the figures and output paths."""
+    """Build and save (PDF, under `output_dir`) two stacked-bar charts
+    comparing `model_names` (default MODEL_NAMES): claim-level relation
+    distribution, and response-level category distribution. Returns the
+    figures and output paths."""
     model_results = load_multi_model_claim_analysis_results(model_names=model_names)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -709,8 +643,6 @@ def plot_multi_model_claim_comparison_summaries(
         yaxis_title="Rate of Responses",
     )
 
-    claim_level_html = output_dir / "claim_comparison_relations_by_model.html"
-    response_level_html = output_dir / "claim_comparison_categories_by_model.html"
     claim_level_pdf = output_dir / "claim_comparison_relations_by_model.pdf"
     response_level_pdf = output_dir / "claim_comparison_categories_by_model.pdf"
     try:
@@ -722,13 +654,11 @@ def plot_multi_model_claim_comparison_summaries(
     except Exception as exc:
         logger.warning("Could not write response-level comparison PDF: %s", exc)
 
-    logger.info("Saved claim-level plot to %s", claim_level_html)
-    logger.info("Saved response-level plot to %s", response_level_html)
+    logger.info("Saved claim-level plot to %s", claim_level_pdf)
+    logger.info("Saved response-level plot to %s", response_level_pdf)
     return {
         "claim_level_figure": claim_level_fig,
         "response_level_figure": response_level_fig,
-        "claim_level_html": claim_level_html,
-        "response_level_html": response_level_html,
         "claim_level_pdf": claim_level_pdf,
         "response_level_pdf": response_level_pdf,
     }
@@ -751,19 +681,35 @@ def main():
         help="Maximum number of qualifying replay samples to process.",
     )
     parser.add_argument(
+        "--model-name",
+        default=model_name,
+        help="Replayed model name (see MODEL_NAMES) -- also determines the "
+        "judge platform (via judge_platform_for_replay_model) unless "
+        "--platform overrides it.",
+    )
+    parser.add_argument(
+        "--platform",
+        default=None,
+        choices=["chatgpt", "claude", "grok", "deepseek"],
+        help="Judge platform for compare_claim_sets (default: derived from "
+        "--model-name).",
+    )
+    parser.add_argument(
         "--replay-path",
-        default=str(REPLAY_PATH),
-        help="Path to the replay JSON file.",
+        default=None,
+        help="Path to the replay JSON file (default: derived from --model-name).",
     )
     parser.add_argument(
         "--output-path",
-        default=str(OUTPUT_PATH_CLAIMS),
-        help="Path to write the extracted claims JSON.",
+        default=None,
+        help="Path to write the extracted claims JSON (default: derived "
+        "from --model-name).",
     )
     parser.add_argument(
         "--cache-path",
-        default=str(CACHE_PATH),
-        help="Path to the claim extraction cache JSON.",
+        default=None,
+        help="Path to the claim extraction cache JSON (default: derived "
+        "from --model-name).",
     )
     parser.add_argument(
         "--print-summary",
@@ -777,8 +723,19 @@ def main():
     )
     args = parser.parse_args()
 
+    model_name_value = args.model_name
+    replay_path = Path(args.replay_path) if args.replay_path else Path(
+        f"{OUTPUT_PATH}/replays/{model_name_value}.json"
+    )
+    output_path = Path(args.output_path) if args.output_path else _claims_output_path_for_model(
+        model_name_value
+    )
+    cache_path = Path(args.cache_path) if args.cache_path else Path(
+        f"{OUTPUT_PATH}/replays/extracted/{model_name_value}_claims_cache.json"
+    )
+
     if args.print_summary:
-        print_claim_comparison_summary(input_path=Path(args.output_path))
+        print_claim_comparison_summary(input_path=output_path)
         return
 
     if args.plot_multi_model_summary:
@@ -786,10 +743,12 @@ def main():
         return
 
     build_claim_analysis(
-        replay_path=Path(args.replay_path),
-        output_path=Path(args.output_path),
-        cache_path=Path(args.cache_path),
+        replay_path=replay_path,
+        output_path=output_path,
+        cache_path=cache_path,
         limit=args.limit,
+        model_name_value=model_name_value,
+        platform=args.platform,
     )
 
 
