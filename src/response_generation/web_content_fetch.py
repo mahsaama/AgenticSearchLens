@@ -496,6 +496,12 @@ async def get_article_text_planB(url, browser=None):
     return extract_clean_text_from_html(content)
 
 def _load_response_source_similarity_input(platform="chatgpt"):
+    """English rows from response_and_sources.pkl/csv, sampled up to 100
+    per topic, preferring the paper's original cohort topics (Science,
+    Health, Politics & History). If none of those topics are present in
+    this platform's data -- e.g. a small non-paper sample -- falls back to
+    sampling (same per-topic cap) across every topic actually present,
+    rather than silently returning an empty frame."""
     pkl_path = f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl"
     csv_path = f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.csv"
 
@@ -578,35 +584,41 @@ def _load_response_source_similarity_input(platform="chatgpt"):
                     return True
         return False
 
-    df = (
-        df[
-            (df["language"] == "en")
-            & (df["topic"].isin(selected_topics))
-        ]
-        .copy()
-    )
+    df = df[df["language"] == "en"].copy()
     if "srcs_cited" in df.columns and "srcs_retrieved" in df.columns:
         has_image_url_mask = df.apply(_row_has_cited_or_retrieved_image_url, axis=1)
         df = df.loc[~has_image_url_mask].copy()
 
     # print(df["topic"].value_counts())
 
-    sampled_frames = []
-    for topic in selected_topics:
-        topic_df = df[df["topic"] == topic].copy()
-        if topic_df.empty:
-            continue
-        sample_n = min(100, len(topic_df))
-        sampled_frames.append(topic_df.sample(n=sample_n, random_state=random_state))
+    def _sample_by_topic(candidate_df, topics):
+        sampled_frames = []
+        for topic in topics:
+            topic_df = candidate_df[candidate_df["topic"] == topic].copy()
+            if topic_df.empty:
+                continue
+            sample_n = min(100, len(topic_df))
+            sampled_frames.append(topic_df.sample(n=sample_n, random_state=random_state))
+        if not sampled_frames:
+            return candidate_df.iloc[0:0].copy()
+        return (
+            pd.concat(sampled_frames, ignore_index=True)
+            .sort_values(["topic", "conv_id", "turn_id"], kind="stable")
+            .reset_index(drop=True)
+        )
 
-    if not sampled_frames:
-        return df.iloc[0:0].reset_index(drop=True)
-
-    sampled_df = (
-        pd.concat(sampled_frames, ignore_index=True)
-        .sort_values(["topic", "conv_id", "turn_id"], kind="stable")
-        .reset_index(drop=True)
+    sampled_df = _sample_by_topic(
+        df[df["topic"].isin(selected_topics)].copy(), selected_topics
     )
+
+    if len(sampled_df) == 0:
+        # None of the paper's original cohort topics (Science/Health/
+        # Politics & History) are present in this data -- e.g. a small
+        # non-paper sample -- so fall back to sampling across every topic
+        # actually present instead of silently returning nothing.
+        all_topics = sorted(df["topic"].dropna().astype(str).unique().tolist())
+        sampled_df = _sample_by_topic(df, all_topics)
+
     return sampled_df
 
 def _iter_response_source_urls(row):
