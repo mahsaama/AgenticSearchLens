@@ -193,15 +193,10 @@ don't need to run it directly.
 - **No topic-annotation file?** That's expected — the paper's hand-labeled dataset
   doesn't ship with this repo. Extraction falls back to `topic_classifier.py`, a
   small dependency-free keyword classifier, instead of labeling everything "Other".
-- **Every output lives under `outputs/<platform>/metadata/`**, ChatGPT included —
-  there's no flat `outputs/metadata/` anymore.
+- **Every output lives under `outputs/<platform>/metadata/`**.
 - **Replay refuses to run without a PII-safety annotation first.** `chat_replayer.py`
   won't send unscreened personal data to a provider API — see Appendix C.1 of the
   paper, or generate one yourself with `chat_replayer.generate_pii_safety_annotations()`.
-- **One rough edge, left as-is rather than papered over:** `web_tool_invocation.py`'s
-  tool-intent judge references two prompts (`SYSTEM_PROMPT_TOOL_INTENT`/
-  `USER_PROMPT_TOOL_INTENT`) that don't exist yet in `evaluator_prompts.py` — add
-  them before calling `classify_web_call_tool_intent_from_thoughts()`.
 
 ## 📝 Notes
 

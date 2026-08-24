@@ -6927,57 +6927,57 @@ def data_extraction():
 
 
 if __name__ == "__main__":
-    # data_extraction()
+    data_extraction()
 
-    # print_replay_web_search_sample_counts()
+    print_replay_web_search_sample_counts()
 
-    # plot_replay_query_term_count_trends_over_time()
+    plot_replay_query_term_count_trends_over_time()
 
-    # plot_replay_parallel_queries_by_query_reformulations()
+    plot_replay_parallel_queries_by_query_reformulations()
 
-    # plot_replay_top_domains(
-    #     common_samples_only=True, 
-    #     common_model_names=DEFAULT_MODELS,
-    # )
-    # plot_replay_top_domains(
-    #     common_samples_only=False,
-    #     common_model_names=DEFAULT_MODELS,
-    # )
+    plot_replay_top_domains(
+        common_samples_only=True, 
+        common_model_names=DEFAULT_MODELS,
+    )
+    plot_replay_top_domains(
+        common_samples_only=False,
+        common_model_names=DEFAULT_MODELS,
+    )
 
-    # query_specificity_evaluation()
-    # plot_query_specificity_distribution_by_iteration()
+    query_specificity_evaluation()
+    plot_query_specificity_distribution_by_iteration()
 
-    # compute_average_citations_and_retrievals_per_response_for_replays()
+    compute_average_citations_and_retrievals_per_response_for_replays()
 
-    # plot_openai_replay_dev_prompt_web_call_heatmap()
+    plot_openai_replay_dev_prompt_web_call_heatmap()
 
-    # evaluate_replay_source_tranco_ranks(separate_cited_external_internal=True)
+    evaluate_replay_source_tranco_ranks(separate_cited_external_internal=True)
 
-    # for model in DEFAULT_MODELS:
-    #     asyncio.run(
-    #         extract_replay_urls_content(
-    #             model_names=[model],
-    #             common_filter_model_names=DEFAULT_MODELS,
-    #             replay_mode="auto",
-    #             force_refresh=False,
-    #         )
-    #     )
+    for model in DEFAULT_MODELS:
+        asyncio.run(
+            extract_replay_urls_content(
+                model_names=[model],
+                common_filter_model_names=DEFAULT_MODELS,
+                replay_mode="auto",
+                force_refresh=False,
+            )
+        )
 
-    #     response_source_nli_sentence_based_for_replays(
-    #         model_names=[model],
-    #         common_filter_model_names=DEFAULT_MODELS,
-    #         nli_method="judge",
-    #         chunking_method="claim",
-    #         claim_selection_mode="all",
-    #     )
+        response_source_nli_sentence_based_for_replays(
+            model_names=[model],
+            common_filter_model_names=DEFAULT_MODELS,
+            nli_method="judge",
+            chunking_method="claim",
+            claim_selection_mode="all",
+        )
 
-    #     asyncio.run(
-    #         replay_hallucinated_url_detection(
-    #             model_names=[model],
-    #             common_filter_model_names=DEFAULT_MODELS,
-    #             replay_mode="auto",
-    #         )
-    #     )
+        asyncio.run(
+            replay_hallucinated_url_detection(
+                model_names=[model],
+                common_filter_model_names=DEFAULT_MODELS,
+                replay_mode="auto",
+            )
+        )
 
     plot_response_source_nli_sentence_based_judge_for_replays(
         model_names=DEFAULT_MODELS,
