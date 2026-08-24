@@ -34,29 +34,24 @@ from src.prompts.evaluator_prompts import (
     SYSTEM_PROMPT_ENTITY_SPECIFICITY,
     SYSTEM_PROMPT_GEOGRAPHIC_SPECIFICITY,
     SYSTEM_PROMPT_NUMERIC_SPECIFICITY,
-    SYSTEM_PROMPT_QUERY_REASON,
-    SYSTEM_PROMPT_QUERY_REASON_VALIDATOR,
     SYSTEM_PROMPT_TEMPORAL_SPECIFICITY,
     USER_PROMPT_ENTITY_SPECIFICITY,
     USER_PROMPT_GEOGRAPHIC_SPECIFICITY,
     USER_PROMPT_NUMERIC_SPECIFICITY,
-    USER_PROMPT_QUERY_REASON,
-    USER_PROMPT_QUERY_REASON_VALIDATOR,
     USER_PROMPT_TEMPORAL_SPECIFICITY,
 )
 
 load_dotenv()
 
 DEFAULT_MODELS = [
-    "gpt-5.3-chat-latest",
+    "gpt-4.1-mini-2025-04-14",
     "claude-sonnet-4-6",
     "grok-4.3",
     "deepseek-v4-flash",
 ]
 OPENAI_REPLAY_MODELS = [
-    "o4-mini-2025-04-16",
+    # "o4-mini-2025-04-16",
     "gpt-4.1-mini-2025-04-14",
-    "gpt-5.3-chat-latest",
 ]
 INPUT_DIR = Path(f"{OUTPUT_PATH}/replays")
 OUTPUT_DIR = Path(f"{OUTPUT_PATH}/replays/extracted")
@@ -3670,612 +3665,6 @@ def plot_query_specificity_distribution_by_iteration(
     return summary
 
 
-def reasons_for_another_web_query(
-    model_names=DEFAULT_MODELS,
-    evaluator_model="gpt-4o-mini",
-    output_stem="replay_web_query_transition_reasons",
-):
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    client = OpenAI(api_key=api_key)
-    replay_rows = [
-        row
-        for row in _build_replay_query_eval_rows(model_names)
-        if any(isinstance(group, list) and any(isinstance(q, str) and q.strip() for q in group) for group in row.get("web_queries", []))
-    ]
-
-    records = []
-    for row in tqdm(replay_rows, total=len(replay_rows)):
-        user_query = str(row.get("user_prompt") or "").strip()
-        if not user_query:
-            continue
-
-        structured_web_queries = []
-        for loop_idx, query_group in enumerate(row.get("web_queries", []), start=1):
-            if not isinstance(query_group, list):
-                query_group = [query_group]
-            cleaned_queries = [str(q).strip() for q in query_group if isinstance(q, str) and q.strip()]
-            if cleaned_queries:
-                structured_web_queries.append({"loop_idx": loop_idx, "queries": cleaned_queries})
-        if not structured_web_queries:
-            continue
-
-        loop_query_records = {}
-        structured_query_records = []
-        structured_thinking_records = []
-        for loop_entry in structured_web_queries:
-            loop_records = []
-            for query_idx, query in enumerate(loop_entry["queries"], start=1):
-                record = {
-                    "query_id": f"{loop_entry['loop_idx']}.{query_idx}",
-                    "loop_idx": loop_entry["loop_idx"],
-                    "query_idx": query_idx,
-                    "query": query,
-                }
-                loop_records.append(record)
-                structured_query_records.append(record)
-                structured_thinking_records.append(
-                    {
-                        "query_id": f"{loop_entry['loop_idx']}.{query_idx}",
-                        "thinking_trace": "",
-                    }
-                )
-            loop_query_records[loop_entry["loop_idx"]] = loop_records
-
-        transition_candidates = []
-        first_loop_idx = structured_web_queries[0]["loop_idx"]
-        for to_record in loop_query_records.get(first_loop_idx, []):
-            transition_candidates.append(
-                {
-                    "from": "U",
-                    "to": to_record["query_id"],
-                    "from_loop_idx": 0,
-                    "to_loop_idx": first_loop_idx,
-                    "transition_kind": "user_to_first_web_turn",
-                }
-            )
-        for loop_pos in range(len(structured_web_queries) - 1):
-            from_loop_idx = structured_web_queries[loop_pos]["loop_idx"]
-            to_loop_idx = structured_web_queries[loop_pos + 1]["loop_idx"]
-            for from_record in loop_query_records.get(from_loop_idx, []):
-                for to_record in loop_query_records.get(to_loop_idx, []):
-                    transition_candidates.append(
-                        {
-                            "from": from_record["query_id"],
-                            "to": to_record["query_id"],
-                            "from_loop_idx": from_loop_idx,
-                            "to_loop_idx": to_loop_idx,
-                            "transition_kind": "web_turn_to_web_turn",
-                        }
-                    )
-        if not transition_candidates:
-            continue
-
-        web_queries_text = "\n".join(f"({item['query_id']}) {item['query']}" for item in structured_query_records)
-        transition_candidates_text = "\n".join(f"({item['from']} -> {item['to']})" for item in transition_candidates)
-        thinking_trace_lines = [
-            f"({item['query_id']}) {item['thinking_trace']}"
-            for item in structured_thinking_records
-            if item["thinking_trace"]
-        ]
-        thinking_traces_text = "\n".join(thinking_trace_lines)
-
-        try:
-            reason_eval = _run_judge(
-                client=client,
-                model_name=evaluator_model,
-                system_prompt=SYSTEM_PROMPT_QUERY_REASON,
-                user_prompt=USER_PROMPT_QUERY_REASON.format(
-                    user_query=user_query,
-                    web_queries=web_queries_text,
-                    thinking_traces=thinking_traces_text,
-                    transition_candidates=transition_candidates_text,
-                ),
-            )
-        except Exception as exc:
-            print("reasons_for_another_web_query reason", row.get("model"), row.get("conv_id"), row.get("turn_id"), exc)
-            continue
-
-        reason_parsed = reason_eval["parsed_judgment"]
-        transitions = reason_parsed.get("transitions", []) if isinstance(reason_parsed, dict) else []
-        valid_transition_pairs = {(item["from"], item["to"]) for item in transition_candidates}
-        normalized_reason_transitions = []
-        reason_transition_by_pair = {}
-        for transition in transitions:
-            if not isinstance(transition, dict):
-                continue
-            from_id = _normalize_reason_transition_endpoint(transition.get("from"))
-            to_id = _normalize_reason_transition_endpoint(transition.get("to"))
-            pair = (from_id, to_id)
-            if (
-                not from_id
-                or not to_id
-                or pair not in valid_transition_pairs
-                or pair in reason_transition_by_pair
-            ):
-                continue
-            normalized_transition = {
-                "from": from_id,
-                "to": to_id,
-                "label": _normalize_query_reason_label(transition.get("label", "")),
-                "reasoning": str(transition.get("reasoning", "")).strip(),
-            }
-            reason_transition_by_pair[pair] = normalized_transition
-            normalized_reason_transitions.append(normalized_transition)
-
-        validation_transition_candidates = []
-        for transition in transition_candidates:
-            validation_transition_candidates.append(
-                {
-                    "from": transition["to"],
-                    "to": transition["from"],
-                    "from_query": transition.get("to_query"),
-                    "to_query": transition.get("from_query"),
-                    "from_loop_idx": transition["to_loop_idx"],
-                    "to_loop_idx": transition["from_loop_idx"],
-                    "transition_kind": transition["transition_kind"],
-                }
-            )
-        validation_transition_candidates_text = "\n".join(
-            f"({item['from']} -> {item['to']})"
-            for item in validation_transition_candidates
-        )
-        valid_validation_transition_pairs = {
-            (item["from"], item["to"]) for item in validation_transition_candidates
-        }
-
-        try:
-            validation_eval = _run_judge(
-                client=client,
-                model_name=evaluator_model,
-                system_prompt=SYSTEM_PROMPT_QUERY_REASON_VALIDATOR,
-                user_prompt=USER_PROMPT_QUERY_REASON_VALIDATOR.format(
-                    user_query=user_query,
-                    web_queries=web_queries_text,
-                    transition_candidates=validation_transition_candidates_text,
-                ),
-            )
-        except Exception as exc:
-            print("reasons_for_another_web_query validate", row.get("model"), row.get("conv_id"), row.get("turn_id"), exc)
-            continue
-
-        validator_parsed = validation_eval["parsed_judgment"]
-        validator_transitions = (
-            validator_parsed.get("transitions", [])
-            if isinstance(validator_parsed, dict)
-            else []
-        )
-        validator_transition_by_pair = {}
-        normalized_validator_transitions = []
-        for transition in validator_transitions:
-            if not isinstance(transition, dict):
-                continue
-            from_id = _normalize_reason_transition_endpoint(transition.get("from"))
-            to_id = _normalize_reason_transition_endpoint(transition.get("to"))
-            pair = (from_id, to_id)
-            if (
-                not from_id
-                or not to_id
-                or pair not in valid_validation_transition_pairs
-                or pair in validator_transition_by_pair
-            ):
-                continue
-            normalized_transition = {
-                "from": from_id,
-                "to": to_id,
-                "label": _normalize_query_reason_label(transition.get("label", "")),
-                "reasoning": str(transition.get("reasoning", "")).strip(),
-            }
-            validator_transition_by_pair[pair] = normalized_transition
-            normalized_validator_transitions.append(normalized_transition)
-
-        records.append(
-            {
-                "model": row.get("model"),
-                "provider": row.get("provider"),
-                "result_key": row.get("result_key"),
-                "sample_idx": row.get("sample_idx"),
-                "sample_source": row.get("sample_source"),
-                "conv_id": row.get("conv_id"),
-                "turn_id": row.get("turn_id"),
-                "user_query": user_query,
-                "web_queries": structured_query_records,
-                "web_queries_structured_text": web_queries_text,
-                "thinking_traces": structured_thinking_records,
-                "transition_candidates": transition_candidates,
-                "transition_candidates_text": transition_candidates_text,
-                "validator_transition_candidates": validation_transition_candidates,
-                "validator_transition_candidates_text": validation_transition_candidates_text,
-                "query_reason_parsed_judgment_judgment": reason_eval["parsed_judgment"],
-                "query_reason_validator_parsed_judgment_judgment": validation_eval["parsed_judgment"],
-                "query_reason_transitions_normalized": normalized_reason_transitions,
-                "query_reason_validator_transitions_normalized": normalized_validator_transitions,
-            }
-        )
-        if len(records) % 10 == 0:
-            _save_replay_query_eval_records(records, output_stem)
-
-    return _save_replay_query_eval_records(records, output_stem)
-
-
-def plot_reasons_for_another_web_query_distribution_all_models(
-    input_stem="replay_web_query_transition_reasons",
-    model_names=DEFAULT_MODELS,
-    output_file_name="replay_reasons_for_another_web_query_distribution_all_models",
-    output_dir=PLOT_OUTPUT_DIR / "query_reformulations",
-):
-    import pandas as pd
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
-    from src.utils.figure_style import with_paper_style, styler
-
-    df = _load_replay_query_eval_df(input_stem)
-    if df is None or df.empty:
-        print("No replay query-transition reason data found.")
-        return None
-
-    reason_order = ["Query Rewriting", "Query Expansion", "Hybrid", "Other"]
-    color_map = {
-        "Query Rewriting": "#1f77b4",
-        "Query Expansion": "#2ca02c",
-        "Hybrid": "#ff7f0e",
-        "Other": "#b59b00",
-    }
-    symbol_map = {
-        "Query Rewriting": "circle",
-        "Query Expansion": "square",
-        "Hybrid": "diamond",
-        "Other": "x",
-    }
-
-    def _as_dict(value):
-        if isinstance(value, dict):
-            return value
-        if isinstance(value, str) and value.strip():
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                try:
-                    return ast.literal_eval(value)
-                except Exception:
-                    return {}
-        return {}
-
-    def _coerce_int(value):
-        if value is None:
-            return None
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            return None
-
-    def _parse_loop_idx_from_endpoint(endpoint):
-        normalized = _normalize_reason_transition_endpoint(endpoint)
-        if not normalized or normalized == "U":
-            return None
-        try:
-            return int(str(normalized).split(".", 1)[0])
-        except (TypeError, ValueError):
-            return None
-
-    aggregate_from_iteration = 3
-
-    def _bucket_iteration(iteration_idx):
-        if iteration_idx >= aggregate_from_iteration:
-            return aggregate_from_iteration
-        return iteration_idx
-
-    def _transition_group_label(iteration_idx, use_arrow=False):
-        arrow = " → " if use_arrow else " -> "
-        if iteration_idx == 1:
-            return f"User{arrow}Iter. 1"
-        if iteration_idx >= aggregate_from_iteration:
-            return f"Iter. {aggregate_from_iteration-1}+{arrow}Iter. {aggregate_from_iteration}+"
-        return f"Iter. {iteration_idx - 1}{arrow}Iter. {iteration_idx}"
-
-    def _build_transition_meta_by_pair(transitions):
-        transition_meta = {}
-        for transition in transitions:
-            if not isinstance(transition, dict):
-                continue
-            transition_key = (
-                _normalize_reason_transition_endpoint(transition.get("from")),
-                _normalize_reason_transition_endpoint(transition.get("to")),
-            )
-            if not transition_key[0] or not transition_key[1]:
-                continue
-            transition_meta[transition_key] = {
-                "transition_kind": str(transition.get("transition_kind", "")).strip(),
-                "from_loop_idx": _coerce_int(transition.get("from_loop_idx")),
-                "to_loop_idx": _coerce_int(transition.get("to_loop_idx")),
-            }
-        return transition_meta
-
-    def _infer_iteration_idx(transition_key, transition_meta, flipped=False):
-        transition_kind = str(transition_meta.get("transition_kind", "")).strip()
-        from_loop_idx = transition_meta.get("from_loop_idx")
-        to_loop_idx = transition_meta.get("to_loop_idx")
-        if from_loop_idx is None:
-            from_loop_idx = _parse_loop_idx_from_endpoint(transition_key[0])
-        if to_loop_idx is None:
-            to_loop_idx = _parse_loop_idx_from_endpoint(transition_key[1])
-        if flipped:
-            if transition_key[1] == "U" or transition_kind == "user_to_first_web_turn":
-                return 1
-            if (
-                from_loop_idx is not None
-                and to_loop_idx is not None
-                and from_loop_idx == to_loop_idx + 1
-            ):
-                return from_loop_idx
-            return None
-        if transition_key[0] == "U" or transition_kind == "user_to_first_web_turn":
-            return 1
-        if (
-            from_loop_idx is not None
-            and to_loop_idx is not None
-            and to_loop_idx == from_loop_idx + 1
-        ):
-            return to_loop_idx
-        return None
-
-    def _aggregate_labels_for_destination_query(labels):
-        normalized_labels = [label for label in labels if label in reason_order]
-        if not normalized_labels:
-            return ""
-        label_set = set(normalized_labels)
-        if "Hybrid" in label_set:
-            return "Hybrid"
-        if "Query Rewriting" in label_set and "Query Expansion" in label_set:
-            return "Hybrid"
-        non_other_labels = label_set - {"Other"}
-        if non_other_labels == {"Query Rewriting"}:
-            return "Query Rewriting"
-        if non_other_labels == {"Query Expansion"}:
-            return "Query Expansion"
-        if not non_other_labels:
-            return "Other"
-        if len(non_other_labels) == 1:
-            return next(iter(non_other_labels))
-        return "Hybrid"
-
-    plot_rows = []
-    for model_name in model_names:
-        model_df = df[df["model"] == model_name].copy()
-        query_iteration_totals_before = {}
-        query_iteration_reason_counts_before = {}
-        for _, row in model_df.iterrows():
-            normalized_reason_transitions = _safe_json_value(
-                row.get("query_reason_transitions_normalized", []),
-                [],
-            )
-            normalized_validator_transitions = _safe_json_value(
-                row.get("query_reason_validator_transitions_normalized", []),
-                [],
-            )
-            transition_candidates = _safe_json_value(
-                row.get("transition_candidates", []),
-                [],
-            )
-            validator_transition_candidates = _safe_json_value(
-                row.get("validator_transition_candidates", []),
-                [],
-            )
-            if not isinstance(normalized_reason_transitions, list):
-                normalized_reason_transitions = []
-            if not isinstance(normalized_validator_transitions, list):
-                normalized_validator_transitions = []
-            if not isinstance(transition_candidates, list):
-                transition_candidates = []
-            if not isinstance(validator_transition_candidates, list):
-                validator_transition_candidates = []
-            if not validator_transition_candidates and transition_candidates:
-                for transition in transition_candidates:
-                    if not isinstance(transition, dict):
-                        continue
-                    validator_transition_candidates.append(
-                        {
-                            "from": transition.get("to"),
-                            "to": transition.get("from"),
-                            "from_loop_idx": transition.get("to_loop_idx"),
-                            "to_loop_idx": transition.get("from_loop_idx"),
-                            "transition_kind": transition.get("transition_kind", ""),
-                        }
-                    )
-
-            reason_judgment = _as_dict(
-                row.get("query_reason_parsed_judgment_judgment", {})
-            )
-            validator_judgment = _as_dict(
-                row.get("query_reason_validator_parsed_judgment_judgment", {})
-            )
-            original_transitions = normalized_reason_transitions or (
-                reason_judgment.get("transitions", [])
-                if isinstance(reason_judgment, dict)
-                else []
-            )
-            validator_transitions = normalized_validator_transitions or (
-                validator_judgment.get("transitions", [])
-                if isinstance(validator_judgment, dict)
-                else []
-            )
-
-            reason_by_pair = {}
-            for transition in original_transitions:
-                if not isinstance(transition, dict):
-                    continue
-                transition_key = (
-                    _normalize_reason_transition_endpoint(transition.get("from")),
-                    _normalize_reason_transition_endpoint(transition.get("to")),
-                )
-                if transition_key[0] and transition_key[1]:
-                    reason_by_pair[transition_key] = transition
-
-            validator_by_pair = {}
-            for transition in validator_transitions:
-                if not isinstance(transition, dict):
-                    continue
-                transition_key = (
-                    _normalize_reason_transition_endpoint(transition.get("from")),
-                    _normalize_reason_transition_endpoint(transition.get("to")),
-                )
-                if transition_key[0] and transition_key[1]:
-                    validator_by_pair[transition_key] = {
-                        "label": _normalize_query_reason_label(transition.get("label", "")),
-                        "reasoning": str(transition.get("reasoning", "")).strip(),
-                    }
-
-            transition_meta_by_pair = _build_transition_meta_by_pair(transition_candidates)
-            validator_transition_meta_by_pair = _build_transition_meta_by_pair(
-                validator_transition_candidates
-            )
-            transition_keys_before = list(transition_meta_by_pair.keys()) or list(
-                reason_by_pair.keys()
-            )
-
-            incoming_labels_by_destination_query = {}
-            destination_query_iteration_bucket = {}
-            for transition_key in transition_keys_before:
-                original_label = _normalize_query_reason_label(
-                    reason_by_pair.get(transition_key, {}).get("label", "")
-                )
-                iteration_idx = _infer_iteration_idx(
-                    transition_key,
-                    transition_meta_by_pair.get(transition_key, {}),
-                    flipped=False,
-                )
-                if iteration_idx is None:
-                    continue
-                iteration_bucket = _bucket_iteration(iteration_idx)
-                if original_label in reason_order:
-                    destination_query = transition_key[1]
-                    if destination_query:
-                        incoming_labels_by_destination_query.setdefault(
-                            destination_query,
-                            [],
-                        ).append(original_label)
-                        destination_query_iteration_bucket.setdefault(
-                            destination_query,
-                            iteration_bucket,
-                        )
-
-            for destination_query, incoming_labels in incoming_labels_by_destination_query.items():
-                aggregate_label = _aggregate_labels_for_destination_query(incoming_labels)
-                if aggregate_label not in reason_order:
-                    continue
-                iteration_bucket = destination_query_iteration_bucket.get(destination_query)
-                if iteration_bucket is None:
-                    continue
-                query_iteration_totals_before[iteration_bucket] = (
-                    query_iteration_totals_before.get(iteration_bucket, 0) + 1
-                )
-                key = (iteration_bucket, aggregate_label)
-                query_iteration_reason_counts_before[key] = (
-                    query_iteration_reason_counts_before.get(key, 0) + 1
-                )
-
-            transition_keys_after = list(validator_transition_meta_by_pair.keys()) or list(
-                validator_by_pair.keys()
-            )
-            for transition_key in transition_keys_after:
-                _ = _infer_iteration_idx(
-                    transition_key,
-                    validator_transition_meta_by_pair.get(transition_key, {}),
-                    flipped=True,
-                )
-
-        for iteration_idx in sorted(query_iteration_totals_before):
-            total = query_iteration_totals_before[iteration_idx]
-            for reason in reason_order:
-                count = query_iteration_reason_counts_before.get((iteration_idx, reason), 0)
-                plot_rows.append(
-                    {
-                        "model": model_name,
-                        "model_display": _model_label(model_name),
-                        "iteration": iteration_idx,
-                        "transition_group": _transition_group_label(
-                            iteration_idx,
-                            use_arrow=False,
-                        ),
-                        "reason": reason,
-                        "count": count,
-                        "total": total,
-                        "rate": (count / total) if total else 0.0,
-                    }
-                )
-
-    if not plot_rows:
-        print("No replay query-reason rate rows to plot.")
-        return None
-
-    plot_df = pd.DataFrame(plot_rows)
-    plot_df.to_csv(REPLAY_QUERY_EVAL_OUTPUT_DIR / f"{output_file_name}.csv", index=False)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    plotted_models = [m for m in model_names if m in set(plot_df["model"])]
-    fig = make_subplots(
-        rows=1,
-        cols=len(plotted_models),
-        shared_yaxes=True,
-        subplot_titles=[_model_label(m) for m in plotted_models],
-        horizontal_spacing=0.04 if len(plotted_models) > 1 else 0.02,
-    )
-    fig.update_annotations(font_size=24)
-    y_max = 0.0
-    for col_idx, model_name in enumerate(plotted_models, start=1):
-        model_plot_df = plot_df[plot_df["model"] == model_name].copy()
-        y_max = max(y_max, float(model_plot_df["rate"].max()))
-        iteration_values = sorted(model_plot_df["iteration"].unique())
-        ticktext = (
-            model_plot_df[["iteration", "transition_group"]]
-            .drop_duplicates()
-            .sort_values("iteration")["transition_group"]
-            .astype(str)
-            .str.replace(" -> ", "<br>↓<br>", regex=False)
-            .tolist()
-        )
-        for reason in reason_order:
-            reason_df = model_plot_df[model_plot_df["reason"] == reason].sort_values("iteration")
-            if reason_df.empty:
-                continue
-            fig.add_trace(
-                go.Scatter(
-                    x=reason_df["iteration"],
-                    y=reason_df["rate"],
-                    mode="lines+markers",
-                    name=reason,
-                    legendgroup=reason,
-                    showlegend=col_idx == 1,
-                    line=dict(width=3, color=color_map.get(reason)),
-                    marker=dict(size=13, symbol=symbol_map.get(reason, "circle")),
-                    meta=_model_label(model_name),
-                    customdata=reason_df[["count", "total"]].values,
-                    hovertemplate="Model: %{meta}<br>Reason: %{fullData.name}<br>Iteration: %{x}<br>Rate: %{y:.1%}<br>Count: %{customdata[0]} / %{customdata[1]}<extra></extra>",
-                ),
-                row=1,
-                col=col_idx,
-            )
-        fig.update_xaxes(
-            tickmode="array",
-            tickvals=iteration_values,
-            ticktext=ticktext,
-            range=[min(iteration_values) - 0.2, max(iteration_values) + 0.5],
-            row=1,
-            col=col_idx,
-        )
-
-    y_upper = min(1.0, max(0.05, y_max * 1.15))
-    fig.update_yaxes(title_text="Rate", tickformat=".0%", range=[-0.05, y_upper + 0.05])
-    fig.update_layout(width=max(1000, 400 * len(plotted_models)), height=520, margin=dict(t=90, b=150, l=85, r=45), legend_title="")
-    fig.add_annotation(x=0.5, y=-0.47, xref="paper", yref="paper", text="Web Query Iteration", showarrow=False, font=dict(size=24))
-    fig = with_paper_style(fig, config=styler(22, 24), legend_pos=(0.8, 1.3))
-    fig.write_image(output_dir / f"{output_file_name}.pdf", format="pdf")
-
-    with open(output_dir / f"{output_file_name}_summary.json", "w") as f:
-        json.dump(plot_rows, f, indent=2, ensure_ascii=False)
-    return plot_df
-
-
 def print_cross_platform_replay_model_call_outcome_eval_scores(
     evaluator_model="gpt-5.6-luna",
     temperature="0.0",
@@ -4776,6 +4165,112 @@ async def extract_replay_urls_content(
     )
     to_json(url_cache, str(urls_content_path), indent=2)
     return url_cache
+
+
+async def replay_hallucinated_url_detection(
+    model_names=DEFAULT_MODELS,
+    replay_mode="auto",
+    output_dir=None,
+    require_all_models_web_call=True,
+    common_filter_model_names=None,
+    skip_reachability=False,
+    skip_wayback=False,
+):
+    """Per replayed model in `model_names`, classify its replay-run cited
+    URLs as "cited_and_retrieved" (retrieved by that same conversation's
+    own web search) vs. "cited_only" (never retrieved -- the group most
+    likely to contain hallucinated citations), then check the "cited_only"
+    URLs for reachability/Wayback evidence of hallucination.
+
+    Reuses src.response_generation.hallucinated_url_detection.run_pipeline()
+    directly -- not a separate reimplementation -- against an in-memory
+    DataFrame of that model's replay rows (sources_retrieved/sources_cited
+    are already extracted by extract_model_file()), rather than requiring
+    a response_and_sources.pkl on disk.
+
+    Same sample-filtering convention as extract_replay_urls_content():
+    `common_filter_model_names` (default: `model_names`) determines which
+    replayed samples are "in scope" (common across those models, and --
+    if `require_all_models_web_call` -- where every one of those models
+    actually called Web search), so results from a subset of
+    `model_names` stay comparable to a full-model-set run.
+
+    Writes each model's results under
+    outputs/replays/extracted/hallucinated_url_detection/<model>/ (or
+    under `output_dir` if given), matching this file's other per-model
+    subdirectory outputs. Returns {model_name: results_dict}.
+    """
+    import pandas as pd
+
+    from src.response_generation.hallucinated_url_detection import run_pipeline
+
+    filter_model_names = (
+        list(common_filter_model_names)
+        if common_filter_model_names is not None
+        else list(model_names)
+    )
+
+    filter_rows = _extract_rows_for_models(filter_model_names, tool_choice=replay_mode)
+    filter_rows = _filter_rows_to_common_samples(filter_rows, filter_model_names)
+    if require_all_models_web_call:
+        filter_rows = _filter_rows_to_samples_with_web_calls_for_all_models(
+            filter_rows,
+            filter_model_names,
+        )
+    valid_result_keys = {
+        row.get("result_key")
+        for row in filter_rows
+        if row.get("result_key")
+    }
+
+    rows = _extract_rows_for_models(model_names, tool_choice=replay_mode)
+    rows = [
+        row
+        for row in rows
+        if row.get("result_key") in valid_result_keys
+        and bool(row.get("has_web_tool_call", False))
+    ]
+
+    base_output_dir = (
+        Path(output_dir) if output_dir is not None else OUTPUT_DIR / "hallucinated_url_detection"
+    )
+
+    results_by_model = {}
+    for model_name_value in model_names:
+        model_rows = [row for row in rows if row.get("model") == model_name_value]
+        if not model_rows:
+            print(
+                f"[{model_name_value}] No web-call replay rows for hallucinated "
+                "URL detection; skipping."
+            )
+            continue
+
+        df = pd.DataFrame(
+            [
+                {
+                    "conv_id": row.get("conv_id"),
+                    "turn_id": row.get("turn_id"),
+                    "sources_retrieved": row.get("sources_retrieved", []),
+                    "sources_cited": row.get("sources_cited", []),
+                }
+                for row in model_rows
+            ]
+        )
+        model_output_dir = base_output_dir / str(model_name_value).replace(".", "-")
+        print(f"[{model_name_value}] hallucinated URL detection: {len(df)} replay rows")
+        try:
+            results_by_model[model_name_value] = await run_pipeline(
+                df,
+                model_output_dir,
+                skip_reachability=skip_reachability,
+                skip_wayback=skip_wayback,
+                retrieved_col="sources_retrieved",
+                cited_col="sources_cited",
+            )
+        except Exception as exc:
+            print(f"[{model_name_value}] hallucinated URL detection failed: {exc}")
+
+    return results_by_model
 
 
 def replay_response_source_nli_sentence_based(
@@ -6891,13 +6386,113 @@ def evaluate_claude_associated_citation_bucket_alignment_for_replays(
     return summary
 
 
+def _replay_ranked_payload_path(model_names=DEFAULT_MODELS):
+    """Where build_replay_tranco_ranked_payload() writes/looks for its
+    output for `model_names` -- one cache file per model-name subset (see
+    _model_subset_slug), not a hardcoded one-off filename."""
+    return OUTPUT_DIR / f"all_models_with_tranco_ranks__{_model_subset_slug(model_names)}.json"
+
+
+def build_replay_tranco_ranked_payload(
+    model_names=DEFAULT_MODELS,
+    replay_mode="auto",
+    output_path=None,
+    force_refresh_tranco=False,
+):
+    """Build (and cache to `output_path`) the {result_key: {"conv_id":,
+    "turn_id":, "models": {model_name: {"sources_retrieved":,
+    "sources_cited":, "sources_retrieved_ranks":, "sources_cited_ranks":}}}}
+    payload evaluate_replay_source_tranco_ranks() reads: a per-source
+    Tranco domain rank for every retrieved/cited source across
+    `model_names`' replay rows.
+
+    Computed from real replay data (extract_model_file's sources_retrieved/
+    sources_cited) plus the real Tranco top-1M list -- reuses
+    src.response_generation.source_selection._load_tranco_rank_lookup(),
+    the same download+cache infrastructure add_tranco_ranks_to_response_
+    and_sources() uses for the platform pipeline -- rather than a
+    hardcoded, one-off, date-stamped JSON file nothing in this repo ever
+    generated (the previous `all_models_with_ranks_290726.json` default,
+    which doesn't exist in a fresh checkout).
+    """
+    from src.response_generation.source_selection import _load_tranco_rank_lookup
+
+    rank_lookup = _load_tranco_rank_lookup(force_refresh=force_refresh_tranco)
+
+    def _domain_for_item(item):
+        if not isinstance(item, dict):
+            return ""
+        domain = _normalize_domain_for_top_plots(str(item.get("domain", "") or ""))
+        if domain:
+            return domain
+        return _normalize_domain_for_top_plots(
+            urlparse(str(item.get("url", "") or "")).netloc
+        )
+
+    def _ranks_for_sources(items):
+        return [
+            rank_lookup.get(_domain_for_item(item), -1)
+            for item in _flatten_source_items(items)
+        ]
+
+    rows = _extract_rows_for_models(model_names, tool_choice=replay_mode)
+
+    payload = {}
+    for row in rows:
+        result_key = row.get("result_key")
+        if not result_key:
+            continue
+        sample = payload.setdefault(
+            result_key,
+            {
+                "conv_id": row.get("conv_id"),
+                "turn_id": row.get("turn_id"),
+                "models": {},
+            },
+        )
+        sample["models"][row.get("model")] = {
+            "sources_retrieved": row.get("sources_retrieved", []),
+            "sources_cited": row.get("sources_cited", []),
+            "sources_retrieved_ranks": _ranks_for_sources(row.get("sources_retrieved", [])),
+            "sources_cited_ranks": _ranks_for_sources(row.get("sources_cited", [])),
+        }
+
+    output_path = (
+        Path(output_path)
+        if output_path is not None
+        else _replay_ranked_payload_path(model_names)
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    to_json(payload, str(output_path), indent=2)
+
+    ranked_retrieved = sum(
+        1
+        for sample in payload.values()
+        for model_payload in sample["models"].values()
+        for rank in model_payload["sources_retrieved_ranks"]
+        if rank > 0
+    )
+    ranked_cited = sum(
+        1
+        for sample in payload.values()
+        for model_payload in sample["models"].values()
+        for rank in model_payload["sources_cited_ranks"]
+        if rank > 0
+    )
+    print(
+        f"Tranco-ranked {ranked_retrieved} retrieved and {ranked_cited} cited "
+        f"replay source(s) across {len(payload)} samples ({len(model_names)} "
+        f"models) -> {output_path}"
+    )
+    return payload
+
+
 def evaluate_replay_source_tranco_ranks(
-    ranked_input_path=Path(
-        f"{OUTPUT_PATH}/replays/extracted/all_models_with_ranks_290726.json"
-    ),
+    ranked_input_path=None,
     separate_cited_external_internal=True,
     model_names=DEFAULT_MODELS,
     output_dir=PLOT_OUTPUT_DIR / "source_selection",
+    force_refresh_tranco=False,
 ):
     import numpy as np
     import pandas as pd
@@ -6906,6 +6501,17 @@ def evaluate_replay_source_tranco_ranks(
 
     from src.utils.figure_style import with_paper_style, styler
 
+    ranked_input_path = (
+        Path(ranked_input_path)
+        if ranked_input_path is not None
+        else _replay_ranked_payload_path(model_names)
+    )
+    if not ranked_input_path.exists():
+        build_replay_tranco_ranked_payload(
+            model_names=model_names,
+            output_path=ranked_input_path,
+            force_refresh_tranco=force_refresh_tranco,
+        )
     ranked_payload = _load_replay_json(ranked_input_path)
 
     def _flatten_rank_values(value):
@@ -7316,111 +6922,72 @@ def data_extraction():
 if __name__ == "__main__":
     # data_extraction()
 
-    # plot_replay_web_call_agreement_counts()
-    # plot_openai_replay_model_agreement_counts()
-
-    # plot_openai_replay_model_call_outcomes()
-
-    # plot_cross_platform_replay_model_call_outcomes()
-
     # print_replay_web_search_sample_counts()
 
     # plot_replay_query_term_count_trends_over_time()
 
     # plot_replay_parallel_queries_by_query_reformulations()
-    # plot_replay_parallel_queries_by_query_reformulations(model_names=OPENAI_REPLAY_MODELS)
 
     # plot_replay_top_domains(
     #     common_samples_only=True, 
-    #     common_model_names=[
-    #         "gpt-5.3-chat-latest",
-    #         "claude-sonnet-4-6",
-    #         "grok-4.3",
-    #         "deepseek-v4-flash"
-    #     ],
+    #     common_model_names=DEFAULT_MODELS,
     # )
     # plot_replay_top_domains(
     #     common_samples_only=False,
-    #     common_model_names=[
-    #         "gpt-5.3-chat-latest",
-    #         "claude-sonnet-4-6",
-    #         "grok-4.3",
-    #         "deepseek-v4-flash"
-    #     ],
+    #     common_model_names=DEFAULT_MODELS,
     # )
-
-    # print_cross_platform_replay_model_call_outcome_eval_scores()
 
     # query_specificity_evaluation()
     # plot_query_specificity_distribution_by_iteration()
-
-    # reasons_for_another_web_query()
-    # plot_reasons_for_another_web_query_distribution_all_models()
 
     # compute_average_citations_and_retrievals_per_response_for_replays()
 
     # plot_openai_replay_dev_prompt_web_call_heatmap()
 
-    # evaluate_replay_source_tranco_ranks(separate_cited_external_internal=False)
-    # evaluate_replay_source_tranco_ranks(separate_cited_external_internal=True)
+    evaluate_replay_source_tranco_ranks(separate_cited_external_internal=True)
 
-    # asyncio.run(
-    #     extract_replay_urls_content(
-    #         # model_names=["grok-4.3"],
-    #         common_filter_model_names=[
-    #             "grok-4.3",
-    #             "claude-sonnet-4-6",
-    #             "gpt-5.3-chat-latest",
-    #         ],
-    #         # model_names=["gpt-5.3-chat-latest"],
-    #         model_names=["claude-sonnet-4-6"],
-    #         replay_mode="auto",
-    #         force_refresh=False,
-    #     )
-    # )
+    for model in DEFAULT_MODELS:
+        asyncio.run(
+            extract_replay_urls_content(
+                model_names=[model],
+                common_filter_model_names=DEFAULT_MODELS,
+                replay_mode="auto",
+                force_refresh=False,
+            )
+        )
 
-    # response_source_nli_sentence_based_for_replays(
-    #     # model_names=["grok-4.3"],
-    #     model_names=["gpt-5.3-chat-latest"],
-    #     # model_names=["claude-sonnet-4-6"],
-    #     common_filter_model_names=[
-    #         "grok-4.3",
-    #         "claude-sonnet-4-6",
-    #         "gpt-5.3-chat-latest",
-    #     ],
-    #     nli_method="judge",
-    #     # nli_method="bert",
-    #     chunking_method="claim",
-    #     claim_selection_mode="all",
-    #     # claim_selection_mode="latest_preceding",
-    # )
+        response_source_nli_sentence_based_for_replays(
+            model_names=[model],
+            common_filter_model_names=DEFAULT_MODELS,
+            nli_method="judge",
+            chunking_method="claim",
+            claim_selection_mode="all",
+        )
 
-    # plot_response_source_nli_sentence_based_judge_for_replays(
-    #     model_names=[
-    #         "gpt-5.3-chat-latest",
-    #         "claude-sonnet-4-6",
-    #         "grok-4.3",
-    #     ],
-    #     common_filter_model_names=[
-    #         "gpt-5.3-chat-latest",
-    #         "claude-sonnet-4-6",
-    #         "grok-4.3",
-    #     ],
-    # )
+        asyncio.run(
+            replay_hallucinated_url_detection(
+                model_names=[model],
+                common_filter_model_names=DEFAULT_MODELS,
+                replay_mode="auto",
+            )
+        )
 
-    # evaluate_claude_associated_citation_bucket_alignment_for_replays()
+    plot_response_source_nli_sentence_based_judge_for_replays(
+        model_names=DEFAULT_MODELS,
+        common_filter_model_names=DEFAULT_MODELS,
+    )
 
-    # response_source_nli_sentence_based_factuality_for_replays(
-    #     model_names=DEFAULT_MODELS,
-    #     nli_method="judge",
-    #     chunking_method="claim",
-    #     claim_selection_mode="all",
-    # )
+    response_source_nli_sentence_based_factuality_for_replays(
+        model_names=DEFAULT_MODELS,
+        nli_method="judge",
+        chunking_method="claim",
+        claim_selection_mode="all",
+    )
 
-    # summarize_response_source_nli_sentence_based_factuality_for_replays(
-    #     model_names=DEFAULT_MODELS,
-    #     nli_method="judge",
-    #     chunking_method="claim",
-    #     claim_selection_mode="all",
-    # )
+    summarize_response_source_nli_sentence_based_factuality_for_replays(
+        model_names=DEFAULT_MODELS,
+        nli_method="judge",
+        chunking_method="claim",
+        claim_selection_mode="all",
+    )
     pass
