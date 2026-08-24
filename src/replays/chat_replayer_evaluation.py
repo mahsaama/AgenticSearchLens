@@ -126,7 +126,7 @@ def evaluate_replay_results(replay_model, data, filename, save_every=5):
             max_tokens=4096,
         )
 
-    output_dir = Path(f"{OUTPUT_PATH}/{platform}/metadata/preference_evaluation")
+    output_dir = Path(f"{OUTPUT_PATH}/replays/preference_evaluation")
     output_dir.mkdir(parents=True, exist_ok=True)
     output_json_path = output_dir / f"{filename}.json"
 
@@ -230,11 +230,10 @@ def evaluate_replay_results(replay_model, data, filename, save_every=5):
 
 if __name__ == "__main__":
     replay_models = [
-        # "gpt-5-mini-2025-08-07",
-        # "gpt-5.3-chat-latest",
+        "gpt-4.1-mini-2025-04-14",
         # "grok-4.3",
         # "claude-sonnet-4-6",
-        "deepseek-v4-flash",
+        # "deepseek-v4-flash",
     ]
     for replay_model in replay_models:
         judge_platform = judge_platform_for_replay_model(replay_model)

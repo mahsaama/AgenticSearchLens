@@ -725,7 +725,7 @@ def _load_replay_results(output_file):
 def _replay_output_file(model, dev_prompt=""):
     """Default results path for a given replay model (and, if replaying
     under another model's developer prompt, that prompt's name)."""
-    if dev_prompt:
+    if dev_prompt.strip():
         return f"{OUTPUT_PATH}/replays/{model}_dev_prompt_{dev_prompt}.json"
     return f"{OUTPUT_PATH}/replays/{model}.json"
 
@@ -912,7 +912,7 @@ def replayer(
 
 if __name__ == "__main__":
     models = [
-        "o4-mini-2025-04-16",
+        # "o4-mini-2025-04-16",
         "gpt-4.1-mini-2025-04-14",
         "grok-4.3",
         "claude-sonnet-4-6",
@@ -921,7 +921,7 @@ if __name__ == "__main__":
     dev_prompts = [
         # "o4-mini",
         # "gpt-4.1-mini",
-        ""
+        " "
     ]
     for model in models:
         for dp in dev_prompts:

@@ -102,122 +102,6 @@ Rules:
 - Ensure the JSON is valid
 """
 
-SYSTEM_PROMPT_USER_WEB_QUERY_TYPE = """
-You are an evaluator classifying the intent of a query.
-
-Classify the query into exactly ONE of the following categories:
-
-- "informational":
-  The query is primarily seeking information, explanations, facts, answers, or learning content about a topic.
-
-- "navigational":
-  The query is primarily intended to find or access a specific website, webpage, app, platform, or online resource.
-
-- "transactional":
-  The query is primarily intended to perform an action using an online service, platform, or tool, such as buying, booking, downloading, signing up, or creating something.
-
-- "commercial":
-  The query is primarily intended to research or compare products/services with potential purchase intent, but without explicitly attempting to complete a transaction.
-
-
-Guidelines:
-- Choose the SINGLE best category
-- Focus on the primary intent of the query
-
-Examples:
-
-Query: "I am shopping for a flight from KUL to Guadalajara..."
-→ transactional
-
-Query: "Open the Stanford CS229 course website"
-→ navigational
-
-Query: "How can I reset my Instagram password if I don’t have access to my original email account?"
-→ informational
-
-Query: "best noise cancelling headphones"
-→ commercial
-
-Return ONLY valid JSON:
-
-{{
-  "type": "transactional" | "navigational" | "informational" | "commercial",
-  "reasoning": "<1-2 sentence explanation>"
-}}
-
-Rules:
-- Output must be valid JSON
-- Do not include any extra text
-"""
-
-USER_PROMPT_USER_WEB_QUERY_TYPE = """
-Classify the following query into exactly one intent type.
-
-Query:
-{user_query}
-
-Return ONLY valid JSON:
-{{
-  "type": "transactional" | "navigational" | "informational" | "commercial",
-  "reasoning": "<string>"
-}}
-
-Rules:
-- Choose exactly one type
-- Focus on the primary intent
-- Output valid JSON only
-"""
-
-SYSTEM_PROMPT_QUERY_RELATION = """
-You are an evaluator classifying the relationship between a user's original query and the web queries an AI assistant issued in response.
-
-For EACH web query, classify how it relates to the user query into exactly ONE of:
-
-- "extractive":
-  The web query reuses words, phrases, or entities directly from the user query with little or no rewording. It essentially extracts the user's request as-is (possibly trimmed).
-
-- "abstractive":
-  The web query rephrases, paraphrases, generalizes, or specializes the user query while preserving the same information need. It reuses the user's intent but with different wording, structure, or level of abstraction.
-
-- "discretionary":
-  The web query goes beyond the user query — introducing new entities, sub-topics, background context, or lines of investigation that the user did not explicitly ask about. The assistant is exercising discretion to broaden or redirect the search.
-
-Guidelines:
-- Judge each web query INDEPENDENTLY against the user query.
-- Focus on the relationship in content, not on stylistic differences (punctuation, capitalization).
-- Return one label per web query keyed by the exact web query string.
-
-Return ONLY valid JSON in this exact shape (one entry per web query):
-
-{{
-  "<web_query_1>": {{
-    "type": "extractive" | "abstractive" | "discretionary",
-    "reasoning": "<1-2 sentence explanation>"
-  }},
-  "<web_query_2>": {{
-    "type": "extractive" | "abstractive" | "discretionary",
-    "reasoning": "<1-2 sentence explanation>"
-  }}
-}}
-
-Rules:
-- Output must be valid JSON
-- Every web query in the input MUST appear as a key in the output
-- Do not include any extra text
-"""
-
-USER_PROMPT_QUERY_RELATION = """
-Classify how each web query relates to the user query.
-
-User query:
-{user_query}
-
-Web queries (JSON list):
-{web_queries}
-
-Return ONLY valid JSON. Every web query above MUST appear as a top-level key in the output, mapping to an object with "type" and "reasoning".
-"""
-
 SYSTEM_PROMPT_RESP_SYNT = """
 You are an NLI (Natural Language Inference) judge.
 
@@ -263,223 +147,6 @@ Return ONLY valid JSON:
 }}
 """
 
-SYSTEM_PROMPT_QUERY_REASON = """
-You are an expert evaluator of conversational search behavior, specializing in query reformulation.
-
-Your task is to label the relationship between specified query transitions based on whether the reformulated query improves upon the original query in 1 of the 2 following ways:
-
-You must choose exactly one of the following categories:
-
-1. Query Rewriting
-- The query is reformulated into a clearer, self-contained, or less ambiguous form.
-- Often resolves ambiguity or rewrites the query to better reflect the user’s intent.
-
-2. Query Expansion
-- The query is augmented with additional terms or context.
-- Adds missing details, constraints, or related concepts to better specify the information need.
-
-3. Hybrid
-- Combines both rewriting and expansion.
-- The query is both clarified/rephrased AND enriched with new information.
-
-4. Other
-- The refomulated query is neither more clarified nor enriched with new information.
-- The reformulated query does not constitute a clear improvement over the original query. So, it cannot be labeled either as query rewriting or query expansion.
-
-Instructions:
-- You are given:
-  - The original user query (ID: U)
-  - A set of web queries with IDs like 1.1, 2.1, etc.
-  - A list of transition pairs to classify
-  - Thinking traces explaining why the next query was issued
-- For each listed transition (from -> to), assign exactly one label.
-- Base your decision only on how the "to" query is reformulated relative to the "from" query.
-- Treat U as the original user query text.
-- If multiple categories seem applicable, select the dominant reformulation strategy.
-- Provide a short reasoning (1–2 sentences) grounded in these definitions.
-- Return every listed transition exactly once, and do not add extra transitions.
-
-Output format (STRICT JSON):
-{{
-  "transitions": [
-    {{
-      "from": "U",
-      "to": "1.1",
-      "label": "Query Rewriting | Query Expansion | Hybrid | Other",
-      "reasoning": "1-2 sentence explanation"
-    }}
-  ]
-}}
-"""
-
-USER_PROMPT_QUERY_REASON = """
-Classify the listed transitions using conversational search query reformulation terminology.
-
-Example:
-
-User Query (U):
-Best laptops for programming
-
-Web Queries:
-(1.1) best laptops for programmers
-(2.1) best lightweight laptops for programming students
-(2.2) macbook air m3 student programming battery life
-
-Thinking Traces:
-(1.1) "I should rephrase this into a direct benchmark-style web query."
-(2.1) "I want results tailored for students and portability, so I will add lightweight and student-related constraints."
-(2.2) "I should also check a concrete model line and include battery-life angle for students."
-
-Transitions to classify:
-(U -> 1.1)
-(1.1 -> 2.1)
-(1.1 -> 2.2)
-
-Output:
-{{
-  "transitions": [
-    {{
-      "from": "U",
-      "to": "1.1",
-      "label": "Query Rewriting",
-      "reasoning": "The first web query is a clarified, self-contained rewrite of the user request with minimal new constraints."
-    }},
-    {{
-      "from": "1.1",
-      "to": "2.1",
-      "label": "Query Expansion",
-      "reasoning": "The second query adds new constraints and contextual attributes ('lightweight' and 'students') to better specify the information need."
-    }},
-    {{
-      "from": "1.1",
-      "to": "2.2",
-      "label": "Hybrid",
-      "reasoning": "The query shifts to a specific product family while adding several new constraints (student use and battery life), combining rewriting and expansion."
-    }}
-  ]
-}}
-
-Now classify this:
-
-User Query (U):
-{user_query}
-
-Web Queries:
-{web_queries}
-
-Thinking Traces:
-{thinking_traces}
-
-Transitions to classify:
-{transition_candidates}
-
-Return ONLY the JSON.
-"""
-
-SYSTEM_PROMPT_QUERY_REASON_VALIDATOR = """
-You are an expert evaluator of conversational search behavior, specializing in query reformulation.
-
-Your task is to label the relationship between specified query transitions based on whether the reformulated query improves upon the original query in 1 of the 2 following ways:
-
-You must choose exactly one of the following categories:
-
-1. Query Rewriting
-- The query is reformulated into a clearer, self-contained, or less ambiguous form.
-- Often resolves ambiguity or rewrites the query to better reflect the user’s intent.
-
-2. Query Expansion
-- The query is augmented with additional terms or context.
-- Adds missing details, constraints, or related concepts to better specify the information need.
-
-3. Hybrid
-- Combines both rewriting and expansion.
-- The query is both clarified/rephrased AND enriched with new information.
-
-4. Other
-- The refomulated query is neither more clarified nor enriched with new information.
-- The reformulated query does not constitute a clear improvement over the original query. So, it cannot be labeled either as query rewriting or query expansion.
-
-Instructions:
-- You are given:
-  - The original user query (ID: U)
-  - A set of web queries with IDs like 1.1, 2.1, etc.
-  - A list of transition pairs to classify
-- For each listed transition (from -> to), assign exactly one label.
-- Base your decision only on how the "to" query is reformulated relative to the "from" query.
-- Treat U as the original user query text.
-- If multiple categories seem applicable, select the dominant reformulation strategy.
-- Provide a short reasoning (1–2 sentences) grounded in these definitions.
-- Return every listed transition exactly once, and do not add extra transitions.
-
-Output format (STRICT JSON):
-{{
-  "transitions": [
-    {{
-      "from": "U",
-      "to": "1.1",
-      "label": "Query Rewriting | Query Expansion | Hybrid | Other",
-      "reasoning": "1-2 sentence explanation"
-    }}
-  ]
-}}
-"""
-
-USER_PROMPT_QUERY_REASON_VALIDATOR = """
-Classify the listed transitions using conversational search query reformulation terminology.
-
-Example:
-
-User Query (U):
-Best laptops for programming
-
-Web Queries:
-(1.1) best laptops for programmers
-(2.1) best lightweight laptops for programming students
-(2.2) macbook air m3 student programming battery life
-
-Transitions to classify:
-(U -> 1.1)
-(1.1 -> 2.1)
-(1.1 -> 2.2)
-
-Output:
-{{
-  "transitions": [
-    {{
-      "from": "U",
-      "to": "1.1",
-      "label": "Query Rewriting",
-      "reasoning": "The first web query is a clarified, self-contained rewrite of the user request with minimal new constraints."
-    }},
-    {{
-      "from": "1.1",
-      "to": "2.1",
-      "label": "Query Expansion",
-      "reasoning": "The second query adds new constraints and contextual attributes ('lightweight' and 'students') to better specify the information need."
-    }},
-    {{
-      "from": "1.1",
-      "to": "2.2",
-      "label": "Hybrid",
-      "reasoning": "The query shifts to a specific product family while adding several new constraints (student use and battery life), combining rewriting and expansion."
-    }}
-  ]
-}}
-
-Now classify this:
-
-User Query (U):
-{user_query}
-
-Web Queries:
-{web_queries}
-
-Transitions to classify:
-{transition_candidates}
-
-Return ONLY the JSON.
-"""
-
 SYSTEM_PROMPT_CLAIM_EXTRACTION = """
 You are an expert claim extraction system.
 
@@ -515,56 +182,6 @@ Extract all claims from the following text.
 Text:
 {text}
 """
-
-SYSTEM_PROMPT_CHARAC = """
-You are an expert AI Data Annotator specializing in LLM tool usage and agentic reasoning.
-
-Your task is to classify why a web search tool was triggered for a given user message along with the reasoning traces.
-
-### TAXONOMY OF SEARCH TRIGGERS
-Select exactly ONE Primary Trigger and optionally any Secondary Triggers:
-
-1. Volatile/Temporal Information — Time-sensitive or frequently changing info (e.g., news, weather, prices, sports, policies, releases).
-2. Unfamiliar Term/Typo — Rare, ambiguous, or possibly misspelled terms requiring lookup.
-3. High-Investment Recommendation — Decisions involving significant time, money, or commitment (e.g., travel, purchases, services).
-4. Attribution/Sourcing Needed — Requires verifiable sources, citations, quotes, or links.
-5. External Reference — Mentions a specific external resource not included in the prompt (e.g., URL, paper, dataset).
-6. Low Confidence/Niche Fact — Obscure, highly specific, or emerging topics with high hallucination risk.
-7. High-Stakes Accuracy — Medical, legal, or financial queries where errors could cause harm.
-8. User Verification — User asks to confirm, validate, or fact-check information.
-9. Explicit Command — User explicitly asks to search, browse, or check online.
-10. None of the Above — No clear trigger applies.
-
-### INSTRUCTIONS
-- Select EXACTLY ONE Primary Trigger.
-- Add Secondary Triggers only if clearly justified (avoid overuse).
-- Prefer the most direct cause of the search, not indirect context.
-- Keep explanations concise (1–2 sentences, no fluff).
-
-### OUTPUT FORMAT (JSON ONLY)
-{{
-  "primary_trigger": "<exact taxonomy label>",
-  "secondary_triggers": ["<optional>", "<optional>"],
-  "explanation": "<brief reasoning>"
-}}
-"""
-
-
-USER_PROMPT_CHARAC = """
-Classify why a web search was triggered.
-
-### INPUT
-User Message:
-{PROMPT}
-
-### OUTPUT FORMAT (JSON ONLY)
-{{
-  "primary_trigger": "<exact taxonomy label>",
-  "secondary_triggers": ["<optional>", "<optional>"],
-  "explanation": "<brief reasoning>"
-}}
-"""
-
 
 SYSTEM_PROMPT_TEMPORAL_SPECIFICITY = """You are an impartial evaluator whose only task is to measure the temporal specificity of a grounding query.
 
@@ -833,7 +450,6 @@ Return ONLY valid JSON in the following format:
 }}
 """
 
-
 SYSTEM_PROMPT_CLAIM_FACTUALITY_EVAL = """
 You are an evaluator assessing the factual correctness of individual factual claims made in an AI-generated response to a user query.
 
@@ -1053,4 +669,72 @@ CLAIM SET A:
 
 CLAIM SET B:
 {claims_with_web}
+"""
+
+SYSTEM_PROMPT_PII_detection = """
+You are an annotator that identifies the personal data or sensitive data in a two-party conversation (User A and User B). 
+Return ONLY valid JSON; do not include explanations outside JSON.
+
+## GDPR Reference
+
+- **GDPR Article 4(1)** defines personal data as any information relating to an identified or identifiable natural person, including identifiers such as a name, an identification number, location data, an online identifier, or to one or more factors specific to the physical, physiological, genetic, mental, economic, cultural or social identity of that person.
+- **GDPR Article 9(1)** defines special category personal data as data revealing racial or ethnic origin, political opinions, religious or philosophical beliefs, or trade union membership, and the processing of genetic data, biometric data, data concerning health, or data concerning a natural person’s sex life or sexual orientation of that person. 
+
+--- 
+
+## Questions to Answer
+
+We are providing only the list of **User A’s messages**. For each message, answer the following:
+
+1) Does the attached conversation have any personal information of **User A** as defined by GDPR Article 4(1)?  
+   - Answer "Yes" or "No".  
+   - If "Yes", specify the **type(s) of personal data** and the **exact instance(s) from the message** in a list. Choose the type of data from below (exact strings):
+     Name | Birth Information | Phone Number | Email Address | Location | Online Identifiers | Economic or Financial Information | Educational Information | Employment Information | Social Identity | Business or Project Information | Physical Identity (Hair, body weight, height..etc) | Cultural Identity | Social Identity | Travel history | Animals/Pet Information | Family/Friends Information (including name, health, relationship..etc) | Device Information | Other Identification numbers
+   - If Other, please specify the type.
+
+2) Does the attached conversation have any special categories of personal data of **User A** as defined by GDPR Article 9(1)?  
+   - Answer "Yes" or "No".  
+   - If "Yes", specify the **type(s) of special category data** and the **exact instance(s) from the message** in a list. Choose the type of data from below (exact strings):
+     Political opinions | Racial or ethnic origin | Sex life | Sexual Orientation | Relationship details | Mental Health | Other Health Information | Biometric data | Genetic data | Religious beliefs | Philosophical beliefs | Personal views and feelings
+   - If Other, please specify the type.
+
+--- 
+
+## Important Notes
+
+-  Only analyze **User A’s messages** (the list provided).  
+-  Use the schema exactly as provided.  
+-  Do not include explanations outside the JSON object.
+
+---
+
+## Output JSON schema (and nothing else):
+{
+  "data_per_turn": [
+    {
+      "turn_index": <int, 0-based>,
+      "personal_data": {
+            "present": "Yes|No",
+            "types": [
+                {
+                    "type": "<type of personal data>",
+                    "instance": "<exact instance from message>"
+                }
+                ....
+            ]
+        },
+        "special_category_data": {
+            "present": "Yes|No",
+            "types": [
+                {
+                    "type": "<type of special category data>",
+                    "instance": "<exact instance from message>"
+                }
+                ....
+            ]
+        }
+    }
+    ...
+  ]
+}
 """
