@@ -204,6 +204,10 @@
   .navlinks a:hover{ color:var(--accent); }
   .navlinks a:hover::after{ right:0; }
   .nav-right{ display:flex; align-items:center; gap:16px; }
+  .gh-link{
+    display:flex; align-items:center; color:var(--ink-2); transition:color .2s;
+  }
+  .gh-link:hover{ color:var(--ink); }
   .theme-btn{
     border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
     font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:0.06em;
@@ -245,19 +249,28 @@
   .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--border); }
   .btn-ghost:hover{ border-color:var(--ink-3); }
 
-  /* ============ STAT STRIP ============ */
+  /* ============ STAT LINE ============ */
+  /* An editorial row of figures set off by rule lines, not a grid of
+     dashboard tiles -- numbers sit inline with their own label, the way a
+     magazine sidebar presents key figures, rather than four identical
+     bordered/shadowed cards. */
   .stats{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
-    background:var(--grid); border:1px solid var(--grid); border-radius:14px; overflow:hidden;
-    margin-top:44px;
+    display:flex; flex-wrap:wrap; margin-top:48px;
+    border-top:1px solid var(--grid); border-bottom:1px solid var(--grid);
   }
-  .stat{ background:var(--surface); padding:22px 22px 20px; }
+  .stat{
+    flex:1 1 210px; padding:22px 30px 22px 0; margin-right:30px;
+    border-right:1px solid var(--grid);
+  }
+  .stat:last-child{ border-right:none; margin-right:0; }
   .stat-value{
-    font-family:"Newsreader", serif; font-weight:600; font-size:32px; color:var(--ink);
+    font-family:"Newsreader", serif; font-weight:600; font-size:36px; color:var(--ink);
     font-variant-numeric:tabular-nums; line-height:1.1;
   }
-  .stat-label{ margin-top:6px; font-size:12.5px; color:var(--ink-3); line-height:1.4; }
-  @media (max-width:700px){ .stats{ grid-template-columns:repeat(2,1fr); } }
+  .stat-label{ margin-top:8px; font-size:13px; color:var(--ink-3); line-height:1.45; max-width:22ch; }
+  @media (max-width:700px){
+    .stat{ flex:1 1 44%; border-right:none; padding-right:0; margin-right:0; }
+  }
 
   /* ============ SECTION HEADS ============ */
   .sec-head{ max-width:860px; margin-bottom:38px; }
@@ -266,23 +279,28 @@
   .sec-head .dek-sm{ margin-top:12px; color:var(--ink-2); font-size:16.5px; }
 
   /* ============ FINDINGS ============ */
-  .findings{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  /* A stacked, editorial list -- large ghost numerals bleeding into the
+     margin, rule lines between entries, no card borders/shadows/equal-width
+     grid. Reads like a magazine's "three things to know", not a SaaS
+     features grid. */
+  .findings{ display:flex; flex-direction:column; border-top:1px solid var(--grid); }
   .finding{
-    background:var(--surface); border:1px solid var(--border); border-radius:14px;
-    padding:26px 24px; box-shadow:var(--shadow);
-    transition:transform .3s cubic-bezier(.22,.61,.36,1), box-shadow .3s cubic-bezier(.22,.61,.36,1), border-color .3s;
-  }
-  .finding:hover{
-    transform:translateY(-4px);
-    box-shadow:var(--shadow-hover);
-    border-color:var(--ink-3);
+    display:grid; grid-template-columns:64px 1fr; gap:8px 28px; align-items:start;
+    padding:34px 0; border-bottom:1px solid var(--grid);
   }
   .finding-num{
-    font-family:"Newsreader", serif; font-style:italic; font-size:15px; color:var(--accent); font-weight:600;
+    font-family:"Newsreader", serif; font-style:italic; font-weight:600; font-size:42px;
+    color:var(--accent); line-height:1; opacity:.32;
+    transition:opacity .35s cubic-bezier(.22,.61,.36,1);
   }
-  .finding h3{ font-size:20.5px; margin-top:10px; line-height:1.3; }
-  .finding p{ margin-top:10px; color:var(--ink-2); font-size:15.5px; line-height:1.6; }
-  @media (max-width:860px){ .findings{ grid-template-columns:1fr; } }
+  .finding:hover .finding-num{ opacity:.85; }
+  .finding-cat{
+    font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--ink-3); font-weight:500;
+  }
+  .finding h3{ font-size:21px; margin-top:8px; line-height:1.32; max-width:600px; }
+  .finding p{ margin-top:8px; color:var(--ink-2); font-size:15.5px; line-height:1.65; max-width:600px; }
+  @media (max-width:640px){ .finding{ grid-template-columns:1fr; gap:4px; } }
   .findings .finding:nth-child(2){ transition-delay:.08s; }
   .findings .finding:nth-child(3){ transition-delay:.16s; }
 
@@ -505,6 +523,11 @@
       <path d="M14.5 3.5V7a1 1 0 0 0 1 1H19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
       <path d="M7.5 12.5h9M7.5 15.3h9M7.5 18.1h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
     </symbol>
+
+    <!-- GitHub mark, for the repo link in the nav -->
+    <symbol id="ic-github" viewBox="0 0 16 16">
+      <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+    </symbol>
   </defs>
 </svg>
 
@@ -522,6 +545,9 @@
       <li><a href="#cite">Cite</a></li>
     </ul>
     <div class="nav-right">
+      <a class="gh-link" href="https://github.com/mahsaama/AgenticSearchLens" target="_blank" rel="noopener" aria-label="View source on GitHub">
+        <svg width="18" height="18"><use href="#ic-github"></use></svg>
+      </a>
       <button class="theme-btn" id="themeBtn" type="button" aria-label="Toggle color theme">Auto</button>
     </div>
   </div>
@@ -567,6 +593,7 @@
     <div class="hero-actions hero-anim" style="animation-delay:.41s">
       <a class="btn btn-primary" href="#findings">Read the key findings</a>
       <a class="btn btn-ghost" id="arxivBtn" href="#cite">View on arXiv ↗</a>
+      <a class="btn btn-ghost" href="https://github.com/mahsaama/AgenticSearchLens" target="_blank" rel="noopener">Code on GitHub ↗</a>
       <a class="btn btn-ghost" href="#cite">Cite this work</a>
     </div>
 
@@ -587,19 +614,28 @@
       </div>
       <div class="findings">
         <article class="finding reveal">
-          <div class="finding-num">01 — Decisions</div>
-          <h3>Agents are good at knowing when <em>not</em> to search.</h3>
-          <p>Web‑calling rates range from 14% to 83% of identical prompts across models. Prompts an agent answers from parametric knowledge alone score higher on quality than prompts it sends to search — search helps, but doesn't fully close the gap.</p>
+          <div class="finding-num">01</div>
+          <div>
+            <div class="finding-cat">Decisions</div>
+            <h3>Agents are good at knowing when <em>not</em> to search.</h3>
+            <p>Web‑calling rates range from 14% to 83% of identical prompts across models. Prompts an agent answers from parametric knowledge alone score higher on quality than prompts it sends to search — search helps, but doesn't fully close the gap.</p>
+          </div>
         </article>
         <article class="finding reveal">
-          <div class="finding-num">02 — Querying &amp; results</div>
-          <h3>Every platform queries differently — and their search engines play favorites.</h3>
-          <p>Some agents fan out several queries per turn; others iterate one query deeply. The search engines behind them return few results (often &lt;15) drawn from a narrow, platform‑specific set of preferred domains.</p>
+          <div class="finding-num">02</div>
+          <div>
+            <div class="finding-cat">Querying &amp; results</div>
+            <h3>Every platform queries differently — and their search engines play favorites.</h3>
+            <p>Some agents fan out several queries per turn; others iterate one query deeply. The search engines behind them return few results (often &lt;15) drawn from a narrow, platform‑specific set of preferred domains.</p>
+          </div>
         </article>
         <article class="finding reveal">
-          <div class="finding-num">03 — Grounding</div>
-          <h3>Not every claim traces back to a citation — even when it could.</h3>
-          <p>Cited URLs skew toward popular, high‑Tranco‑rank domains. A non‑trivial share of claims is supported only by uncited search results, and claims with no retrieval support at all score the lowest on factuality.</p>
+          <div class="finding-num">03</div>
+          <div>
+            <div class="finding-cat">Grounding</div>
+            <h3>Not every claim traces back to a citation — even when it could.</h3>
+            <p>Cited URLs skew toward popular, high‑Tranco‑rank domains. A non‑trivial share of claims is supported only by uncited search results, and claims with no retrieval support at all score the lowest on factuality.</p>
+          </div>
         </article>
       </div>
     </div>
