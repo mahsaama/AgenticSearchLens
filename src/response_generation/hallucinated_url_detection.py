@@ -24,10 +24,21 @@ Outputs under --output-dir:
   - cited_only_hallucinated.json
   - results_hallucinated_rate.json
 
-Example:
+Example (one platform's response_and_sources.pkl, explicit paths):
   python -m src.response_generation.hallucinated_url_detection \
     --input-pkl /path/to/response_and_sources.pkl \
     --output-dir hallucinated_url_results
+
+Example (a platform, using this repo's own outputs/<platform>/... layout):
+  python -m src.response_generation.hallucinated_url_detection --platform claude
+  python -m src.response_generation.hallucinated_url_detection --platform all
+
+build_citation_groups()/run_pipeline() also accept an already-loaded
+DataFrame (instead of a pkl path) plus retrieved_col/cited_col, so other
+callers with retrieved/cited source columns under different names --
+e.g. src/replays/extract_replay_artifacts.py's replay rows, which use
+"sources_retrieved"/"sources_cited" rather than "srcs_retrieved"/
+"srcs_cited" -- can reuse this pipeline without a pickle round-trip.
 """
 
 import argparse
@@ -39,6 +50,8 @@ import time
 from collections import Counter, defaultdict
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunparse, urlunsplit
+
+from src.utils.common_io import OUTPUT_PATH, PLATFORMS
 
 
 CONCURRENCY = 20
@@ -198,16 +211,36 @@ def iter_grounding_rows(df):
     return df.iterrows()
 
 
-def build_citation_groups(input_pkl, output_dir):
+def build_citation_groups(
+    input_pkl,
+    output_dir,
+    retrieved_col="srcs_retrieved",
+    cited_col="srcs_cited",
+):
     """Stage 1: split every cited URL in `input_pkl` into "cited_and_retrieved"
     (also appeared in that conversation's own retrieved sources, cumulative
     across turns) vs. "cited_only" (cited but never actually retrieved --
     the group most likely to contain hallucinated citations), writing
     per-group occurrences/unique-URLs/cite-months JSON under `output_dir`.
     Returns a summary dict (also written to citation_grouping_summary.json).
+
+    `input_pkl` is normally a path to a pickled DataFrame (e.g.
+    response_and_sources.pkl), but an already-loaded DataFrame is also
+    accepted directly -- useful for callers (like extract_replay_artifacts.py)
+    that already have the rows in memory and shouldn't have to round-trip
+    through a pickle file just to reuse this pipeline. `retrieved_col`/
+    `cited_col` let such callers point at whatever their retrieved/cited
+    source columns are actually named.
     """
-    with Path(input_pkl).open("rb") as f:
-        df = pickle.load(f)
+    import pandas as pd
+
+    if isinstance(input_pkl, pd.DataFrame):
+        df = input_pkl
+        input_pkl_label = "<in-memory DataFrame>"
+    else:
+        with Path(input_pkl).open("rb") as f:
+            df = pickle.load(f)
+        input_pkl_label = str(input_pkl)
 
     conversation_retrieved = defaultdict(set)
     occurrences = {
@@ -224,8 +257,8 @@ def build_citation_groups(input_pkl, output_dir):
     citation_count = 0
 
     for row_index, row in iter_grounding_rows(df):
-        retrieved_urls = source_urls(row.get("srcs_retrieved"))
-        cited_urls = source_urls(row.get("srcs_cited"))
+        retrieved_urls = source_urls(row.get(retrieved_col))
+        cited_urls = source_urls(row.get(cited_col))
         retrieval_count += len(retrieved_urls)
         citation_count += len(cited_urls)
 
@@ -248,7 +281,7 @@ def build_citation_groups(input_pkl, output_dir):
             cite_months[group].setdefault(url, month)
 
     summary = {
-        "input_pkl": str(input_pkl),
+        "input_pkl": input_pkl_label,
         "counting_basis": "occurrence_weighted_conversation_cumulative_cited_urls",
         "num_responses": int(num_responses),
         "sum_retrievals": int(retrieval_count),
@@ -532,25 +565,38 @@ def classify_group(output_dir, group):
     }
 
 
-async def run_pipeline(args):
+async def run_pipeline(
+    input_pkl,
+    output_dir,
+    skip_reachability=False,
+    skip_wayback=False,
+    retrieved_col="srcs_retrieved",
+    cited_col="srcs_cited",
+):
     """Run all 4 stages in order (citation grouping -> reachability ->
     Wayback -> classification) and write the final
-    results_hallucinated_rate.json summary."""
-    output_dir = Path(args.output_dir)
+    results_hallucinated_rate.json summary. `input_pkl` may be a pkl path
+    or an already-loaded DataFrame -- see build_citation_groups()."""
+    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    grouping_summary = build_citation_groups(args.input_pkl, output_dir)
+    grouping_summary = build_citation_groups(
+        input_pkl,
+        output_dir,
+        retrieved_col=retrieved_col,
+        cited_col=cited_col,
+    )
 
-    if not args.skip_reachability:
+    if not skip_reachability:
         for group in ("cited_and_retrieved", "cited_only"):
             await run_reachability_group(output_dir, group)
 
-    if not args.skip_wayback:
+    if not skip_wayback:
         for group in ("cited_and_retrieved", "cited_only"):
             run_wayback_group(output_dir, group)
 
     results = {
-        "input_pkl": str(args.input_pkl),
+        "input_pkl": grouping_summary["input_pkl"],
         "grouping_summary": grouping_summary,
         "buckets": {
             group: classify_group(output_dir, group)
@@ -559,16 +605,55 @@ async def run_pipeline(args):
     }
     dump_json(output_dir / "results_hallucinated_rate.json", results)
     print(json.dumps(results, ensure_ascii=False, indent=2))
+    return results
+
+
+def _default_input_pkl(platform):
+    """outputs/<platform>/metadata/response_and_sources.pkl -- same
+    convention response_generation.py/source_selection.py use."""
+    return Path(f"{OUTPUT_PATH}/{platform}/metadata/response_and_sources.pkl")
+
+
+def _default_output_dir(platform):
+    """outputs/<platform>/metadata/hallucinated_url_detection -- kept
+    under metadata/ alongside response_and_sources.pkl, matching every
+    other per-platform analysis output in this repo."""
+    return Path(f"{OUTPUT_PATH}/{platform}/metadata/hallucinated_url_detection")
+
+
+async def run_pipeline_for_platform(platform, skip_reachability=False, skip_wayback=False):
+    """run_pipeline() against `platform`'s own response_and_sources.pkl,
+    writing to outputs/<platform>/metadata/hallucinated_url_detection/."""
+    return await run_pipeline(
+        _default_input_pkl(platform),
+        _default_output_dir(platform),
+        skip_reachability=skip_reachability,
+        skip_wayback=skip_wayback,
+    )
 
 
 def parse_args():
-    """CLI arguments: --input-pkl, --output-dir, and the --skip-* flags to
-    resume from a partially-completed run."""
+    """CLI arguments: either --platform (resolving --input-pkl/--output-dir
+    from this repo's outputs/<platform>/... convention; "all" loops every
+    platform in PLATFORMS), or explicit --input-pkl/--output-dir for a
+    custom source (e.g. a non-platform pkl, or reusing this pipeline from
+    another script). Plus the --skip-* flags to resume from a
+    partially-completed run."""
     parser = argparse.ArgumentParser(
         description="Compute hallucinated URL buckets from response_and_sources.pkl."
     )
-    parser.add_argument("--input-pkl", required=True, type=Path)
-    parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument(
+        "--platform",
+        choices=PLATFORMS + ["all"],
+        default=None,
+        help=(
+            "Run against outputs/<platform>/metadata/response_and_sources.pkl "
+            "instead of explicit --input-pkl/--output-dir. 'all' loops every "
+            "platform in PLATFORMS."
+        ),
+    )
+    parser.add_argument("--input-pkl", type=Path, default=None)
+    parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument(
         "--skip-reachability",
         action="store_true",
@@ -579,8 +664,43 @@ def parse_args():
         action="store_true",
         help="Skip Wayback checks and classify 404/410 URLs without new Wayback data.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.platform is None and (args.input_pkl is None or args.output_dir is None):
+        parser.error("Provide either --platform, or both --input-pkl and --output-dir.")
+    if args.platform is not None and (args.input_pkl is not None or args.output_dir is not None):
+        parser.error("--platform cannot be combined with --input-pkl/--output-dir.")
+
+    return args
+
+
+async def _main():
+    args = parse_args()
+    if args.platform == "all":
+        for platform in PLATFORMS:
+            print(f"=== {platform} ===")
+            try:
+                await run_pipeline_for_platform(
+                    platform,
+                    skip_reachability=args.skip_reachability,
+                    skip_wayback=args.skip_wayback,
+                )
+            except Exception as exc:
+                print(f"[{platform}] hallucinated URL detection failed: {exc}")
+    elif args.platform is not None:
+        await run_pipeline_for_platform(
+            args.platform,
+            skip_reachability=args.skip_reachability,
+            skip_wayback=args.skip_wayback,
+        )
+    else:
+        await run_pipeline(
+            args.input_pkl,
+            args.output_dir,
+            skip_reachability=args.skip_reachability,
+            skip_wayback=args.skip_wayback,
+        )
 
 
 if __name__ == "__main__":
-    asyncio.run(run_pipeline(parse_args()))
+    asyncio.run(_main())
