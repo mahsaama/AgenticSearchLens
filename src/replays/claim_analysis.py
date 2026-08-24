@@ -43,7 +43,11 @@ from src.prompts.evaluator_prompts import (
     USER_PROMPT_CLAIM_COMPARISON,
 )
 from src.replays.chat_replayer_evaluation import judge_platform_for_replay_model
-from src.replays.extract_replay_artifacts import _has_web_tool_call, _infer_provider
+from src.replays.extract_replay_artifacts import (
+    DEFAULT_MODELS as _REPLAY_DEFAULT_MODELS,
+    _has_web_tool_call,
+    _infer_provider,
+)
 from src.response_generation.claim_extraction import extract_claims_from_text as _extract_claims_from_text
 from src.utils.figure_style import styler, with_paper_style
 from src.utils.common_io import OUTPUT_PATH, load_json, to_json
@@ -59,22 +63,31 @@ if not logging.getLogger().handlers:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-# model_name = "gpt-5.3-chat-latest"
-# model_name = "claude-sonnet-4-6"
-# model_name = "grok-4.3"
-model_name = "deepseek-v4-flash"
-MODEL_NAMES = [
-    "gpt-5.3-chat-latest",
-    "claude-sonnet-4-6",
-    "grok-4.3",
-    "deepseek-v4-flash",
-]
+# The replay model roster (and their actual outputs/replays/<model>.json
+# filenames) lives in one place -- extract_replay_artifacts.DEFAULT_MODELS
+# -- not duplicated here, so this list can't drift out of sync with which
+# replay files actually exist on disk.
+MODEL_NAMES = list(_REPLAY_DEFAULT_MODELS)
+model_name = MODEL_NAMES[0]
 
+_PLATFORM_DISPLAY_NAME = {
+    "chatgpt": "ChatGPT",
+    "claude": "Claude",
+    "grok": "Grok",
+    "deepseek": "Deepseek",
+}
 MODEL_NAMES_MAP = {
-    "gpt-5.3-chat-latest": "ChatGPT",
-    "claude-sonnet-4-6": "Claude",
-    "grok-4.3": "Grok",
-    "deepseek-v4-flash": "Deepseek"
+    model_name_value: _PLATFORM_DISPLAY_NAME.get(
+        judge_platform_for_replay_model(model_name_value), model_name_value
+    )
+    for model_name_value in MODEL_NAMES
+}
+# platform -> its default replay model name (inverse of
+# judge_platform_for_replay_model over MODEL_NAMES) -- lets --platform on
+# the CLI select the right replay file, not just the judge model.
+PLATFORM_TO_MODEL_NAME = {
+    judge_platform_for_replay_model(model_name_value): model_name_value
+    for model_name_value in MODEL_NAMES
 }
 
 REPLAY_PATH = Path(f"{OUTPUT_PATH}/replays/{model_name}.json")
@@ -682,17 +695,21 @@ def main():
     )
     parser.add_argument(
         "--model-name",
-        default=model_name,
-        help="Replayed model name (see MODEL_NAMES) -- also determines the "
-        "judge platform (via judge_platform_for_replay_model) unless "
-        "--platform overrides it.",
+        default=None,
+        help="Replayed model name (see MODEL_NAMES) to process -- default: "
+        "PLATFORM_TO_MODEL_NAME[--platform] if --platform is given, else "
+        f"{model_name!r}. Also determines the judge platform (via "
+        "judge_platform_for_replay_model) unless --platform is also given.",
     )
     parser.add_argument(
         "--platform",
         default=None,
         choices=["chatgpt", "claude", "grok", "deepseek"],
-        help="Judge platform for compare_claim_sets (default: derived from "
-        "--model-name).",
+        help="Which platform to process: selects that platform's replay "
+        "model (PLATFORM_TO_MODEL_NAME) -- and hence its replay/output/"
+        "cache paths -- unless --model-name is also given explicitly, in "
+        "which case --platform only overrides the judge platform for "
+        "compare_claim_sets.",
     )
     parser.add_argument(
         "--replay-path",
@@ -723,7 +740,15 @@ def main():
     )
     args = parser.parse_args()
 
-    model_name_value = args.model_name
+    if args.model_name:
+        model_name_value = args.model_name
+    elif args.platform:
+        model_name_value = PLATFORM_TO_MODEL_NAME.get(args.platform)
+        if model_name_value is None:
+            parser.error(f"No default replay model configured for platform {args.platform!r}.")
+    else:
+        model_name_value = model_name
+
     replay_path = Path(args.replay_path) if args.replay_path else Path(
         f"{OUTPUT_PATH}/replays/{model_name_value}.json"
     )
