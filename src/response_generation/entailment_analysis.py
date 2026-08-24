@@ -2984,6 +2984,7 @@ def plot_response_source_nli_sentence_based(
             yaxis_title="Rate of Response Claims",
             legend_title="Source",
             title=mode_title,
+            margin=dict(t=130),
         )
         fig.update_xaxes(categoryorder="array", categoryarray=platform_order)
         fig.update_yaxes(range=[0, 1], tickformat=".0%")
@@ -2992,7 +2993,7 @@ def plot_response_source_nli_sentence_based(
             paper_fig = with_paper_style(
                 fig,
                 config=styler(24, 22),
-                legend_pos=(0.8, 1.5),
+                legend_pos=(0.8, 1.8),
             )
             paper_fig.write_image(f"{output_dir}/{mode_file_name}.pdf", format="pdf")
         except Exception as e:
