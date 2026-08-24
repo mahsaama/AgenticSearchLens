@@ -1,0 +1,146 @@
+[
+  {
+    "entailment_source_bucket": "Associated Citations",
+    "sentence_count": 17,
+    "sentence_rate": 0.6296296296296297,
+    "total_sentence_count": 27,
+    "claim_selection_mode": "all",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Other Citations",
+    "sentence_count": 2,
+    "sentence_rate": 0.07407407407407407,
+    "total_sentence_count": 27,
+    "claim_selection_mode": "all",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Search Results",
+    "sentence_count": 0,
+    "sentence_rate": 0.0,
+    "total_sentence_count": 27,
+    "claim_selection_mode": "all",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Parametric Knowledge",
+    "sentence_count": 8,
+    "sentence_rate": 0.2962962962962963,
+    "total_sentence_count": 27,
+    "claim_selection_mode": "all",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Associated Citations",
+    "sentence_count": 1,
+    "sentence_rate": 0.03125,
+    "total_sentence_count": 32,
+    "claim_selection_mode": "all",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Other Citations",
+    "sentence_count": 0,
+    "sentence_rate": 0.0,
+    "total_sentence_count": 32,
+    "claim_selection_mode": "all",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Search Results",
+    "sentence_count": 1,
+    "sentence_rate": 0.03125,
+    "total_sentence_count": 32,
+    "claim_selection_mode": "all",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Parametric Knowledge",
+    "sentence_count": 30,
+    "sentence_rate": 0.9375,
+    "total_sentence_count": 32,
+    "claim_selection_mode": "all",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Associated Citations",
+    "sentence_count": 5,
+    "sentence_rate": 0.19230769230769232,
+    "total_sentence_count": 26,
+    "claim_selection_mode": "all",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  },
+  {
+    "entailment_source_bucket": "Other Citations",
+    "sentence_count": 5,
+    "sentence_rate": 0.19230769230769232,
+    "total_sentence_count": 26,
+    "claim_selection_mode": "all",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  },
+  {
+    "entailment_source_bucket": "Search Results",
+    "sentence_count": 8,
+    "sentence_rate": 0.3076923076923077,
+    "total_sentence_count": 26,
+    "claim_selection_mode": "all",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  },
+  {
+    "entailment_source_bucket": "Parametric Knowledge",
+    "sentence_count": 8,
+    "sentence_rate": 0.3076923076923077,
+    "total_sentence_count": 26,
+    "claim_selection_mode": "all",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  },
+  {
+    "entailment_source_bucket": "Associated Citations",
+    "sentence_count": 0,
+    "sentence_rate": 0.0,
+    "total_sentence_count": 28,
+    "claim_selection_mode": "all",
+    "model": "deepseek-v4-flash",
+    "model_label": "DeepSeek V4 Flash"
+  },
+  {
+    "entailment_source_bucket": "Other Citations",
+    "sentence_count": 0,
+    "sentence_rate": 0.0,
+    "total_sentence_count": 28,
+    "claim_selection_mode": "all",
+    "model": "deepseek-v4-flash",
+    "model_label": "DeepSeek V4 Flash"
+  },
+  {
+    "entailment_source_bucket": "Search Results",
+    "sentence_count": 1,
+    "sentence_rate": 0.03571428571428571,
+    "total_sentence_count": 28,
+    "claim_selection_mode": "all",
+    "model": "deepseek-v4-flash",
+    "model_label": "DeepSeek V4 Flash"
+  },
+  {
+    "entailment_source_bucket": "Parametric Knowledge",
+    "sentence_count": 27,
+    "sentence_rate": 0.9642857142857143,
+    "total_sentence_count": 28,
+    "claim_selection_mode": "all",
+    "model": "deepseek-v4-flash",
+    "model_label": "DeepSeek V4 Flash"
+  }
+]

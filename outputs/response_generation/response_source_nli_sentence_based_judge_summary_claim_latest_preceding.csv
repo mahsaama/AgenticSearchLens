@@ -1,0 +1,5 @@
+entailment_source_bucket,sentence_count,sentence_rate,total_sentence_count,claim_selection_mode,platform
+Associated Citations,3,0.5,6,latest_preceding,ChatGPT
+Other Citations,0,0.0,6,latest_preceding,ChatGPT
+Search Results,3,0.5,6,latest_preceding,ChatGPT
+Parametric Knowledge,0,0.0,6,latest_preceding,ChatGPT

@@ -1,0 +1,13 @@
+entailment_source_bucket,sentence_count,sentence_rate,total_sentence_count,claim_selection_mode,model,model_label
+Associated Citations,17,0.68,25,latest_preceding,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Other Citations,0,0.0,25,latest_preceding,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Search Results,0,0.0,25,latest_preceding,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Parametric Knowledge,8,0.32,25,latest_preceding,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Associated Citations,1,0.03333333333333333,30,latest_preceding,claude-sonnet-4-6,Claude Sonnet 4.6
+Other Citations,0,0.0,30,latest_preceding,claude-sonnet-4-6,Claude Sonnet 4.6
+Search Results,1,0.03333333333333333,30,latest_preceding,claude-sonnet-4-6,Claude Sonnet 4.6
+Parametric Knowledge,28,0.9333333333333333,30,latest_preceding,claude-sonnet-4-6,Claude Sonnet 4.6
+Associated Citations,5,0.25,20,latest_preceding,grok-4.3,Grok-4.3
+Other Citations,4,0.2,20,latest_preceding,grok-4.3,Grok-4.3
+Search Results,7,0.35,20,latest_preceding,grok-4.3,Grok-4.3
+Parametric Knowledge,4,0.2,20,latest_preceding,grok-4.3,Grok-4.3

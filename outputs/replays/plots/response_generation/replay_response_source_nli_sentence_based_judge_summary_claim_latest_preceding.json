@@ -1,0 +1,110 @@
+[
+  {
+    "entailment_source_bucket": "Associated Citations",
+    "sentence_count": 17,
+    "sentence_rate": 0.68,
+    "total_sentence_count": 25,
+    "claim_selection_mode": "latest_preceding",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Other Citations",
+    "sentence_count": 0,
+    "sentence_rate": 0.0,
+    "total_sentence_count": 25,
+    "claim_selection_mode": "latest_preceding",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Search Results",
+    "sentence_count": 0,
+    "sentence_rate": 0.0,
+    "total_sentence_count": 25,
+    "claim_selection_mode": "latest_preceding",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Parametric Knowledge",
+    "sentence_count": 8,
+    "sentence_rate": 0.32,
+    "total_sentence_count": 25,
+    "claim_selection_mode": "latest_preceding",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "model_label": "GPT-4.1 Mini"
+  },
+  {
+    "entailment_source_bucket": "Associated Citations",
+    "sentence_count": 1,
+    "sentence_rate": 0.03333333333333333,
+    "total_sentence_count": 30,
+    "claim_selection_mode": "latest_preceding",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Other Citations",
+    "sentence_count": 0,
+    "sentence_rate": 0.0,
+    "total_sentence_count": 30,
+    "claim_selection_mode": "latest_preceding",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Search Results",
+    "sentence_count": 1,
+    "sentence_rate": 0.03333333333333333,
+    "total_sentence_count": 30,
+    "claim_selection_mode": "latest_preceding",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Parametric Knowledge",
+    "sentence_count": 28,
+    "sentence_rate": 0.9333333333333333,
+    "total_sentence_count": 30,
+    "claim_selection_mode": "latest_preceding",
+    "model": "claude-sonnet-4-6",
+    "model_label": "Claude Sonnet 4.6"
+  },
+  {
+    "entailment_source_bucket": "Associated Citations",
+    "sentence_count": 5,
+    "sentence_rate": 0.25,
+    "total_sentence_count": 20,
+    "claim_selection_mode": "latest_preceding",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  },
+  {
+    "entailment_source_bucket": "Other Citations",
+    "sentence_count": 4,
+    "sentence_rate": 0.2,
+    "total_sentence_count": 20,
+    "claim_selection_mode": "latest_preceding",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  },
+  {
+    "entailment_source_bucket": "Search Results",
+    "sentence_count": 7,
+    "sentence_rate": 0.35,
+    "total_sentence_count": 20,
+    "claim_selection_mode": "latest_preceding",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  },
+  {
+    "entailment_source_bucket": "Parametric Knowledge",
+    "sentence_count": 4,
+    "sentence_rate": 0.2,
+    "total_sentence_count": 20,
+    "claim_selection_mode": "latest_preceding",
+    "model": "grok-4.3",
+    "model_label": "Grok-4.3"
+  }
+]

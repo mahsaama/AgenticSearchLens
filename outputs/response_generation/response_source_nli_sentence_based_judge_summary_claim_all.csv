@@ -1,0 +1,13 @@
+entailment_source_bucket,sentence_count,sentence_rate,total_sentence_count,claim_selection_mode,platform
+Associated Citations,17,0.6538461538461539,26,all,ChatGPT
+Other Citations,2,0.07692307692307693,26,all,ChatGPT
+Search Results,7,0.2692307692307692,26,all,ChatGPT
+Parametric Knowledge,0,0.0,26,all,ChatGPT
+Associated Citations,0,0.0,26,all,Claude
+Other Citations,19,0.7307692307692307,26,all,Claude
+Search Results,0,0.0,26,all,Claude
+Parametric Knowledge,7,0.2692307692307692,26,all,Claude
+Associated Citations,0,0.0,73,all,Grok
+Other Citations,35,0.4794520547945205,73,all,Grok
+Search Results,28,0.3835616438356164,73,all,Grok
+Parametric Knowledge,10,0.136986301369863,73,all,Grok

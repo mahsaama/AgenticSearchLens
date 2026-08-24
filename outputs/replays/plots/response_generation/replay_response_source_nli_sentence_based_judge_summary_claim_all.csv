@@ -1,0 +1,17 @@
+entailment_source_bucket,sentence_count,sentence_rate,total_sentence_count,claim_selection_mode,model,model_label
+Associated Citations,17,0.6296296296296297,27,all,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Other Citations,2,0.07407407407407407,27,all,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Search Results,0,0.0,27,all,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Parametric Knowledge,8,0.2962962962962963,27,all,gpt-4.1-mini-2025-04-14,GPT-4.1 Mini
+Associated Citations,1,0.03125,32,all,claude-sonnet-4-6,Claude Sonnet 4.6
+Other Citations,0,0.0,32,all,claude-sonnet-4-6,Claude Sonnet 4.6
+Search Results,1,0.03125,32,all,claude-sonnet-4-6,Claude Sonnet 4.6
+Parametric Knowledge,30,0.9375,32,all,claude-sonnet-4-6,Claude Sonnet 4.6
+Associated Citations,5,0.19230769230769232,26,all,grok-4.3,Grok-4.3
+Other Citations,5,0.19230769230769232,26,all,grok-4.3,Grok-4.3
+Search Results,8,0.3076923076923077,26,all,grok-4.3,Grok-4.3
+Parametric Knowledge,8,0.3076923076923077,26,all,grok-4.3,Grok-4.3
+Associated Citations,0,0.0,28,all,deepseek-v4-flash,DeepSeek V4 Flash
+Other Citations,0,0.0,28,all,deepseek-v4-flash,DeepSeek V4 Flash
+Search Results,1,0.03571428571428571,28,all,deepseek-v4-flash,DeepSeek V4 Flash
+Parametric Knowledge,27,0.9642857142857143,28,all,deepseek-v4-flash,DeepSeek V4 Flash
