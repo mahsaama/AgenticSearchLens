@@ -1,6 +1,8 @@
 # 🔎 Web Search Tool Calling In AI Chatbots
 
-This repository studies how modern AI chatbots decide to call Web search tools and how those calls shape the final response.
+When a chatbot decides to search the web, formulates a query, and writes an
+answer grounded in what it found — this repo is about that whole chain, end
+to end, across the four platforms that actually do it in production.
 
 ## 🎯 Motivation
 
@@ -29,18 +31,19 @@ This repository studies how modern AI chatbots decide to call Web search tools a
 - `src/web_search_decision/extraction.py`: parses raw ChatGPT/Claude/Grok/DeepSeek exports into a per-turn summary dataframe (one unified module, `--platform` picks which).
 - `src/utils/chatgpt_conversation_utils.py` / `src/utils/other_platforms_parsing_utils.py`: the conversation-tree parsing and topic-lookup helpers the two extraction modules above build on.
 - `src/utils/common_io.py`: shared path constants and JSON read/write helpers.
-- `src/utils/topic_classifier.py`: dependency-free keyword-based topic classification, used when no topic-annotation file is available (see "Pipeline Order & Known Gaps" below).
+- `src/utils/topic_classifier.py`: dependency-free keyword-based topic classification, used when no topic-annotation file is available (see below).
+- `src/utils/llm_judge.py`: the shared multi-provider LLM-judge client — every judged metric (factuality, specificity, claim comparison, ...) is scored by *that platform's own model*, not one fixed judge for everyone.
 - `src/web_search_decision/web_tool_invocation.py`: analyses focused on Web-call decisions and trends.
-- `src/web_search_decision/claim_analysis.py`: claim-level comparison between Web and no-Web responses.
 - `src/query_formulation/query_reformulations.py`: query evolution and reformulation analyses.
 - `src/response_generation/source_selection.py`: retrieved/cited source analyses.
-- `src/response_generation/response_generation.py`: response grounding and quality analyses -- the orchestrator; imports and runs the three modules below plus its own raw response/sources extraction and embedding-similarity checks.
+- `src/response_generation/response_generation.py`: response grounding and quality analyses -- the orchestrator; imports and runs the three modules below plus its own raw response/sources extraction and embedding-similarity checks. Fully platform-generalized: claims, entailment, and factuality all run per-platform now.
 - `src/response_generation/web_content_fetch.py`: fetches and caches cited/retrieved source URLs' raw text (requests → Wikipedia API → Playwright fallback).
 - `src/response_generation/claim_extraction.py`: extracts atomic claims from a response's text, with a content-hash cache.
 - `src/response_generation/entailment_analysis.py`: NLI entailment scoring and the factuality/grounding-source analysis built on it (the bulk of §5.2's figures/tables).
-- `src/response_generation/hallucinated_url_detection.py`: checks cited URLs for reachability/hallucination.
+- `src/response_generation/hallucinated_url_detection.py`: checks cited URLs for reachability/fabrication — domain-level retrieved-vs-cited matching, `--platform` picks the source, or feed it any DataFrame directly.
 - `src/replays/chat_replayer.py` / `src/replays/chat_replayer_evaluation.py`: invitro replay (re-querying prompts via platform APIs) and LLM-judge scoring of the replayed responses.
-- `src/replays/extract_replay_artifacts.py`: post-processes replay outputs into the artifacts/plots used across the analyses above.
+- `src/replays/extract_replay_artifacts.py`: post-processes replay outputs into the artifacts/plots used across the analyses above, plus its own Tranco-rank and hallucination checks for replay data.
+- `src/replays/claim_analysis.py`: claim-level comparison between a replayed model's Web and no-Web responses — `--platform` picks the model, judged by that platform's own model.
 - `src/prompts/evaluator_prompts.py`: prompt templates used by the LLM-judge evaluations.
 - `src/utils/figure_style.py`: shared Plotly styling for figures.
 - `outputs/`: generated analysis artifacts.
@@ -78,8 +81,12 @@ playwright install chromium
 python -m nltk.downloader punkt punkt_tab
 ```
 
-🔑 Fill in your keys in `.env` (already in the repo, with placeholders for the API
-keys and every optional override alongside its built-in default):
+🔑 Copy `.env_sample` to `.env` and fill in your keys (placeholders for every
+API key and optional override are already there, alongside its built-in default):
+
+```bash
+cp .env_sample .env
+```
 
 ```bash
 OPENAI_API_KEY=...       # LLM-judge evaluations (factuality/completeness/relevance,
@@ -155,7 +162,8 @@ web_df = load_web_data_from_file("pkl", platform="chatgpt")
 ```
 
 **2. Run the descriptive analyses.** Each of these reads the extracted dataframes
-and writes figures/tables under `outputs/<module_name>/`:
+and writes figures/tables under `outputs/<module_name>/` (each loops over all four
+platforms itself — no `--platform` flag needed here):
 
 ```bash
 python -m src.web_search_decision.web_tool_invocation     # §3: search-calling decisions & trends
@@ -169,122 +177,31 @@ API-based replay and quality scoring (needs the provider API keys above):
 
 ```bash
 python -m src.replays.chat_replayer               # replay prompts through each platform's API
-python -m src.replays.chat_replayer_evaluation    # score replayed responses (factuality/
-                                                   # completeness/relevance) with an LLM judge
-python -m src.web_search_decision.claim_analysis --help            # claim-level Web vs. no-Web comparison
-python -m src.response_generation.hallucinated_url_detection --help  # cited-URL reachability check
+python -m src.replays.chat_replayer_evaluation     # score replayed responses (factuality/
+                                                    # completeness/relevance) with an LLM judge
+python -m src.replays.claim_analysis --platform chatgpt              # claim-level Web vs. no-Web comparison, one platform
+python -m src.replays.claim_analysis --plot-multi-model-summary      # ...and compare across all four
+python -m src.response_generation.hallucinated_url_detection --platform chatgpt  # cited-URL reachability check
 ```
 
 `src/replays/extract_replay_artifacts.py` is invoked internally by the scripts above to
 turn replay output into the artifacts consumed by the analyses in step 2 — you generally
 don't need to run it directly.
 
-## 🔗 Pipeline Order & Known Gaps
+## 🧩 A Few Things Worth Knowing
 
-A few functions across the analysis modules depend on artifacts that either
-come from *another* module (run that one first) or don't ship with this
-repo at all (a research-only file, or a genuine gap). Worth knowing before
-a function fails in a way that isn't obviously about missing data:
-
-- **Topic labels.** `chatgpt_conversation_utils.load_topics()` and
-  `other_platforms_parsing_utils.load_topics()` look up each conversation's
-  topic from a CSV/JSONL the paper's authors built by hand over their own
-  dataset — it won't exist on your checkout. Rather than label everything
-  "Other", extraction now falls back to `topic_classifier.classify_topic()`,
-  a small dependency-free keyword classifier applied to each conversation's
-  opening message.
-- **Every artifact this pipeline writes lives under `outputs/<platform>/metadata/`,
-  ChatGPT included** — `data_summary.*`/`web_data_summary.*` from extraction,
-  `response_and_sources.pkl` and everything downstream of it (URL-content
-  cache, claim cache, NLI/factuality caches and outputs, query-reformulation
-  caches, tool categorization, replay preference-evaluation results, ...).
-  There's no flat `outputs/metadata/` anymore. This was a real migration,
-  not just a new default: earlier, ChatGPT's copy of dozens of these files
-  lived at the flat path (predating this module's Claude/Grok/DeepSeek
-  support) while the other three platforms already had their own
-  subfolder — every one of those hardcoded paths across
-  `response_generation.py`/`claim_extraction.py`/`entailment_analysis.py`/
-  `web_content_fetch.py`/`source_selection.py`/`query_reformulations.py`/
-  `web_tool_invocation.py`/`chat_replayer.py`/`chat_replayer_evaluation.py`
-  now points at `outputs/chatgpt/metadata/` instead (as does
-  `.env`'s `CLAIM_EXTRACTION_CACHE_PATH`). This is a *path* fix, not a
-  *platform-support* fix, though — see "How far cross-platform support
-  actually reaches" below for the difference.
-- **ChatGPT web-search detection is a two-step process across export
-  formats.** Older/plugin-era exports route a tool call through a message
-  explicitly routed to a named tool (`recipient` set to something like
-  `"browser"`/`"web"`); current (2025+) exports don't — the assistant's
-  answer message just carries a non-empty `metadata.search_result_groups`
-  (or, when that's absent, a `"thoughts"` block with non-empty `tool_icons`,
-  e.g. for a single-page fetch that never populates search_result_groups).
-  `extraction.py`'s ChatGPT loader checks both eras' signals when building
-  each turn's `tools` list; `web_call_mask()`/`_chatgpt_has_web_call()` then
-  do the same two-step check on that list (step 1: known legacy recipient
-  names; step 2: the `"web_search"` marker the loader injects for the
-  current format) instead of substring-matching the free-text `interactions`
-  trace the old version relied on. If your own export still comes back with
-  0 Web-search turns, that's the first thing to check against your actual
-  JSON's message metadata shape.
-- **`response_and_sources.pkl`.** `source_selection.py`'s
-  `count_unique_retrieved_safe_cited()` (and related functions) read
-  `outputs/[<platform>/]metadata/response_and_sources.pkl`, which is
-  produced by `response_generation.extract_response_and_sources(web_df)` for
-  ChatGPT or `extract_response_and_sources_other_platforms(web_df, platform)`
-  for Claude/Grok/DeepSeek — a *different* module. Run that first. (It's easy
-  to confuse with `source_selection.extract_retrieved_safe_cited_source(web_df)`,
-  which writes a differently-named file that only feeds functions within
-  `source_selection.py` itself.) Each platform writes its own copy now (under
-  its own metadata dir, same convention as extraction's output) — earlier all
-  four wrote the same flat path and silently overwrote each other if you ran
-  more than one platform.
-- **`all_tools_categorized.json`.** `web_tool_invocation.py`'s Web-call
-  trend functions normally read a hand-curated tool-name-to-category
-  mapping that also doesn't ship with this repo. They now fall back to
-  `_auto_categorize_tool()`, a small heuristic (name contains "web"/
-  "search"/"browse", or matches the known Grok/DeepSeek web-tool sets) that
-  gives a correct, if coarser, Web-vs-other split instead of silently
-  reading 0% everywhere.
-- **PII-safety annotations for replay.** `chat_replayer.py`'s
-  `filter_df_for_history()`/`replayer()` refuse to run without a
-  `personal_presence`/`special_category_presence`-annotated CSV (see
-  Appendix C.1 of the paper) — deliberately *not* given a graceful
-  fallback, since skipping it would mean sending unscreened personal data
-  to external provider APIs. `filter_df_for_history()`/`replayer()` do accept
-  a `source_platform` argument (default `"chatgpt"`) to sample invivo turns
-  from Claude/Grok/DeepSeek instead, independent of which model(s) they get
-  replayed against.
-- **How far cross-platform support actually reaches** — this is about
-  *logic*, not paths (see above for the path migration). `extraction.py`
-  and `response_generation.extract_response_and_sources[_other_platforms]`
-  are fully unified across all four platforms (one function, `platform=`
-  parameter, verified end-to-end against all four sample exports). Most of
-  `source_selection.py`'s and `query_reformulations.py`'s analysis functions
-  already accept a platform too (`_prepare_source_count_df(model=...)` and
-  friends) — for these, moving ChatGPT's default off the flat path means
-  they now behave identically for all four platforms, path-wise. What's
-  *not* generalized: the deeper §5.2 grounding/NLI/LLM-judge machinery
-  (`web_content_fetch.py`/`claim_extraction.py`/`entailment_analysis.py`,
-  plus most of `query_reformulations.py`'s and `web_tool_invocation.py`'s
-  own analysis functions) has no `platform` parameter at all — it was
-  written and tuned against the paper's own ChatGPT-sourced replay data,
-  hardcoded to ChatGPT's artifacts specifically (now at
-  `outputs/chatgpt/metadata/` rather than the flat path, but still only
-  ChatGPT). Generalizing *the logic* of every one of those functions to run
-  against an arbitrary platform wasn't attempted here (large surface, and
-  untestable against real data without a richer non-ChatGPT sample than the
-  synthetic fixtures in this repo).
-- **Two known, currently-unfixed issues**, left as-is rather than
-  papered over or guessed at:
-  - `web_tool_invocation.py`'s `_run_tool_intent_judge()` references
-    `SYSTEM_PROMPT_TOOL_INTENT`/`USER_PROMPT_TOOL_INTENT`, which aren't
-    defined anywhere in `evaluator_prompts.py` — add them before calling
-    `classify_web_call_tool_intent_from_thoughts()`.
-  - `web_tool_invocation.py` defines its own `GROK_WEB_TOOLS`/
-    `DEEPSEEK_WEB_TOOLS` (used by `_has_web_call_for_platform()`) that are
-    much narrower than the canonical sets in `extraction.py` (used
-    everywhere else, including extraction itself) — a possible
-    under-counting inconsistency, not resolved here since picking which
-    heuristic is "correct" is a research-methodology call.
+- **No topic-annotation file?** That's expected — the paper's hand-labeled dataset
+  doesn't ship with this repo. Extraction falls back to `topic_classifier.py`, a
+  small dependency-free keyword classifier, instead of labeling everything "Other".
+- **Every output lives under `outputs/<platform>/metadata/`**, ChatGPT included —
+  there's no flat `outputs/metadata/` anymore.
+- **Replay refuses to run without a PII-safety annotation first.** `chat_replayer.py`
+  won't send unscreened personal data to a provider API — see Appendix C.1 of the
+  paper, or generate one yourself with `chat_replayer.generate_pii_safety_annotations()`.
+- **One rough edge, left as-is rather than papered over:** `web_tool_invocation.py`'s
+  tool-intent judge references two prompts (`SYSTEM_PROMPT_TOOL_INTENT`/
+  `USER_PROMPT_TOOL_INTENT`) that don't exist yet in `evaluator_prompts.py` — add
+  them before calling `classify_web_call_tool_intent_from_thoughts()`.
 
 ## 📝 Notes
 
