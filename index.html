@@ -490,7 +490,7 @@
 
   footer{ padding:44px 0 60px; }
   footer .foot-row{ display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; align-items:flex-end; }
-  footer .fine{ font-size:12.5px; color:var(--ink-3); max-width:520px; line-height:1.7; }
+  footer .fine{ font-size:12.5px; color:var(--ink-3); line-height:1.7; }
   footer .fine a{ color:var(--ink-3); text-decoration:underline; }
 
   ::selection{ background:var(--accent-soft); color:var(--ink); }
@@ -554,7 +554,6 @@
 
   <!-- ============ HERO ============ -->
   <header class="wrap hero">
-    <div class="eyebrow hero-anim" style="animation-delay:.02s">MPI‑SWS · Ruhr University Bochum · Saarland University · LIX, École Polytechnique · Microsoft · Seoul National University — research preprint</div>
     <h1 class="hero-anim" style="animation-delay:.09s">Characterizing Web Search by <em>Conversational LLM Agents</em></h1>
     <p class="dek hero-anim" style="animation-delay:.17s">From the decision to search, through how queries are built and what the search engine hands back, to which of it actually survives into the final, cited response — traced across four commercial platforms.</p>
 
@@ -957,10 +956,6 @@
             </tbody>
           </table>
         </div>
-      </div>
-
-      <div class="scope reveal">
-        <b>Scope &amp; caveats, briefly:</b> donated traces don't expose hidden chain‑of‑thought, ranking algorithms, or proprietary retrieval pipelines, so some behaviors here may reflect platform harness design rather than the underlying model alone. Several analyses lean on LLM‑as‑judge labeling (entailment, query type, response quality); these were validated against human annotation with generally high, though not perfect, agreement. The study is English‑language and text‑only, and does not cover multimodal or non‑English retrieval. Full methodology, prompts, and limitations are in the paper's appendix.
       </div>
     </div>
   </section>
