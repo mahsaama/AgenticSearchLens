@@ -480,12 +480,27 @@
   /* citation */
   .cite-card{
     background:var(--ink); color:#f2f1ec; border-radius:16px; padding:30px 32px; margin-top:26px;
-    box-shadow:var(--shadow);
+    box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px;
   }
   :root[data-theme="dark"] .cite-card, :root:not([data-theme="light"]) .cite-card{ background:var(--surface-2); color:var(--ink); border:1px solid var(--border); }
   .cite-card pre{
     margin:0; white-space:pre-wrap; word-break:break-word;
     font-family:Arial, "Helvetica Neue", Helvetica, sans-serif; font-size:12.8px; line-height:1.75;
+  }
+  .copy-btn{
+    align-self:flex-end; display:inline-flex; align-items:center; gap:6px;
+    padding:6px 14px; border-radius:7px; font-size:12px; font-weight:600;
+    font-family:Arial, "Helvetica Neue", Helvetica, sans-serif;
+    cursor:pointer; border:1px solid rgba(242,241,236,0.28); background:rgba(242,241,236,0.1); color:#f2f1ec;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .copy-btn:hover{ background:rgba(242,241,236,0.18); border-color:rgba(242,241,236,0.45); }
+  .copy-btn.copied{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  :root[data-theme="dark"] .copy-btn, :root:not([data-theme="light"]) .copy-btn{
+    border-color:var(--border); background:rgba(127,127,127,0.14); color:var(--ink);
+  }
+  :root[data-theme="dark"] .copy-btn:hover, :root:not([data-theme="light"]) .copy-btn:hover{
+    background:rgba(127,127,127,0.24);
   }
 
   footer{ padding:44px 0 60px; }
@@ -969,7 +984,8 @@
         <p class="dek-sm">Available as an <a href="https://arxiv.org/abs/2609.19244" target="_blank" rel="noopener">arXiv preprint</a>.</p>
       </div>
       <div class="cite-card reveal">
-        <pre>@misc{amani2026characterizingwebsearchconversational,
+        <button type="button" class="copy-btn" data-copy-target="citeBibtex">Copy</button>
+        <pre id="citeBibtex">@misc{amani2026characterizingwebsearchconversational,
       title={Characterizing Web Search by Conversational LLM Agents: From Search Decisions and Strategies to Results and Responses},
       author={Mahsa Amani and Seungeon Lee and Abhisek Dash and Asmaa El Fraihi and Yunah Jang and Elisabeth Kirsten and Qinyuan Wu and Krishna P. Gummadi and Manish Gupta and Abhilasha Ravichander and Muhammad Bilal Zafar and Soumi Das},
       year={2026},
@@ -1014,6 +1030,50 @@
       current = states[(idx + 1) % states.length];
       apply(current);
       try { localStorage.setItem('asa-theme', current); } catch(e){}
+    });
+  })();
+
+  // Copy-to-clipboard for code/citation blocks that opt in via .copy-btn.
+  (function(){
+    document.querySelectorAll('.copy-btn').forEach(function(btn){
+      var target = document.getElementById(btn.getAttribute('data-copy-target'));
+      if(!target) return;
+
+      function fallbackCopy(text){
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch(e){ ok = false; }
+        document.body.removeChild(ta);
+        return ok;
+      }
+
+      function showResult(ok){
+        var original = btn.textContent;
+        btn.textContent = ok ? 'Copied!' : 'Copy failed';
+        btn.classList.toggle('copied', ok);
+        setTimeout(function(){
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1800);
+      }
+
+      btn.addEventListener('click', function(){
+        var text = target.textContent;
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(
+            function(){ showResult(true); },
+            function(){ showResult(fallbackCopy(text)); }
+          );
+        } else {
+          showResult(fallbackCopy(text));
+        }
+      });
     });
   })();
 
